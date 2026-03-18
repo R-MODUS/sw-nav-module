@@ -1,0 +1,25 @@
+<div class="centered-content" style="max-width: 100%; margin-top: 20px;">
+    <h1>Dokumentace robota</h1>
+    <div class="pdf-container">
+        <object data="static/pdf/manual.pdf" type="application/pdf" class="pdf-viewer">
+            <p>Váš prohlížeč nepodporuje zobrazení PDF. Můžete si jej <a href="static/pdf/manual.pdf">stáhnout zde</a>.</p>
+        </object>
+    </div>
+</div>
+
+<style>
+    .pdf-container {
+        width: 100%;
+        height: calc(100vh - 180px); /* Dynamická výška podle okna prohlížeče */
+        background: #1e1e1e;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+    }
+
+    .pdf-viewer {
+        width: 100%;
+        height: 100%;
+        border: none;
+    }
+</style>

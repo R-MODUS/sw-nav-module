@@ -1,0 +1,30 @@
+lidar_node:
+  ros__parameters:
+    frame_id: 'lidar_mount'
+    angle_min: 0.0
+    angle_max: 6.28319
+    range_max: 5.0
+    range_min: 0.05
+    port: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.2:1.0-port0'
+    motor_pin: 19
+    frequency: 10000
+    target_rpm: 300
+
+motors_node:
+  ros__parameters:
+    port: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0-port0'
+    max_speed: 255
+
+display_node:
+  ros__parameters:
+    width: 128
+    height: 32
+    orientation: 2
+    brightness: 5
+
+fan_control_node:
+  ros__parameters:
+    fan_pin: 13
+    frequency: 10
+    min_to_run: 0.25
+    user_power: [0.0, 0.5, 1.0]

@@ -1,0 +1,4 @@
+float32 cpu_usage_percent
+float32 cpu_temperature
+float32 ram_usage_percent
+string wifi_ssid

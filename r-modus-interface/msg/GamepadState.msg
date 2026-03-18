@@ -1,0 +1,22 @@
+bool a
+bool b
+bool x
+bool y
+bool select
+bool guide
+bool start
+bool lstick
+bool rstick
+bool lb
+bool rb
+bool dpad_up
+bool dpad_down
+bool dpad_left
+bool dpad_right
+
+float32 lx
+float32 ly
+float32 rx
+float32 ry
+float32 lt
+float32 rt

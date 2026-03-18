@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robot OS - Modular</title>
+    <link rel="stylesheet" href="static/css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <nav class="sidebar">
+            <div class="sidebar-header"><span class="logo">🤖 Robot OS</span></div>
+            <ul class="nav-links">
+                <li onclick="window.loadPage('status')" id="nav-status">📊 Status</li>
+                <li onclick="window.loadPage('controls')" id="nav-controls">🕹️ Ovládání</li>
+                <li onclick="window.loadPage('map')" id="nav-map">🗺️ Mapa</li>
+                <li onclick="window.loadPage('terminal')" id="nav-terminal">📟 Terminál</li>
+                <li onclick="window.loadPage('docs')" id="nav-docs">📄 Manuál</li>
+                <li onclick="window.loadPage('config')" id="nav-config">⚙️ Konfig</li>
+            </ul>
+            <div class="sidebar-footer">
+                <ul class="nav-links-bottom">
+                    <li onclick="window.loadPage('users')" id="nav-users">👥 Uživatelé</li>
+                </ul>
+                <p id="conn">❌ Odpojeno</p>
+            </div>
+        </nav>
+
+        <main id="main-content" class="main-view">
+            <!-- Obsah se načítá dynamicky zde -->
+        </main>
+    </div>
+
+    <!-- Externí knihovny -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
+    
+    <!-- Hlavní logika aplikace -->
+    <script src="static/js/app.js"></script>
+    
+    <!-- Skripty specifické pro stránky -->
+    <script src="static/js/map.js"></script>
+
+</body>
+</html>

@@ -1,7 +1,7 @@
 import rclpy
 from rclpy.node import Node
 
-from my.msg import PiStatus
+from rmodus_interface.msg import PiStatus
 
 import psutil
 import subprocess

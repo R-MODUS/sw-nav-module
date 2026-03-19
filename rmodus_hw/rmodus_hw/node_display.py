@@ -1,7 +1,7 @@
 import rclpy
 from rclpy.node import Node
 
-from my.msg import PiStatus
+from rmodus_interface.msg import PiStatus
 
 from .utils.display import Display
 from .utils.wifi import get_ip_address

@@ -1,6 +1,6 @@
 import rclpy
 from rclpy.node import Node
-from my.srv import GetWifiNetworks
+from rmodus_interface.srv import GetWifiNetworks
 import subprocess
 import re
 

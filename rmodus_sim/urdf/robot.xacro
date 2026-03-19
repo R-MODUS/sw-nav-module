@@ -1,0 +1,245 @@
+<?xml version='1.0'?>
+
+<robot
+  name='my_robot'
+  xmlns:xacro='http://www.ros.org/wiki/xacro'
+  xmlns:gz='http://gazebosim.org/schema'>
+
+<!-- PARAMETERS -->
+
+<xacro:arg name='is_sim' default='false'/>
+
+<!-- CONSTANTS -->
+
+<!-- mecanum dont publish odom topic in Gazebo 8.9.0 !!!, use 8.10.0 instead or diff-->
+<xacro:property name='drive' value='mecanum'/> <!-- mecanum or diff -->
+
+<xacro:property name='meshes_dir' value='rmodus_sim/meshes'/>
+<xacro:property name='creo_scale' value='0.001' />
+
+<xacro:property name='base_mass' value='5'/>
+<xacro:property name='base_size_x' value='0.2'/>
+<xacro:property name='base_size_y' value='0.2'/>
+<xacro:property name='base_size_z' value='0.1'/>
+
+<xacro:property name='wheel_mass' value='0.5'/>
+<xacro:property name='wheelbase' value='0.179'/>
+<xacro:property name='track_width' value='0.327'/>
+<xacro:property name='wheel_radius' value='0.05'/>
+<xacro:property name='wheel_length' value='0.03'/>
+
+<xacro:property name='wheel_mu' value='1.0'/>
+<xacro:property name='wheel_mu2' value='0.1'/>
+
+<xacro:property name='base_offset_z' value='0.0973 '/> <!-- 0.0973 -->
+<xacro:property name='wheel_offset_z' value='-0.0473'/>
+<xacro:property name='nav_offset_z' value='0'/>
+<xacro:property name='nav_offset_x' value='0.032'/>
+<xacro:property name='lidar_offset_z' value='0.2'/>
+<xacro:property name='lidar_offset_x' value='0.005'/>
+<xacro:property name='imu_offset_z' value='0.015'/>
+<xacro:property name='imu_offset_x' value='0.056'/>
+<xacro:property name='imu_offset_y' value='0.020'/>
+
+<!-- COLORS -->
+
+<xacro:property name='alpha' value='1'/> <!-- {0 - 1} -->
+<material name='red'> <color rgba='0.8 0.0 0.0 ${alpha}'/> </material>
+<material name='green'> <color rgba='0.0 0.8 0.0 ${alpha}'/> </material>
+<material name='blue'> <color rgba='0.0 0.0 0.8 ${alpha}'/> </material>
+<material name='gray'> <color rgba='0.5 0.5 0.5 ${alpha}'/> </material>
+
+<!-- FUNCTIONS -->
+
+<xacro:macro name='box_inertia' params='m x y z'>
+  <inertial>
+    <mass value='${m}'/>
+    <inertia ixx='${m/12 * (y*y + z*z)}' ixy='0.0' ixz='0.0' 
+             iyy='${m/12 * (x*x + z*z)}' iyz='0.0' 
+             izz='${m/12 * (x*x + y*y)}'/>
+  </inertial>
+</xacro:macro>
+
+<xacro:macro name='cylinder_inertia' params='m r h'>
+  <inertial>
+    <mass value='${m}'/>
+    <inertia ixx='${m/12 * (3*r*r + h*h)}' ixy='0.0' ixz='0.0' 
+              iyy='${m/12 * (3*r*r + h*h)}' iyz='0.0' 
+              izz='${m/2 * r*r}'/>
+    </inertial>
+</xacro:macro>
+
+<xacro:macro name='sphere_inertia' params='m r'>
+  <inertial>
+    <mass value='${m}'/>
+    <inertia ixx='${2/5 * m * r * r}' ixy='0.0' ixz='0.0' 
+             iyy='${2/5 * m * r * r}' iyz='0.0' 
+             izz='${2/5 * m * r * r}'/>
+  </inertial>
+</xacro:macro>
+
+<!-- LINKS -->
+
+<link name='base_footprint'>
+</link>
+
+<link name='base_link'>
+  <xacro:box_inertia m='${base_mass}' x='${base_size_x}' y='${base_size_y}' z='${base_size_z}'/>
+  <visual>
+    <geometry>
+      <mesh filename='package://${meshes_dir}/base.obj' scale='${creo_scale} ${creo_scale} ${creo_scale}'/>
+    </geometry>
+    <material name='blue'/>
+  </visual>
+  <collision>
+    <geometry>
+      <box size='${base_size_x} ${base_size_y} ${base_size_z}'/>
+    </geometry>
+  </collision>
+</link>
+
+<link name='front_left_wheel'>
+  <xacro:sphere_inertia m='${wheel_mass}' r='${wheel_radius}' />
+  <visual>
+    <geometry>
+      <mesh filename='package://${meshes_dir}/wheel.obj' scale='${creo_scale} ${creo_scale} ${creo_scale}'/>
+    </geometry>
+    <material name='green'/>
+  </visual>
+  <collision>
+    <geometry>
+      <sphere radius='${wheel_radius}'/>
+    </geometry>
+  </collision>
+</link>
+
+<link name='front_right_wheel'>
+  <xacro:sphere_inertia m='${wheel_mass}' r='${wheel_radius}' />
+  <visual>
+    <origin xyz='0 0 0' rpy='0 ${pi} 0'/>
+    <geometry>
+      <mesh filename='package://${meshes_dir}/wheel.obj' scale='${creo_scale} ${creo_scale} ${creo_scale}'/>
+    </geometry>
+    <material name='green'/>
+  </visual>
+  <collision>
+    <geometry>
+      <sphere radius='${wheel_radius}'/>
+    </geometry>
+  </collision>
+</link>
+
+<link name='rear_left_wheel'>
+  <xacro:sphere_inertia m='${wheel_mass}' r='${wheel_radius}' />
+  <visual>
+    <geometry>
+      <mesh filename='package://${meshes_dir}/wheel_mirror.obj' scale='${creo_scale} ${creo_scale} ${creo_scale}'/>
+    </geometry>
+    <material name='green'/>
+  </visual>
+  <collision>
+    <geometry>
+      <sphere radius='${wheel_radius}'/>
+    </geometry>
+  </collision>
+</link>
+
+<link name='rear_right_wheel'>
+  <xacro:sphere_inertia m='${wheel_mass}' r='${wheel_radius}' />
+  <visual>
+    <origin xyz='0 0 0' rpy='0 ${pi} 0'/>
+    <geometry>
+      <mesh filename='package://${meshes_dir}/wheel_mirror.obj' scale='${creo_scale} ${creo_scale} ${creo_scale}'/>
+    </geometry>
+    <material name='green'/>
+  </visual>
+  <collision>
+    <geometry>
+      <sphere radius='${wheel_radius}'/>
+    </geometry>
+  </collision>
+</link>
+
+<link name='nav_module_mount'>
+  <visual>
+    <origin xyz='0 0 0' rpy='0 0 0'/>
+    <geometry> <mesh filename='package://${meshes_dir}/navigation.obj' scale='${creo_scale} ${creo_scale} ${creo_scale}'/> </geometry>
+    <material name='gray'/>
+  </visual>
+</link>
+
+<link name='lidar_beam'>
+  <visual>
+    <geometry> <cylinder radius='0.01' length='0.04'/> </geometry>
+    <material name='red'/>
+  </visual>
+</link>
+
+<link name='imu_mount'>
+  <visual>
+    <geometry> <box size='0.02 0.02 0.01'/> </geometry>
+    <material name='red'/>
+  </visual>
+</link>
+
+<!-- JOINTS -->
+
+<joint name='body_link_joint' type='fixed'>
+    <parent link='base_footprint' />
+    <child link='base_link' />
+    <origin xyz='0 0 ${base_offset_z}' rpy='0 0 0'/>
+</joint>
+
+<joint name='front_left_wheel_joint' type='continuous'>
+  <parent link='base_link'/>
+  <child link='front_left_wheel'/>
+  <origin xyz='${wheelbase/2} ${track_width/2} ${wheel_offset_z}' rpy='-1.5707 0 0'/>
+  <axis xyz='0 0 1'/>
+</joint>
+
+<joint name='front_right_wheel_joint' type='continuous'>
+  <parent link='base_link'/>
+  <child link='front_right_wheel'/>
+  <origin xyz='${wheelbase/2} ${-track_width/2} ${wheel_offset_z}' rpy='-1.5707 0 0'/>
+  <axis xyz='0 0 1'/>
+</joint>
+
+<joint name='rear_left_wheel_joint' type='continuous'>
+  <parent link='base_link'/>
+  <child link='rear_left_wheel'/>
+  <origin xyz='${-wheelbase/2} ${track_width/2} ${wheel_offset_z}' rpy='-1.5707 0 0'/>
+  <axis xyz='0 0 1'/>
+</joint>
+
+<joint name='rear_right_wheel_joint' type='continuous'>
+  <parent link='base_link'/>
+  <child link='rear_right_wheel'/>
+  <origin xyz='${-wheelbase/2} ${-track_width/2} ${wheel_offset_z}' rpy='-1.5707 0 0'/>
+  <axis xyz='0 0 1'/>
+</joint>
+
+<joint name='nav_module_mount_joint' type='fixed'>
+  <parent link='base_link'/>
+  <child link='nav_module_mount'/>
+  <origin xyz='${nav_offset_x} 0 ${nav_offset_z}' rpy='0 0 0'/>
+</joint>
+
+<joint name='lidar_joint' type='fixed'>
+  <parent link='nav_module_mount'/>
+  <child link='lidar_beam'/>
+  <origin xyz='${lidar_offset_x} 0 ${lidar_offset_z}' rpy='0 0 0'/>
+</joint>
+
+<joint name='imu_joint' type='fixed'>
+  <parent link='nav_module_mount'/>
+  <child link='imu_mount'/>
+  <origin xyz='${imu_offset_x} ${imu_offset_y} ${imu_offset_z}' rpy='0 0 0'/>
+</joint>
+
+<!-- PLUGINS -->
+
+<xacro:if value="$(arg is_sim)">
+    <xacro:include filename='robot.gazebo'/>
+</xacro:if>
+
+</robot>

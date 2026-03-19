@@ -14,7 +14,7 @@
 <!-- mecanum dont publish odom topic in Gazebo 8.9.0 !!!, use 8.10.0 instead or diff-->
 <xacro:property name='drive' value='mecanum'/> <!-- mecanum or diff -->
 
-<xacro:property name='meshes_dir' value='sim_robot/meshes'/>
+<xacro:property name='meshes_dir' value='meshes'/>
 <xacro:property name='creo_scale' value='0.001' />
 
 <xacro:property name='base_mass' value='5'/>

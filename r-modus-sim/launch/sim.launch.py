@@ -7,8 +7,8 @@ from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
 def generate_launch_description():
-    pkg_share = FindPackageShare('sim_robot')
-    src_str = os.path.join(get_package_share_directory('sim_robot'), '..')
+    pkg_share = FindPackageShare('r-modus-sim')
+    src_str = os.path.join(get_package_share_directory('r-modus-sim'))
     world = PathJoinSubstitution([pkg_share, 'worlds', 'my_world.world'])
     sim_gui_config = PathJoinSubstitution([pkg_share, 'config', 'simulation.config'])
     bridge_config = PathJoinSubstitution([pkg_share, 'config', 'bridge_parameters.yaml'])
@@ -17,7 +17,6 @@ def generate_launch_description():
     #gazebo options
     verbose = False
     paused = False
-    use_sim_time = True
 
     verbose = '-v' if verbose else ''
     paused = '-r' if  not paused else ''
@@ -46,8 +45,8 @@ def generate_launch_description():
             package='robot_state_publisher',
             executable='robot_state_publisher',
             parameters=[{
-                'use_sim_time': use_sim_time,
-                'robot_description': Command(['xacro ', robot_xacro, ' is_sim:=', use_sim_time])
+                'use_sim_time': True,
+                'robot_description': Command(['xacro ', robot_xacro, ' is_sim:=', 'true'])
             }],
             output='screen',
             emulate_tty=True,

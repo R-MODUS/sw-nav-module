@@ -1,0 +1,35 @@
+# IDEs
+__pycache__/
+*.pyc
+.vscode/
+.idea/
+
+# ROS 2
+install/
+build/
+log/
+*.a
+*.so
+xsens_mti_ros2_driver/lib/
+
+# Linux
+bash_history
+
+# Creo
+*.crc.*
+*.vnu.*
+*.log.*
+*.std.*
+
+# Microsoft Office
+~$*.xlsx
+~$*.pptx
+
+# LaTeX
+*.tex
+*.out
+*.fls
+*.aux
+*.log
+*.fdb_latexmk
+*.synctex.gz

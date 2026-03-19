@@ -1,0 +1,20 @@
+git lfs track "*.zip"
+
+git lfs track "*.stl"
+git lfs track "*.stp"
+git lfs track "*.step"
+git lfs track "*.obj"
+git lfs track "*.igs"
+git lfs track "*.iges"
+
+git lfs track "*.prt"
+git lfs track "*.asm"
+git lfs track "*.drw"
+
+git lfs track "*.jpg"
+git lfs track "*.jpeg"
+git lfs track "*.png"
+
+git lfs track "*.pdf"
+git lfs track "*.pptx"
+git lfs track "*.xlxs"

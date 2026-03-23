@@ -41,6 +41,7 @@ setup(
             "display = rmodus_hw.node_display:main",
             "fan_control = rmodus_hw.node_fan_control:main",
             "lidar = rmodus_hw.node_lidar:main",
+            "cliff_sensors = rmodus_hw.node_cliff_sensors:main",
         ],
     },
 )

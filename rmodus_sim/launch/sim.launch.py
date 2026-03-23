@@ -13,7 +13,7 @@ def generate_launch_description():
     world = PathJoinSubstitution([pkg_share, 'worlds', 'my_world.world'])
     sim_gui_config = PathJoinSubstitution([pkg_share, 'config', 'simulation.config'])
     bridge_config = PathJoinSubstitution([pkg_share, 'config', 'bridge_parameters.yaml'])
-    robot_xacro = PathJoinSubstitution([pkg_share, 'urdf', 'robot.xacro'])
+    robot_xacro = PathJoinSubstitution([pkg_share, 'urdf', 'robot.urdf.xacro'])
 
     #gazebo options
     verbose = False
@@ -48,7 +48,7 @@ def generate_launch_description():
             parameters=[{
                 'use_sim_time': True,
                 'robot_description': ParameterValue(
-                    Command(['xacro ', robot_xacro, ' is_sim:=', 'true']),
+                    Command(['xacro ', robot_xacro]),
                     value_type=str
                 )
             }],
@@ -62,12 +62,10 @@ def generate_launch_description():
             output='screen'
         ),
         Node(
-        package='rmodus_sim',
-        executable='sim_bumper_bridge',
-        name='sim_bumper_bridge',
-        output='screen',
-        parameters=[
-            {'use_sim_time': True}
-        ]
+            package='rmodus_sim',
+            executable='sim_bumper_bridge',
+            name='sim_bumper_bridge',
+            output='screen',
+            parameters=[{'use_sim_time': True}]
         ),
     ])

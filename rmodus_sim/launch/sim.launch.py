@@ -5,6 +5,7 @@ from launch.actions import ExecuteProcess, SetEnvironmentVariable
 from launch.substitutions import PathJoinSubstitution, Command
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
+from launch_ros.parameter_descriptions import ParameterValue
 
 def generate_launch_description():
     pkg_share = FindPackageShare('rmodus_sim')
@@ -46,7 +47,10 @@ def generate_launch_description():
             executable='robot_state_publisher',
             parameters=[{
                 'use_sim_time': True,
-                'robot_description': Command(['xacro ', robot_xacro, ' is_sim:=', 'true'])
+                'robot_description': ParameterValue(
+                    Command(['xacro ', robot_xacro, ' is_sim:=', 'true']),
+                    value_type=str
+                )
             }],
             output='screen',
             emulate_tty=True,
@@ -56,5 +60,14 @@ def generate_launch_description():
             executable='create',
             arguments=['-topic', '/robot_description', '-name', 'my_robot', '-z', '0.2'],
             output='screen'
+        ),
+        Node(
+        package='rmodus_sim',
+        executable='sim_bumper_bridge',
+        name='sim_bumper_bridge',
+        output='screen',
+        parameters=[
+            {'use_sim_time': True}
+        ]
         ),
     ])

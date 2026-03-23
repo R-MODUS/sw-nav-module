@@ -175,4 +175,186 @@
   </sensor>
 </gazebo>
 
+<!-- CLIFF SENSORS -->
+<gazebo reference='cliff_fl_joint'>
+  <preserveFixedJoint>true</preserveFixedJoint>
+</gazebo>
+
+<gazebo reference='cliff_fr_joint'>
+  <preserveFixedJoint>true</preserveFixedJoint>
+</gazebo>
+
+<gazebo reference='cliff_rl_joint'>
+  <preserveFixedJoint>true</preserveFixedJoint>
+</gazebo>
+
+<gazebo reference='cliff_rr_joint'>
+  <preserveFixedJoint>true</preserveFixedJoint>
+</gazebo>
+
+<gazebo reference='cliff_fl_link'>
+  <sensor name='cliff_fl' type='gpu_ray'>
+    <always_on>1</always_on>
+    <update_rate>20</update_rate>
+    <visualize>true</visualize>
+    <ray>
+      <scan>
+        <horizontal>
+          <samples>1</samples>
+          <resolution>1</resolution>
+          <min_angle>0</min_angle>
+          <max_angle>0</max_angle>
+        </horizontal>
+      </scan>
+      <range>
+        <min>0.01</min>
+        <max>0.5</max>
+        <resolution>0.001</resolution>
+      </range>
+    </ray>
+    <topic>/cliff/front_left</topic>
+    <gz_frame_id>cliff_fl_link</gz_frame_id>
+  </sensor>
+</gazebo>
+
+<gazebo reference='cliff_fr_link'>
+  <sensor name='cliff_fr' type='gpu_ray'>
+    <always_on>1</always_on>
+    <update_rate>20</update_rate>
+    <visualize>true</visualize>
+    <ray>
+      <scan>
+        <horizontal>
+          <samples>1</samples>
+          <resolution>1</resolution>
+          <min_angle>0</min_angle>
+          <max_angle>0</max_angle>
+        </horizontal>
+      </scan>
+      <range>
+        <min>0.01</min>
+        <max>0.5</max>
+        <resolution>0.001</resolution>
+      </range>
+    </ray>
+    <topic>/cliff/front_right</topic>
+    <gz_frame_id>cliff_fr_link</gz_frame_id>
+  </sensor>
+</gazebo>
+
+<gazebo reference='cliff_rl_link'>
+  <sensor name='cliff_rl' type='gpu_ray'>
+    <always_on>1</always_on>
+    <update_rate>20</update_rate>
+    <visualize>true</visualize>
+    <ray>
+      <scan>
+        <horizontal>
+          <samples>1</samples>
+          <resolution>1</resolution>
+          <min_angle>0</min_angle>
+          <max_angle>0</max_angle>
+        </horizontal>
+      </scan>
+      <range>
+        <min>0.01</min>
+        <max>0.5</max>
+        <resolution>0.001</resolution>
+      </range>
+    </ray>
+    <topic>/cliff/rear_left</topic>
+    <gz_frame_id>cliff_rl_link</gz_frame_id>
+  </sensor>
+</gazebo>
+
+<gazebo reference='cliff_rr_link'>
+  <sensor name='cliff_rr' type='gpu_ray'>
+    <always_on>1</always_on>
+    <update_rate>20</update_rate>
+    <visualize>true</visualize>
+    <ray>
+      <scan>
+        <horizontal>
+          <samples>1</samples>
+          <resolution>1</resolution>
+          <min_angle>0</min_angle>
+          <max_angle>0</max_angle>
+        </horizontal>
+      </scan>
+      <range>
+        <min>0.01</min>
+        <max>0.5</max>
+        <resolution>0.001</resolution>
+      </range>
+    </ray>
+    <topic>/cliff/rear_right</topic>
+    <gz_frame_id>cliff_rr_link</gz_frame_id>
+  </sensor>
+</gazebo>
+
+<!-- BUMPER SENSORS + TOUCHPLUGIN -->
+<gazebo reference='bumper_front_joint'>
+  <preserveFixedJoint>true</preserveFixedJoint>
+</gazebo>
+
+<gazebo reference='bumper_rear_joint'>
+  <preserveFixedJoint>true</preserveFixedJoint>
+</gazebo>
+
+<gazebo reference='bumper_left_joint'>
+  <preserveFixedJoint>true</preserveFixedJoint>
+</gazebo>
+
+<gazebo reference='bumper_right_joint'>
+  <preserveFixedJoint>true</preserveFixedJoint>
+</gazebo>
+
+<gazebo>
+  <plugin
+    filename="libgz-sim-contact-system.so"
+    name="gz::sim::systems::Contact">
+  </plugin>
+</gazebo>
+
+<gazebo reference='bumper_front_link'>
+  <sensor name='bumper_front_sensor' type='contact'>
+    <always_on>1</always_on>
+    <update_rate>30</update_rate>
+    <topic>/bumper/front</topic>
+    <contact>
+      <collision>bumper_front_link_collision</collision> <!-- _collision -->
+    </contact>
+  </sensor>
+</gazebo>
+
+<gazebo reference='bumper_rear_link'>
+  <sensor name='bumper_rear_sensor' type='contact'>
+    <always_on>1</always_on>
+    <update_rate>30</update_rate>
+    <contact>
+      <collision>bumper_rear_link_collision</collision>
+    </contact>
+  </sensor>
+</gazebo>
+
+<gazebo reference='bumper_left_link'>
+  <sensor name='bumper_left_sensor' type='contact'>
+    <always_on>1</always_on>
+    <update_rate>30</update_rate>
+    <contact>
+      <collision>bumper_left_link_collision</collision>
+    </contact>
+  </sensor>
+</gazebo>
+
+<gazebo reference='bumper_right_link'>
+  <sensor name='bumper_right_sensor' type='contact'>
+    <always_on>1</always_on>
+    <update_rate>30</update_rate>
+    <contact>
+      <collision>bumper_right_link_collision</collision>
+    </contact>
+  </sensor>
+</gazebo>
+
 </robot>

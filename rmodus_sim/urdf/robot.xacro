@@ -18,8 +18,8 @@
 <xacro:property name='creo_scale' value='0.001' />
 
 <xacro:property name='base_mass' value='5'/>
-<xacro:property name='base_size_x' value='0.2'/>
-<xacro:property name='base_size_y' value='0.2'/>
+<xacro:property name='base_size_x' value='0.5'/>
+<xacro:property name='base_size_y' value='0.5'/>
 <xacro:property name='base_size_z' value='0.1'/>
 
 <xacro:property name='wheel_mass' value='0.5'/>
@@ -40,6 +40,12 @@
 <xacro:property name='imu_offset_z' value='0.015'/>
 <xacro:property name='imu_offset_x' value='0.056'/>
 <xacro:property name='imu_offset_y' value='0.020'/>
+
+<xacro:property name='cliff_sensor_z'    value='-0.02'/>
+<xacro:property name='cliff_sensor_mass' value='0.001'/>
+<xacro:property name='bumper_thickness' value='0.005'/>
+<xacro:property name='bumper_height'    value='0.04'/>
+<xacro:property name='bumper_mass'      value='0.01'/>
 
 <!-- COLORS -->
 
@@ -76,6 +82,31 @@
              iyy='${2/5 * m * r * r}' iyz='0.0' 
              izz='${2/5 * m * r * r}'/>
   </inertial>
+</xacro:macro>
+
+<!-- MACRO: Cliff sensor link (visual only, fixed joint) -->
+<xacro:macro name='cliff_sensor_link' params='name'>
+  <link name='${name}_link'>
+    <xacro:box_inertia m='${cliff_sensor_mass}' x='0.015' y='0.015' z='0.02'/>
+    <visual>
+      <geometry><box size='0.015 0.015 0.02'/></geometry>
+      <material name='red'/>
+    </visual>
+  </link>
+</xacro:macro>
+
+<!-- MACRO: Bumper panel link (with collision for contact detection) -->
+<xacro:macro name='bumper_link' params='name len_x len_y'>
+  <link name='bumper_${name}_link'>
+    <xacro:box_inertia m='${bumper_mass}' x='${len_x}' y='${len_y}' z='${bumper_height}'/>
+    <visual>
+      <geometry><box size='${len_x} ${len_y} ${bumper_height}'/></geometry>
+      <material name='red'/>
+    </visual>
+    <collision name='bumper_${name}_link'>
+      <geometry><box size='${len_x} ${len_y} ${bumper_height}'/></geometry>
+    </collision>
+  </link>
 </xacro:macro>
 
 <!-- LINKS -->
@@ -118,7 +149,7 @@
   <visual>
     <origin xyz='0 0 0' rpy='0 ${pi} 0'/>
     <geometry>
-      <mesh filename='package://${meshes_dir}/wheel.obj' scale='${creo_scale} ${creo_scale} ${creo_scale}'/>
+      <mesh filename='package://${meshes_dir}/wheel_mirror.obj' scale='${creo_scale} ${creo_scale} ${creo_scale}'/>
     </geometry>
     <material name='green'/>
   </visual>
@@ -149,7 +180,7 @@
   <visual>
     <origin xyz='0 0 0' rpy='0 ${pi} 0'/>
     <geometry>
-      <mesh filename='package://${meshes_dir}/wheel_mirror.obj' scale='${creo_scale} ${creo_scale} ${creo_scale}'/>
+      <mesh filename='package://${meshes_dir}/wheel.obj' scale='${creo_scale} ${creo_scale} ${creo_scale}'/>
     </geometry>
     <material name='green'/>
   </visual>
@@ -182,6 +213,18 @@
   </visual>
 </link>
 
+<!-- CLIFF SENSOR LINKS (4 rohy) -->
+<xacro:cliff_sensor_link name='cliff_fl'/>
+<xacro:cliff_sensor_link name='cliff_fr'/>
+<xacro:cliff_sensor_link name='cliff_rl'/>
+<xacro:cliff_sensor_link name='cliff_rr'/>
+
+<!-- BUMPER LINKS (4 strany) -->
+<xacro:bumper_link name='front' len_x='${bumper_thickness}' len_y='${base_size_y}'/>
+<xacro:bumper_link name='rear'  len_x='${bumper_thickness}' len_y='${base_size_y}'/>
+<xacro:bumper_link name='left'  len_x='${base_size_x}'      len_y='${bumper_thickness}'/>
+<xacro:bumper_link name='right' len_x='${base_size_x}'      len_y='${bumper_thickness}'/>
+
 <!-- JOINTS -->
 
 <joint name='body_link_joint' type='fixed'>
@@ -193,28 +236,28 @@
 <joint name='front_left_wheel_joint' type='continuous'>
   <parent link='base_link'/>
   <child link='front_left_wheel'/>
-  <origin xyz='${wheelbase/2} ${track_width/2} ${wheel_offset_z}' rpy='-1.5707 0 0'/>
+  <origin xyz='${wheelbase/2} ${track_width/2} ${wheel_offset_z}' rpy='${-pi/2} 0 0'/>
   <axis xyz='0 0 1'/>
 </joint>
 
 <joint name='front_right_wheel_joint' type='continuous'>
   <parent link='base_link'/>
   <child link='front_right_wheel'/>
-  <origin xyz='${wheelbase/2} ${-track_width/2} ${wheel_offset_z}' rpy='-1.5707 0 0'/>
+  <origin xyz='${wheelbase/2} ${-track_width/2} ${wheel_offset_z}' rpy='${-pi/2} 0 0'/>
   <axis xyz='0 0 1'/>
 </joint>
 
 <joint name='rear_left_wheel_joint' type='continuous'>
   <parent link='base_link'/>
   <child link='rear_left_wheel'/>
-  <origin xyz='${-wheelbase/2} ${track_width/2} ${wheel_offset_z}' rpy='-1.5707 0 0'/>
+  <origin xyz='${-wheelbase/2} ${track_width/2} ${wheel_offset_z}' rpy='${-pi/2} 0 0'/>
   <axis xyz='0 0 1'/>
 </joint>
 
 <joint name='rear_right_wheel_joint' type='continuous'>
   <parent link='base_link'/>
   <child link='rear_right_wheel'/>
-  <origin xyz='${-wheelbase/2} ${-track_width/2} ${wheel_offset_z}' rpy='-1.5707 0 0'/>
+  <origin xyz='${-wheelbase/2} ${-track_width/2} ${wheel_offset_z}' rpy='${-pi/2} 0 0'/>
   <axis xyz='0 0 1'/>
 </joint>
 
@@ -234,6 +277,56 @@
   <parent link='nav_module_mount'/>
   <child link='imu_mount'/>
   <origin xyz='${imu_offset_x} ${imu_offset_y} ${imu_offset_z}' rpy='0 0 0'/>
+</joint>
+
+<!-- CLIFF SENSOR JOINTS -->
+<joint name='cliff_fl_joint' type='fixed'>
+  <parent link='base_link'/>
+  <child link='cliff_fl_link'/>
+  <origin xyz='${base_size_x/2} ${base_size_y/2} ${cliff_sensor_z}' rpy='0 ${pi/2} 0'/>
+</joint>
+
+<joint name='cliff_fr_joint' type='fixed'>
+  <parent link='base_link'/>
+  <child link='cliff_fr_link'/>
+  <origin xyz='${base_size_x/2} ${-base_size_y/2} ${cliff_sensor_z}' rpy='0 ${pi/2} 0'/>
+</joint>
+
+<joint name='cliff_rl_joint' type='fixed'>
+  <parent link='base_link'/>
+  <child link='cliff_rl_link'/>
+  <origin xyz='${-base_size_x/2} ${base_size_y/2} ${cliff_sensor_z}' rpy='0 ${pi/2} 0'/>
+</joint>
+
+<joint name='cliff_rr_joint' type='fixed'>
+  <parent link='base_link'/>
+  <child link='cliff_rr_link'/>
+  <origin xyz='${-base_size_x/2} ${-base_size_y/2} ${cliff_sensor_z}' rpy='0 ${pi/2} 0'/>
+</joint>
+
+<!-- BUMPER JOINTS (strany, panel těsně vně těla robota) -->
+<joint name='bumper_front_joint' type='fixed'>
+  <parent link='base_link'/>
+  <child link='bumper_front_link'/>
+  <origin xyz='${base_size_x/2 + bumper_thickness/2} 0 0' rpy='0 0 0'/>
+</joint>
+
+<joint name='bumper_rear_joint' type='fixed'>
+  <parent link='base_link'/>
+  <child link='bumper_rear_link'/>
+  <origin xyz='${-(base_size_x/2 + bumper_thickness/2)} 0 0' rpy='0 0 0'/>
+</joint>
+
+<joint name='bumper_left_joint' type='fixed'>
+  <parent link='base_link'/>
+  <child link='bumper_left_link'/>
+  <origin xyz='0 ${base_size_y/2 + bumper_thickness/2} 0' rpy='0 0 0'/>
+</joint>
+
+<joint name='bumper_right_joint' type='fixed'>
+  <parent link='base_link'/>
+  <child link='bumper_right_link'/>
+  <origin xyz='0 ${-(base_size_y/2 + bumper_thickness/2)} 0' rpy='0 0 0'/>
 </joint>
 
 <!-- PLUGINS -->

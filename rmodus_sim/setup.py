@@ -36,6 +36,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            'sim_bumper_bridge = rmodus_sim.sim_bumper_bridge:main',
         ],
     },
 )

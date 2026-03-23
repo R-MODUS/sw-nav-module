@@ -47,6 +47,7 @@ def generate_launch_description():
         Node(package=pkg_name, executable='motors', name='motors_node', parameters=params),
         Node(package=pkg_name, executable='lidar', name='lidar_node', parameters=params),
         Node(package=pkg_name, executable='cliff_sensors', name='cliff_sensors_node', parameters=params),
+        Node(package=pkg_name, executable='bumper_sensors', name='bumper_sensors_node', parameters=params),
         
         Node(
             package='xsens_mti_ros2_driver',

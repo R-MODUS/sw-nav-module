@@ -21,7 +21,7 @@ def generate_launch_description():
     config_str = os.path.join(get_package_share_directory(pkg_name), 'config', 'base_params.yaml')
 
     # merge static bridge config with dynamic sensor topics from robot config
-    final_bridge_config_path = create_combined_bridge_config(
+    final_bridge_config_path, bumper_names = create_combined_bridge_config(
         bridge_config_str, 
         config_str
     )
@@ -82,7 +82,10 @@ def generate_launch_description():
             executable='sim_bumper_bridge',
             name='sim_bumper_bridge',
             output='screen',
-            parameters=[{'use_sim_time': True}]
+            parameters=[{
+                'use_sim_time': True,
+                'bumper_names': bumper_names,
+                }]
         ),
     ])
 
@@ -99,6 +102,7 @@ def create_combined_bridge_config(static_yaml_path, robot_config_path):
     with open(robot_config_path, 'r') as f:
         robot_data = yaml.safe_load(f)
         params = robot_data.get('/**', {}).get('ros__parameters', {})
+        bumper_names = [b['name'] for b in params.get('bumpers', [])]
 
     # 3. Přidání bumperů
     for b in params.get('bumpers', []):
@@ -128,4 +132,4 @@ def create_combined_bridge_config(static_yaml_path, robot_config_path):
     yaml.dump(bridge_data, tmp_file)
     tmp_file.close()
     
-    return tmp_file.name
+    return tmp_file.name, bumper_names

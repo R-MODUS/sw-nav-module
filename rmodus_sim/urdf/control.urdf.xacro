@@ -1,0 +1,125 @@
+<?xml version="1.0"?>
+
+<robot xmlns:xacro='http://www.ros.org/wiki/xacro'
+       xmlns:gz='http://gazebosim.org/schema'>
+
+<!-- PROPERTY -->
+<!-- mecanum dont publish odom topic in Gazebo 8.9.0 !!!, use 8.10.0 instead or diff-->
+<xacro:property name='drive' value='mecanum'/> <!-- mecanum or diff -->
+
+<!-- JOINT STATE plugin -->
+<gazebo>
+  <plugin
+    filename="libgz-sim-joint-state-publisher-system.so"
+    name="gz::sim::systems::JointStatePublisher">
+    <topic>/joint_states</topic>
+  </plugin>
+</gazebo>
+
+<!-- DIFF DRIVE plugin -->
+<xacro:if value="${drive == 'diff'}">
+  <gazebo>
+    <plugin
+      filename="libgz-sim-diff-drive-system.so"
+      name="gz::sim::systems::DiffDrive">
+      <left_joint>front_left_wheel_joint</left_joint>
+      <left_joint>rear_left_wheel_joint</left_joint>
+      <right_joint>front_right_wheel_joint</right_joint>
+      <right_joint>rear_right_wheel_joint</right_joint>
+
+      <wheel_separation>${track_width}</wheel_separation>
+      <wheel_radius>${wheel_radius}</wheel_radius>
+
+      <odom_publish_frequency>30</odom_publish_frequency>
+      <topic>/cmd_vel</topic>
+      <odom_topic>/odom</odom_topic>
+      <tf_topic>__unused_tf</tf_topic> 
+      <frame_id>odom</frame_id>
+      <child_frame_id>base_footprint</child_frame_id>
+    </plugin>
+  </gazebo>
+</xacro:if>
+
+<!-- MECANUM DRIVE plugin -->
+<xacro:if value="${drive == 'mecanum'}">
+  <gazebo>
+    <plugin 
+      filename='libgz-sim-mecanum-drive-system.so'
+      name='gz::sim::systems::MecanumDrive'>
+      <front_left_joint>front_left_wheel_joint</front_left_joint>
+      <front_right_joint>front_right_wheel_joint</front_right_joint>
+      <back_left_joint>rear_left_wheel_joint</back_left_joint>
+      <back_right_joint>rear_right_wheel_joint</back_right_joint>
+
+      <wheel_separation>${track_width}</wheel_separation>
+      <wheelbase>${wheelbase}</wheelbase>
+      <wheel_radius>${wheel_radius}</wheel_radius>
+      
+      <odom_publish_frequency>30</odom_publish_frequency>
+      <topic>/cmd_vel</topic>
+      <odom_topic>/odom</odom_topic>
+      <tf_topic>__unused_tf</tf_topic> 
+      <frame_id>odom</frame_id>
+      <child_frame_id>base_footprint</child_frame_id>
+    </plugin>
+  </gazebo>
+
+  <gazebo reference='front_left_wheel'>
+    <collision>
+      <surface>
+        <friction>
+          <ode>
+            <mu>${wheel_mu}</mu>
+            <mu2>${wheel_mu2}</mu2>
+            <fdir1 gz:expressed_in='base_footprint'>1 -1 0</fdir1>
+          </ode>
+        </friction>
+      </surface>
+    </collision> 
+  </gazebo>
+
+  <gazebo reference='front_right_wheel'>
+    <collision>
+      <surface>
+        <friction>
+          <ode>
+            <mu>${wheel_mu}</mu>
+            <mu2>${wheel_mu2}</mu2>
+            <fdir1 gz:expressed_in='base_footprint'>1 1 0</fdir1>
+          </ode>
+        </friction>
+      </surface>
+    </collision>
+  </gazebo>
+
+  <gazebo reference='rear_left_wheel'>
+    <collision>
+      <surface>
+        <friction>
+          <ode>
+            <mu>${wheel_mu}</mu>
+            <mu2>${wheel_mu2}</mu2>
+            <fdir1 gz:expressed_in='base_footprint'>1 1 0</fdir1>
+          </ode>
+        </friction>
+      </surface>
+    </collision>
+  </gazebo>
+
+  <gazebo reference='rear_right_wheel'>
+    <collision>
+      <surface>
+        <friction>
+          <ode>
+            <mu>${wheel_mu}</mu>
+            <mu2>${wheel_mu2}</mu2>
+            <fdir1 gz:expressed_in='base_footprint'>1 -1 0</fdir1>
+          </ode>
+        </friction>
+      </surface>
+    </collision>
+  </gazebo>
+</xacro:if>
+
+
+</robot>

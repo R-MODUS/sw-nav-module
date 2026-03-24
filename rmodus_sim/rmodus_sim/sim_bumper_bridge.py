@@ -2,6 +2,7 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Bool
 from ros_gz_interfaces.msg import Contacts
+from rmodus_interface.msg import Bumper
 
 class SimBumperBridge(Node):
     def __init__(self):
@@ -14,7 +15,7 @@ class SimBumperBridge(Node):
         for name in self.bumpers:
             # Publisher pro čistá data (pro logiku robota)
             self.publishers_[name] = self.create_publisher(
-                Bool, f'/bumper/{name}', 10)
+                Bumper, f'/bumper/{name}', 10)
             
             # Subscriber pro surová data z Gazeba
             self.create_subscription(
@@ -24,9 +25,9 @@ class SimBumperBridge(Node):
                 10)
 
     def process_contact(self, msg, name):
-        out_msg = Bool()
+        out_msg = Bumper()
         # Pokud pole kontaktů není prázdné, nárazník je sepnutý
-        out_msg.data = len(msg.contacts) > 0
+        out_msg.contact = len(msg.contacts) > 0
         self.publishers_[name].publish(out_msg)
 
 def main(args=None):

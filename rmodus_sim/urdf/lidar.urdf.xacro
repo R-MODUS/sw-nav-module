@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+
+<robot xmlns:xacro='http://www.ros.org/wiki/xacro'
+       xmlns:gz='http://gazebosim.org/schema'>
+
+<!-- PROPERTY -->
+<xacro:property name='lidar_offset_z' value='0.2'/>
+<xacro:property name='lidar_offset_x' value='0.005'/>
+
+<!-- LIDAR -->
+<link name='lidar_beam'>
+  <visual>
+    <geometry> <cylinder radius='0.01' length='0.04'/> </geometry>
+    <material name='red'/>
+  </visual>
+</link>
+
+<joint name='lidar_joint' type='fixed'>
+  <parent link='nav_module_mount'/>
+  <child link='lidar_beam'/>
+  <origin xyz='${lidar_offset_x} 0 ${lidar_offset_z}' rpy='0 0 0'/>
+</joint>
+
+<gazebo>
+  <plugin
+    filename='libgz-sim-sensors-system.so'
+    name='gz::sim::systems::Sensors'>
+    <render_engine>ogre2</render_engine>
+  </plugin>
+</gazebo>
+
+<gazebo reference='lidar_beam'>
+  <sensor name='lidar' type='gpu_ray'>
+    <always_on>1</always_on>
+    <visualize>false</visualize>
+    <update_rate>10</update_rate>
+    <ray>
+      <scan>
+        <horizontal>
+          <samples>360</samples>
+          <resolution>1.0</resolution>
+          <min_angle>0.0</min_angle>
+          <max_angle>${2*pi}</max_angle>
+        </horizontal>
+      </scan>
+      <range>
+        <min>0.05</min>
+        <max>5.0</max>
+      </range>
+    </ray>
+    <topic>scan</topic>
+    <gz_frame_id>lidar_beam</gz_frame_id>
+  </sensor>
+</gazebo>
+<!-- /LIDAR -->
+
+</robot>

@@ -1,0 +1,90 @@
+<?xml version="1.0"?>
+
+<robot xmlns:xacro='http://www.ros.org/wiki/xacro'
+       xmlns:gz='http://gazebosim.org/schema'>
+
+<!-- PROPERTY -->
+<xacro:property name='cliff_sensor_mass' value='0.001'/>
+<xacro:property name='cliff_sensor_parent' default='base_link'/>
+
+<!-- CLIFF_SENSORS -->
+<xacro:macro name="render_cliff_sensor" params="c">
+
+  <!-- Sensor link -->
+  <link name="cliff_sensor_${c['name']}_link">
+    <xacro:box_inertia m="${cliff_sensor_mass}" x="${c['size'][0]}" y="${c['size'][1]}" z="${c['size'][2]}"/>
+    <visual>
+      <geometry><box size="${c['size'][0]} ${c['size'][1]} ${c['size'][2]}"/></geometry>
+      <material name="red"/>
+    </visual>
+    <!-- <collision>
+      <geometry><box size="${c['size'][0]} ${c['size'][1]} ${c['size'][2]}"/></geometry>
+    </collision> -->
+  </link>
+
+  <joint name="cliff_sensor_${c['name']}_joint" type="fixed">
+    <parent link="${cliff_sensor_parent}"/>
+    <child link="cliff_sensor_${c['name']}_link"/>
+    <origin xyz="${c['offset'][0]} ${c['offset'][1]} ${c['offset'][2]}" 
+            rpy="0 0 ${c.get('yaw', 0.0)}"/>
+  </joint>
+
+  <gazebo reference="cliff_sensor_${c['name']}_link">
+    <preserveFixedJoint>true</preserveFixedJoint>
+  </gazebo>
+
+  <!-- Beam frame -->
+  <link name="cliff_sensor_${c['name']}_beam_frame">
+    <inertial>
+      <mass value="0.001"/> <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/>
+    </inertial>
+  </link>
+
+  <joint name="cliff_sensor_${c['name']}_beam_joint" type="fixed">
+    <parent link="cliff_sensor_${c['name']}_link"/>
+    <child link="cliff_sensor_${c['name']}_beam_frame"/>
+    <origin xyz="0 0 ${-c['size'][2]/2}" rpy="0 ${pi/2} 0"/>
+  </joint>
+
+  <gazebo reference="cliff_sensor_${c['name']}_beam_joint">
+    <preserveFixedJoint>true</preserveFixedJoint>
+  </gazebo>
+
+  <gazebo reference="cliff_sensor_${c['name']}_beam_frame">
+    <sensor name="cliff_${c['name']}" type="gpu_ray">
+      <always_on>1</always_on>
+      <update_rate>20</update_rate>
+      <visualize>true</visualize>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>1</samples>
+            <resolution>1</resolution>
+            <min_angle>0</min_angle>
+            <max_angle>0</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.01</min>
+          <max>0.5</max>
+          <resolution>0.001</resolution>
+        </range>
+      </ray>
+      <topic>/cliff/${c['name']}</topic>
+      <gz_frame_id>cliff_sensor_${c['name']}_beam_frame</gz_frame_id>
+    </sensor>
+  </gazebo>
+</xacro:macro>
+
+<xacro:macro name="cliff_sensor_loop" params="items">
+  <xacro:if value="${items}">
+    <xacro:property name="current_c" value="${items.pop(0)}"/>
+    <xacro:render_cliff_sensor c="${current_c}" />
+    <xacro:cliff_sensor_loop items="${items}"/>
+  </xacro:if>
+</xacro:macro>
+
+<xacro:cliff_sensor_loop items="${list(cliff_sensors)}"/>
+<!-- /CLIFF_SENSORS -->
+
+</robot>

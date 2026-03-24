@@ -5,6 +5,10 @@ from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.parameter_descriptions import ParameterValue
 
+import os
+import json
+import yaml
+
 def generate_launch_description():
     pkg_name = 'rmodus_hw'
     pkg_share = FindPackageShare(pkg_name)
@@ -32,9 +36,10 @@ def generate_launch_description():
             executable='robot_state_publisher',
             parameters=[{
                 'use_sim_time': False,
-                'robot_description': ParameterValue(
-                    Command(['xacro ', robot_xacro]),
-                    value_type=str
+                'robot_description': ParameterValue(Command([
+                    'xacro ', robot_xacro,
+                ]),
+                value_type=str
                 )
             }],
             output='screen',

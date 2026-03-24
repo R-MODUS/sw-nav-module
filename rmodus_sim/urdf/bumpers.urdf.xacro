@@ -5,7 +5,6 @@
 
 <!-- PROPERTY -->
 <xacro:property name='bumper_mass'      value='0.01'/>
-<xacro:property name='bumper_parent' default='base_link'/>
 
 <!-- BUMPERS -->
 <gazebo>
@@ -30,7 +29,7 @@
   </link>
 
   <joint name="bumper_${b['name']}_joint" type="fixed">
-    <parent link="${bumper_parent}"/>
+    <parent link="${b['parent_frame']}"/>
     <child link="bumper_${b['name']}_link"/>
     <origin xyz="${b['offset'][0]} ${b['offset'][1]} ${b['offset'][2]}" 
             rpy="0 0 ${b['yaw']}"/>

@@ -5,7 +5,6 @@
 
 <!-- PROPERTY -->
 <xacro:property name='cliff_sensor_mass' value='0.001'/>
-<xacro:property name='cliff_sensor_parent' default='base_link'/>
 
 <!-- CLIFF_SENSORS -->
 <xacro:macro name="render_cliff_sensor" params="c">
@@ -23,7 +22,7 @@
   </link>
 
   <joint name="cliff_sensor_${c['name']}_joint" type="fixed">
-    <parent link="${cliff_sensor_parent}"/>
+    <parent link="${b['parent_frame']}"/>
     <child link="cliff_sensor_${c['name']}_link"/>
     <origin xyz="${c['offset'][0]} ${c['offset'][1]} ${c['offset'][2]}" 
             rpy="0 0 ${c.get('yaw', 0.0)}"/>

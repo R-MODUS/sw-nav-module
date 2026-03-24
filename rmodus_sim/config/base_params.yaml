@@ -1,5 +1,7 @@
 /**:
   ros__parameters:
+
+
     base_link:
       mass: 5.0
       size: [0.5, 0.5, 0.1] # x, y, z
@@ -7,15 +9,18 @@
       nav_offset_x: 0.032
       nav_offset_z: 0.0
 
+
     nav_module:
       offset_x: 0.032
       offset_z: 0.0
+
 
     imu:
       name: "imu"
       topic: "/imu/data"
       frame_id: "imu_link"
     
+
     lidar:
       name: "lidar"
       topic: "/scan"
@@ -25,12 +30,14 @@
       fov: 360
       resolution: 1.0
 
+
     flow_sensor:
       name: "flow_front"
       topic: "/flow/front"
       frame_id: "flow_front_link"
       offset: [0.3, 0.0, 0.0] # x, y, z
       yaw: 0.0
+
 
     bumpers:
       - name: "front"
@@ -64,6 +71,7 @@
         offset: [0.0, -0.2, 0.0]
         yaw: -1.57
         parent_frame: "base_link"
+
 
     cliff_sensors:
       - name: "fl"

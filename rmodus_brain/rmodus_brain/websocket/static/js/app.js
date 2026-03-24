@@ -3,6 +3,10 @@ let ws;
 let userRole = 'spectator'; // Výchozí role
 const ADMIN_TOKEN_KEY = 'robot_admin_token';
 let activePage = '';
+let wsReconnectTimer = null;
+let wsConnectTimer = null;
+const WS_RECONNECT_DELAY_MS = 2000;
+const WS_CONNECT_TIMEOUT_MS = 7000;
 
 /* === HLAVNÍ LOGIKA APLIKACE === */
 
@@ -41,6 +45,12 @@ window.loadPage = async function(pageName) {
                     } else {
                         console.error("initMap function not found. Was map.js loaded correctly?");
                     }
+                } else if (pageName === 'sensors') {
+                    if (typeof window.initSensorsPage === 'function') {
+                        window.initSensorsPage();
+                    } else {
+                        console.error('initSensorsPage function not found. Was sensors.js loaded correctly?');
+                    }
                 }
             }, 50); // Krátké zpoždění pro jistotu
         });
@@ -52,20 +62,53 @@ window.loadPage = async function(pageName) {
 }
 
 /* === INICIALIZACE PO NAČTENÍ STRÁNKY === */
-document.addEventListener('DOMContentLoaded', () => {
+function bootstrapApp() {
     initWebSocket();
     updateUI();
     // Načtení výchozí stránky
     window.loadPage('status');
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootstrapApp, { once: true });
+} else {
+    bootstrapApp();
+}
 
 
 /* === WEBSOCKET LOGIKA === */
 function initWebSocket() {
+    if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+        return;
+    }
+
+    if (wsReconnectTimer) {
+        clearTimeout(wsReconnectTimer);
+        wsReconnectTimer = null;
+    }
+
+    if (wsConnectTimer) {
+        clearTimeout(wsConnectTimer);
+        wsConnectTimer = null;
+    }
+
     const connElem = document.getElementById("conn");
-    ws = new WebSocket(`ws://${location.host}/ws`);
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    ws = new WebSocket(`${wsProtocol}://${location.host}/ws`);
+    const socket = ws;
+
+    wsConnectTimer = setTimeout(() => {
+        if (socket.readyState === WebSocket.CONNECTING) {
+            console.warn('WebSocket connect timeout. Retrying...');
+            socket.close();
+        }
+    }, WS_CONNECT_TIMEOUT_MS);
 
     ws.onopen = () => {
+        if (wsConnectTimer) {
+            clearTimeout(wsConnectTimer);
+            wsConnectTimer = null;
+        }
         if (connElem) {
             connElem.textContent = "✅ Připojeno";
             connElem.style.color = "green";
@@ -74,6 +117,10 @@ function initWebSocket() {
     };
 
     ws.onclose = () => {
+        if (wsConnectTimer) {
+            clearTimeout(wsConnectTimer);
+            wsConnectTimer = null;
+        }
         if (connElem) {
             connElem.textContent = "❌ Odpojeno";
             connElem.style.color = "red";
@@ -81,7 +128,7 @@ function initWebSocket() {
         userRole = 'spectator';
         updateUI();
         // Zkusíme se znovu připojit po 2 sekundách
-        setTimeout(initWebSocket, 2000);
+        wsReconnectTimer = setTimeout(initWebSocket, WS_RECONNECT_DELAY_MS);
     };
 
     ws.onmessage = (event) => {
@@ -116,6 +163,24 @@ function initWebSocket() {
                     }
                     break;
 
+                case "sensor_catalog":
+                    if (typeof window.handleSensorCatalog === "function") {
+                        window.handleSensorCatalog(data.sensors);
+                    }
+                    break;
+
+                case "sensor_data":
+                    if (typeof window.handleSensorData === "function") {
+                        window.handleSensorData(data);
+                    }
+                    break;
+
+                case "tf_2d":
+                    if (typeof window.handleTfFrames === "function") {
+                        window.handleTfFrames(data);
+                    }
+                    break;
+
                 case "role_update":
                     userRole = data.role;
                     if (userRole === 'admin' && window.prompt_pin) {
@@ -143,6 +208,9 @@ function initWebSocket() {
 
     ws.onerror = (err) => {
         console.error("Chyba WebSocketu:", err);
+        if (ws && ws.readyState === WebSocket.CONNECTING) {
+            ws.close();
+        }
     };
 }
 

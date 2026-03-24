@@ -70,9 +70,9 @@ function initMap() {
                 if (range < 0.1) continue;
 
                 const angle = angle_min + i * angle_increment;
-                // Převod polárních souřadnic na kartézské, s osou Y invertovanou pro canvas
-                const px = this.robotX + (Math.cos(angle) * range) * this.SCALE;
-                const py = this.robotY - (Math.sin(angle) * range) * this.SCALE;
+                // Projekce do canvasu: ROS X směřuje nahoru, ROS Y doleva
+                const px = this.robotX - (Math.sin(angle) * range) * this.SCALE;
+                const py = this.robotY - (Math.cos(angle) * range) * this.SCALE;
 
                 this.ctx.fillRect(px - 1, py - 1, 2, 2);
             }

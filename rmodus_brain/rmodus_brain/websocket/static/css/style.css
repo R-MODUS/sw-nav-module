@@ -269,3 +269,277 @@ button { background: var(--accent); color: black; border: none; padding: 15px 30
     background-color: #00d4ff; /* Tyrkysová */
     color: black;
 }
+
+.sensors-page {
+    width: 100%;
+    max-width: 1380px;
+}
+
+.sensors-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 24px;
+    margin-bottom: 28px;
+}
+
+.page-eyebrow {
+    margin: 0 0 8px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 0.75rem;
+}
+
+.sensors-header h1 {
+    margin: 0;
+}
+
+.page-subtitle {
+    margin: 10px 0 0;
+    color: #94a3b8;
+    max-width: 600px;
+}
+
+.sensor-summary {
+    display: flex;
+    gap: 14px;
+}
+
+.sensor-summary-item,
+.sensor-card {
+    background: linear-gradient(180deg, rgba(21, 25, 33, 0.96), rgba(11, 14, 20, 0.96));
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.24);
+}
+
+.sensor-summary-item {
+    min-width: 120px;
+    padding: 16px 18px;
+}
+
+.summary-label {
+    display: block;
+    font-size: 0.82rem;
+    color: #94a3b8;
+    margin-bottom: 8px;
+}
+
+.sensor-summary-item strong {
+    font-size: 1.8rem;
+    color: var(--accent);
+}
+
+.sensors-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 24px;
+}
+
+.sensor-card {
+    padding: 22px;
+}
+
+.sensor-card-visual,
+.sensor-card-detail {
+    min-height: 0;
+}
+
+.sensor-card-detail {
+    grid-column: 1 / span 2;
+}
+
+.card-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+
+.card-title-row h2 {
+    margin: 0 0 6px;
+}
+
+.card-title-row p {
+    margin: 0;
+    color: #94a3b8;
+}
+
+.sensor-badge {
+    border: 1px solid rgba(0, 212, 255, 0.35);
+    background: rgba(0, 212, 255, 0.09);
+    color: var(--accent);
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-size: 0.82rem;
+    white-space: nowrap;
+}
+
+.tf-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+.tf-control-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    color: #cbd5e1;
+}
+
+.tf-control-check {
+    cursor: pointer;
+    user-select: none;
+}
+
+.tf-control-item input[type='checkbox'] {
+    accent-color: var(--accent);
+}
+
+.tf-control-item input[type='range'] {
+    width: 150px;
+}
+
+.tf-control-item strong {
+    color: var(--accent);
+    min-width: 34px;
+}
+
+#robotTfCanvas,
+#sensorDetailCanvas {
+    width: 100%;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+    background: #05080d;
+}
+
+.sensor-detail-canvas-wrap {
+    width: 50%;
+    min-width: 320px;
+}
+
+.sensor-card-footer {
+    margin-top: 14px;
+    color: #94a3b8;
+}
+
+.sensor-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.sensor-selection-empty,
+.sensor-metric-empty {
+    color: #94a3b8;
+    padding: 14px 0;
+}
+
+.sensor-group h3 {
+    margin: 0 0 10px;
+    text-transform: capitalize;
+}
+
+.sensor-group-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.sensor-select-button {
+    background: #10161f;
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 10px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.sensor-select-button:hover,
+.sensor-select-button.active {
+    border-color: rgba(0, 212, 255, 0.45);
+    background: rgba(0, 212, 255, 0.12);
+    color: white;
+}
+
+.sensor-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin: 18px 0;
+}
+
+.sensor-metric {
+    padding: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.sensor-metric span {
+    display: block;
+    color: #94a3b8;
+    margin-bottom: 6px;
+    font-size: 0.8rem;
+}
+
+.sensor-metric strong {
+    display: block;
+    font-size: 1.05rem;
+}
+
+.sensor-raw-output {
+    margin: 0;
+    padding: 18px;
+    background: #05080d;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+    color: #cbd5e1;
+    overflow-x: auto;
+    max-height: 260px;
+}
+
+@media (max-width: 1100px) {
+    .sensors-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .sensor-card-detail {
+        grid-column: 1;
+    }
+}
+
+@media (max-width: 760px) {
+    .main-view {
+        padding: 20px;
+    }
+
+    .sensors-header {
+        flex-direction: column;
+    }
+
+    .sensor-summary {
+        width: 100%;
+    }
+
+    .sensor-summary-item {
+        flex: 1;
+    }
+
+    .sensor-detail-canvas-wrap {
+        width: 100%;
+        min-width: 0;
+    }
+
+    #robotTfCanvas,
+    #sensorDetailCanvas {
+        height: auto;
+    }
+}

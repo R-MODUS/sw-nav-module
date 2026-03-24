@@ -22,7 +22,7 @@
   </link>
 
   <joint name="cliff_sensor_${c['name']}_joint" type="fixed">
-    <parent link="${b['parent_frame']}"/>
+    <parent link="${c['parent_frame']}"/>
     <child link="cliff_sensor_${c['name']}_link"/>
     <origin xyz="${c['offset'][0]} ${c['offset'][1]} ${c['offset'][2]}" 
             rpy="0 0 ${c.get('yaw', 0.0)}"/>

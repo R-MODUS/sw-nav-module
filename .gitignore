@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 .vscode/
 .idea/
+.github
 
 # ROS 2
 install/

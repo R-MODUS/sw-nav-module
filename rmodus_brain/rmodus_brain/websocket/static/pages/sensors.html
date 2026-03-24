@@ -1,0 +1,70 @@
+<div class="sensors-page">
+    <div class="sensors-header">
+        <div>
+            <p class="page-eyebrow">Sensors</p>
+            <h1>Sensor diagnostics</h1>
+            <p class="page-subtitle">Inspect the robot TF layout and verify live sensor outputs from one place.</p>
+        </div>
+        <div class="sensor-summary" id="sensor-summary">
+            <div class="sensor-summary-item">
+                <span class="summary-label">TF frames</span>
+                <strong id="tf-frame-count">0</strong>
+            </div>
+            <div class="sensor-summary-item">
+                <span class="summary-label">Sensors</span>
+                <strong id="sensor-count">0</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="sensors-grid">
+        <section class="sensor-card sensor-card-visual">
+            <div class="card-title-row">
+                <div>
+                    <h2>Robot top view</h2>
+                    <p>2D TF overview for sensor placement checks.</p>
+                </div>
+                <span class="sensor-badge" id="tf-root-frame">base_link</span>
+            </div>
+            <div class="tf-controls">
+                <label class="tf-control-item tf-control-check" for="tf-show-labels">
+                    <input type="checkbox" id="tf-show-labels" />
+                    <span>Show TF labels</span>
+                </label>
+                <label class="tf-control-item" for="tf-zoom">
+                    <span>Zoom</span>
+                    <input type="range" id="tf-zoom" min="0.8" max="5.0" step="0.1" value="4.0" />
+                    <strong id="tf-zoom-value">1.4x</strong>
+                </label>
+            </div>
+            <canvas id="robotTfCanvas" width="640" height="520"></canvas>
+            <div class="sensor-card-footer" id="tf-status">Waiting for TF data...</div>
+        </section>
+
+        <section class="sensor-card sensor-card-panel">
+            <div class="card-title-row">
+                <div>
+                    <h2>Sensor selection</h2>
+                    <p>Choose a sensor to inspect its latest live output.</p>
+                </div>
+            </div>
+            <div id="sensor-selector" class="sensor-selector"></div>
+            <div class="sensor-selection-empty" id="sensor-selection-empty">No sensor catalog received yet.</div>
+        </section>
+
+        <section class="sensor-card sensor-card-detail">
+            <div class="card-title-row">
+                <div>
+                    <h2 id="sensor-detail-title">Sensor output</h2>
+                    <p id="sensor-detail-subtitle">Select a sensor from the list above.</p>
+                </div>
+                <span class="sensor-badge" id="sensor-detail-type">none</span>
+            </div>
+            <div class="sensor-detail-canvas-wrap">
+                <canvas id="sensorDetailCanvas" width="640" height="300"></canvas>
+            </div>
+            <div class="sensor-metrics" id="sensor-metrics"></div>
+            <pre class="sensor-raw-output" id="sensor-raw-output">No sensor selected.</pre>
+        </section>
+    </div>
+</div>

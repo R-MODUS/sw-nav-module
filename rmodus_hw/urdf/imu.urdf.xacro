@@ -1,0 +1,19 @@
+<?xml version='1.0'?>
+<!-- IMU TF frame - no Gazebo plugins -->
+
+<robot xmlns:xacro='http://www.ros.org/wiki/xacro'>
+
+<link name='imu_mount'>
+  <visual>
+    <geometry><box size='0.02 0.02 0.01'/></geometry>
+    <material name='red'/>
+  </visual>
+</link>
+
+<joint name='imu_joint' type='fixed'>
+  <parent link='nav_module_mount'/>
+  <child link='imu_mount'/>
+  <origin xyz='${imu_cfg["offset_x"]} ${imu_cfg["offset_y"]} ${imu_cfg["offset_z"]}' rpy='0 0 0'/>
+</joint>
+
+</robot>

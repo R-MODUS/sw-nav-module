@@ -181,6 +181,24 @@ function initWebSocket() {
                     }
                     break;
 
+                case "map_grid":
+                    if (typeof window.updateMapGrid === "function") {
+                        window.updateMapGrid(data);
+                    }
+                    break;
+
+                case "map_updates":
+                    if (typeof window.updateMapUpdates === "function") {
+                        window.updateMapUpdates(data);
+                    }
+                    break;
+
+                case "nav_path":
+                    if (typeof window.updateNavPath === "function") {
+                        window.updateNavPath(data.path);
+                    }
+                    break;
+
                 case "role_update":
                     userRole = data.role;
                     if (userRole === 'admin' && window.prompt_pin) {
@@ -289,6 +307,19 @@ function kickOperator() {
         }
     } else {
         alert("Tuto akci může provést pouze admin.");
+    }
+}
+
+/* === ODESÍLÁNÍ PŘÍKAZŮ Z MAPY === */
+window.sendGoalPoseCommand = function(x, y, yaw) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        const payload = {
+            type: "set_goal_pose",
+            x: parseFloat(x),
+            y: parseFloat(y),
+            yaw: parseFloat(yaw)
+        };
+        ws.send(JSON.stringify(payload));
     }
 }
 

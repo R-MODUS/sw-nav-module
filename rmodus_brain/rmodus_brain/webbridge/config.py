@@ -21,3 +21,9 @@ LIDAR_TOPIC = "/scan"
 IMU_TOPIC = "/imu/data"
 BUMPER_TOPIC_PREFIX = "/bumper/"
 CLIFF_TOPIC_PREFIX = "/cliff/"
+
+# Navigation topics
+MAP_TOPIC = "/map"
+MAP_UPDATES_TOPIC = "/map_updates"
+PLAN_TOPIC = "/received_global_plan"
+GOAL_POSE_TOPIC = "/goal_pose"

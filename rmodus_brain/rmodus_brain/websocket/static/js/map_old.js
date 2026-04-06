@@ -1,25 +1,27 @@
-/* Global state for map rendering */
+// Global state for map rendering
 const mapState = {
     initialized: false,
     canvas: null,
     ctx: null,
     
-    /* Map data from /map topic */
+    // Map data from /map topic
     map: null,
+    mapUpdates: [],
     
-    /* Robot pose from /tf */
+    // Robot pose from /tf
     robotPose: null,
     
-    /* Navigation path from /received_global_plan */
+    // Navigation path from /received_global_plan
     navPath: null,
     
-    /* UI state */
+    // UI state
     zoom: 1.0,
-    goalMode: 'inactive', /* 'inactive', 'waiting_position', 'waiting_direction' */
-    goalPending: null, /* { x, y, yaw } at any step */
+    goalModeActive: false,
+    goalPending: null,
+    goalFinal: null,
 };
 
-/* Initialize map rendering */
+// Initialize map rendering
 window.initMap = function() {
     const canvas = document.getElementById('mapCanvas');
     if (!canvas) {
@@ -31,37 +33,26 @@ window.initMap = function() {
     mapState.ctx = canvas.getContext('2d');
     mapState.initialized = true;
     
-    /* Resize canvas to fill container */
+    // Resize canvas to fill container
     updateCanvasSize();
     window.addEventListener('resize', updateCanvasSize);
     
-    /* Add click handler for goal setting */
+    // Add click handler for goal setting
     canvas.addEventListener('click', handleCanvasClick);
-    
-    /* Right-click to cancel */
     canvas.addEventListener('contextmenu', (e) => {
         e.preventDefault();
-        cancelGoal();
+        mapState.goalPending = null;
+        mapState.goalFinal = null;
+        draw();
     });
     
-    /* Add zoom slider handler */
+    // Add zoom slider handler
     const zoomSlider = document.getElementById('mapZoom');
     if (zoomSlider) {
         zoomSlider.addEventListener('input', (e) => {
             mapState.zoom = parseFloat(e.target.value);
             draw();
         });
-    }
-    
-    /* Setup buttons */
-    const btnCancel = document.getElementById('btnCancelGoal');
-    const btnSend = document.getElementById('btnSendGoal');
-    
-    if (btnCancel) {
-        btnCancel.addEventListener('click', cancelGoal);
-    }
-    if (btnSend) {
-        btnSend.addEventListener('click', confirmGoal);
     }
     
     console.log('Map initialized successfully');
@@ -75,9 +66,18 @@ function updateCanvasSize() {
     draw();
 }
 
-/* Update map data from websocket */
+// Update map data from websocket
 window.updateMapGrid = function(data) {
     mapState.map = data;
+    mapState.mapUpdates = [];
+    draw();
+};
+
+window.updateMapUpdates = function(data) {
+    if (mapState.mapUpdates.length > 100) {
+        mapState.mapUpdates = mapState.mapUpdates.slice(-100);
+    }
+    mapState.mapUpdates.push(data);
     draw();
 };
 
@@ -94,12 +94,8 @@ window.updateNavPath = function(path) {
 window.handleTfFrames = function(data) {
     if (!data.frames) return;
     
-    /* Find robot base frame */
-    const baseFrame = data.frames.find(f => 
-        f.child_frame_id === 'base_link' || 
-        f.child_frame_id === 'base_footprint'
-    );
-    
+    // Find robot base frame (usually "base_link")
+    const baseFrame = data.frames.find(f => f.child_frame_id === 'base_link' || f.child_frame_id === 'base_footprint');
     if (baseFrame) {
         mapState.robotPose = {
             x: baseFrame.x,
@@ -110,64 +106,54 @@ window.handleTfFrames = function(data) {
     }
 };
 
-/* Calculate viewport to center map in rectangular area */
+// Calculate viewport to center on map with padding
 function getViewport() {
     if (!mapState.map) return null;
     
-    const canvasWidth = mapState.canvas.width;
-    const canvasHeight = mapState.canvas.height;
-    
+    const padding = 36;
     const mapWidth = mapState.map.width;
     const mapHeight = mapState.map.height;
     const resolution = mapState.map.resolution;
     
-    /* Map dimensions in meters */
-    const mapMetersX = mapHeight * resolution; /* height = X dimension */
-    const mapMetersY = mapWidth * resolution;  /* width = Y dimension */
+    const metersX = mapHeight * resolution; // map height = world X
+    const metersY = mapWidth * resolution;  // map width = world Y
     
-    /* Available draw area (with small margin) */
-    const margin = 20;
-    const availWidth = canvasWidth - margin * 2;
-    const availHeight = canvasHeight - margin * 2;
+    // Available draw area
+    const availWidth = mapState.canvas.width - padding * 2;
+    const availHeight = mapState.canvas.height - padding * 2;
     
-    /* Calculate pixels per meter to fit map */
+    // Pixels per meter, applying zoom
     let ppm = Math.min(
-        availWidth / mapMetersY,
-        availHeight / mapMetersX
+        availWidth / metersY,
+        availHeight / metersX
     ) * mapState.zoom;
     ppm = Math.max(ppm, 0.1);
     
-    /* Map origin and center in world coords */
+    // Center viewport on map center
     const mapOriginX = mapState.map.origin.x;
     const mapOriginY = mapState.map.origin.y;
-    const mapCenterX = mapOriginX + mapMetersX / 2;
-    const mapCenterY = mapOriginY + mapMetersY / 2;
+    const mapCenterX = mapOriginX + metersX / 2;
+    const mapCenterY = mapOriginY + metersY / 2;
     
-    /* Viewport dimensions in world meters */
     const viewportMetersX = availHeight / ppm;
     const viewportMetersY = availWidth / ppm;
     
-    /* Viewport bounds (centered on map) */
     const minX = mapCenterX - viewportMetersX / 2;
     const minY = mapCenterY - viewportMetersY / 2;
     
     return {
         ppm,
-        margin,
-        canvasWidth,
-        canvasHeight,
+        padding,
         minX,
         minY,
         maxX: minX + viewportMetersX,
         maxY: minY + viewportMetersY,
-        centerScreenX: margin + availWidth / 2,
-        centerScreenY: margin + availHeight / 2,
-        availWidth,
-        availHeight
+        centerScreenX: padding + availWidth / 2,
+        centerScreenY: padding + availHeight / 2,
     };
 }
 
-/* Convert world coordinates to canvas coordinates */
+// Convert world coordinates to canvas coordinates
 function worldToScreen(x, y, viewport) {
     if (!viewport) return null;
     
@@ -177,7 +163,7 @@ function worldToScreen(x, y, viewport) {
     };
 }
 
-/* Convert canvas coordinates to world coordinates */
+// Convert canvas coordinates to world coordinates
 function screenToWorld(screenX, screenY, viewport) {
     if (!viewport) return null;
     
@@ -187,7 +173,7 @@ function screenToWorld(screenX, screenY, viewport) {
     };
 }
 
-/* Main draw function */
+// Main draw function
 function draw() {
     if (!mapState.initialized) return;
     
@@ -197,73 +183,56 @@ function draw() {
         return;
     }
     
-    /* Clear background */
+    // Clear background
     drawBackground();
     
-    /* Draw center rectangle border */
-    drawMapBorder(viewport);
-    
-    /* Draw grid */
+    // Draw grid
     drawGrid(viewport);
     
-    /* Draw occupancy grid */
+    // Draw occupancy grid
     if (mapState.map) {
         drawMap(viewport);
     }
     
-    /* Draw navigation path */
+    // Draw navigation path
     if (mapState.navPath) {
         drawNavPath(viewport);
     }
     
-    /* Draw goal preview */
+    // Draw goal preview
     if (mapState.goalPending) {
         drawGoalPreview(viewport);
     }
     
-    /* Draw robot */
+    // Draw robot
     if (mapState.robotPose) {
         drawRobot(viewport);
     }
 }
 
 function drawPlaceholder() {
-    mapState.ctx.fillStyle = '#1a1f2e';
+    mapState.ctx.fillStyle = '#f6f3ee';
     mapState.ctx.fillRect(0, 0, mapState.canvas.width, mapState.canvas.height);
     
-    mapState.ctx.fillStyle = '#666';
-    mapState.ctx.font = '16px sans-serif';
+    mapState.ctx.fillStyle = '#999';
+    mapState.ctx.font = '14px sans-serif';
     mapState.ctx.textAlign = 'center';
-    mapState.ctx.fillText('Čekám na data mapy...', mapState.canvas.width / 2, mapState.canvas.height / 2);
+    mapState.ctx.fillText('Waiting for map data...', mapState.canvas.width / 2, mapState.canvas.height / 2);
 }
 
 function drawBackground() {
     const gradient = mapState.ctx.createLinearGradient(0, 0, 0, mapState.canvas.height);
-    gradient.addColorStop(0, '#0f1419');
-    gradient.addColorStop(1, '#1a1f2e');
+    gradient.addColorStop(0, '#f6f3ee');
+    gradient.addColorStop(1, '#ddd7cf');
     mapState.ctx.fillStyle = gradient;
     mapState.ctx.fillRect(0, 0, mapState.canvas.width, mapState.canvas.height);
 }
 
-function drawMapBorder(viewport) {
-    /* Draw rectangular border around map area */
-    mapState.ctx.strokeStyle = 'rgba(0, 212, 255, 0.3)';
-    mapState.ctx.lineWidth = 2;
-    
-    mapState.ctx.strokeRect(
-        viewport.margin,
-        viewport.margin,
-        viewport.availWidth,
-        viewport.availHeight
-    );
-}
-
 function drawGrid(viewport) {
     const stepMeters = 1.0;
-    mapState.ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+    mapState.ctx.strokeStyle = 'rgba(17, 24, 39, 0.08)';
     mapState.ctx.lineWidth = 1;
     
-    /* Vertical lines (X direction) */
     for (let x = Math.ceil(viewport.minX); x <= viewport.maxX; x += stepMeters) {
         const start = worldToScreen(x, viewport.minY, viewport);
         const end = worldToScreen(x, viewport.maxY, viewport);
@@ -275,7 +244,6 @@ function drawGrid(viewport) {
         }
     }
     
-    /* Horizontal lines (Y direction) */
     for (let y = Math.ceil(viewport.minY); y <= viewport.maxY; y += stepMeters) {
         const start = worldToScreen(viewport.minX, y, viewport);
         const end = worldToScreen(viewport.maxX, y, viewport);
@@ -298,14 +266,14 @@ function drawMap(viewport) {
     const originY = mapState.map.origin.y;
     const data = mapState.map.data;
     
-    mapState.ctx.fillStyle = 'rgba(80, 80, 80, 0.7)';
+    mapState.ctx.fillStyle = 'rgba(60, 60, 60, 0.8)';
     
     for (let row = 0; row < height; row++) {
         for (let col = 0; col < width; col++) {
             const idx = row * width + col;
             const value = data[idx];
             
-            /* 0 = free, 100 = occupied, -1 = unknown */
+            // 0 = free, 100 = occupied, -1 = unknown
             if (value > 50) {
                 const x = originX + col * resolution;
                 const y = originY + row * resolution;
@@ -344,46 +312,26 @@ function drawNavPath(viewport) {
 }
 
 function drawGoalPreview(viewport) {
-    if (!mapState.goalPending) return;
-    
     const screen = worldToScreen(mapState.goalPending.x, mapState.goalPending.y, viewport);
     if (!screen) return;
     
-    /* Draw goal circle */
-    mapState.ctx.fillStyle = 'rgba(74, 222, 128, 0.4)';
+    // Draw goal circle
+    mapState.ctx.fillStyle = 'rgba(74, 222, 128, 0.5)';
     mapState.ctx.beginPath();
     mapState.ctx.arc(screen.x, screen.y, 15, 0, 2 * Math.PI);
     mapState.ctx.fill();
     
-    /* Draw goal border */
+    // Draw heading indicator
+    const headingLen = 20;
+    const headingDx = Math.cos(mapState.goalPending.yaw) * headingLen;
+    const headingDy = Math.sin(mapState.goalPending.yaw) * headingLen;
+    
     mapState.ctx.strokeStyle = 'rgba(74, 222, 128, 0.8)';
     mapState.ctx.lineWidth = 2;
+    mapState.ctx.beginPath();
+    mapState.ctx.moveTo(screen.x, screen.y);
+    mapState.ctx.lineTo(screen.x + headingDx, screen.y + headingDy);
     mapState.ctx.stroke();
-    
-    /* Draw heading indicator if direction is set */
-    if (mapState.goalMode === 'waiting_direction') {
-        const headingLen = 25;
-        const headingDx = Math.cos(mapState.goalPending.yaw) * headingLen;
-        const headingDy = Math.sin(mapState.goalPending.yaw) * headingLen;
-        
-        mapState.ctx.strokeStyle = 'rgba(74, 222, 128, 1)';
-        mapState.ctx.lineWidth = 2;
-        mapState.ctx.beginPath();
-        mapState.ctx.moveTo(screen.x, screen.y);
-        mapState.ctx.lineTo(screen.x + headingDx, screen.y + headingDy);
-        mapState.ctx.stroke();
-        
-        /* Arrow tip */
-        const arrowSize = 8;
-        mapState.ctx.beginPath();
-        mapState.ctx.moveTo(screen.x + headingDx, screen.y + headingDy);
-        mapState.ctx.lineTo(screen.x + headingDx - Math.cos(mapState.goalPending.yaw - 0.3) * arrowSize,
-                           screen.y + headingDy - Math.sin(mapState.goalPending.yaw - 0.3) * arrowSize);
-        mapState.ctx.lineTo(screen.x + headingDx - Math.cos(mapState.goalPending.yaw + 0.3) * arrowSize,
-                           screen.y + headingDy - Math.sin(mapState.goalPending.yaw + 0.3) * arrowSize);
-        mapState.ctx.closePath();
-        mapState.ctx.fill();
-    }
 }
 
 function drawRobot(viewport) {
@@ -392,7 +340,7 @@ function drawRobot(viewport) {
     const screen = worldToScreen(mapState.robotPose.x, mapState.robotPose.y, viewport);
     if (!screen) return;
     
-    /* Draw robot triangle */
+    // Draw robot triangle
     const size = 12;
     const angle = mapState.robotPose.yaw;
     
@@ -408,11 +356,6 @@ function drawRobot(viewport) {
     mapState.ctx.closePath();
     mapState.ctx.fill();
     
-    /* Draw glow */
-    mapState.ctx.strokeStyle = 'rgba(124, 58, 237, 0.5)';
-    mapState.ctx.lineWidth = 1;
-    mapState.ctx.stroke();
-    
     mapState.ctx.restore();
 }
 
@@ -427,79 +370,30 @@ function handleCanvasClick(event) {
     const world = screenToWorld(screenX, screenY, viewport);
     if (!world) return;
     
-    if (mapState.goalMode === 'inactive') {
-        /* First click: place goal position */
+    if (!mapState.goalPending) {
+        // First click: place goal
         mapState.goalPending = { x: world.x, y: world.y, yaw: 0 };
-        mapState.goalMode = 'waiting_direction';
-        updateGoalUI();
         draw();
-    } else if (mapState.goalMode === 'waiting_direction') {
-        /* Second click: set heading */
+    } else {
+        // Second click: set heading and send goal
         const dx = world.x - mapState.goalPending.x;
         const dy = world.y - mapState.goalPending.y;
+        mapState.goalPending.yaw = Math.atan2(dy, dx);
+        mapState.goalFinal = { ...mapState.goalPending };
         
-        if (dx !== 0 || dy !== 0) {
-            mapState.goalPending.yaw = Math.atan2(dy, dx);
+        // Send goal to backend
+        if (window.sendGoalPoseCommand) {
+            window.sendGoalPoseCommand(
+                mapState.goalFinal.x,
+                mapState.goalFinal.y,
+                mapState.goalFinal.yaw
+            );
         }
         
-        updateGoalUI();
+        mapState.goalPending = null;
         draw();
     }
 }
 
-function updateGoalUI() {
-    const goalStatus = document.getElementById('goalStatus');
-    const goalCoords = document.getElementById('goalCoordinates');
-    const goalX = document.getElementById('goalX');
-    const goalY = document.getElementById('goalY');
-    const goalYaw = document.getElementById('goalYaw');
-    const btnCancel = document.getElementById('btnCancelGoal');
-    const btnSend = document.getElementById('btnSendGoal');
-    const mapInstruction = document.getElementById('mapInstruction');
-    
-    if (!mapState.goalPending) {
-        /* Inactive state */
-        if (goalStatus) goalStatus.textContent = 'Klikněte na mapu pro zadání cíle';
-        if (goalCoords) goalCoords.style.display = 'none';
-        if (btnCancel) btnCancel.style.display = 'none';
-        if (btnSend) btnSend.style.display = 'none';
-        if (mapInstruction) mapInstruction.textContent = '1. Klik = vstupní bod';
-    } else if (mapState.goalMode === 'waiting_direction') {
-        /* Waiting for direction */
-        if (goalStatus) goalStatus.textContent = '🎯 Klikněte znovu pro nastavení směru';
-        if (goalCoords) {
-            goalCoords.style.display = 'block';
-            goalX.textContent = mapState.goalPending.x.toFixed(2);
-            goalY.textContent = mapState.goalPending.y.toFixed(2);
-            goalYaw.textContent = (mapState.goalPending.yaw * 180 / Math.PI).toFixed(1);
-        }
-        if (btnCancel) btnCancel.style.display = 'block';
-        if (btnSend) btnSend.style.display = 'block';
-        if (mapInstruction) mapInstruction.textContent = '2. Klik = finální směr (nebo tlačítko)';
-    }
-}
-
-function confirmGoal() {
-    if (!mapState.goalPending) return;
-    
-    /* Send goal to backend */
-    if (window.sendGoalPoseCommand) {
-        window.sendGoalPoseCommand(
-            mapState.goalPending.x,
-            mapState.goalPending.y,
-            mapState.goalPending.yaw
-        );
-    }
-    
-    cancelGoal();
-}
-
-function cancelGoal() {
-    mapState.goalMode = 'inactive';
-    mapState.goalPending = null;
-    updateGoalUI();
-    draw();
-}
-
-/* Export for use by app.js */
+// Export for use by app.js
 window.mapState = mapState;

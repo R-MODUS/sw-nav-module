@@ -1,0 +1,82 @@
+# =============================================================================
+# Simulation robot geometry - demo values, read by xacro only
+# =============================================================================
+robot_geometry:
+
+  base_link:
+    mass: 5.0
+    size: [0.5, 0.5, 0.1] # x, y, z
+    offset_z: 0.0973
+    nav_offset_x: 0.032
+    nav_offset_z: 0.0
+
+  imu:
+    offset_x: 0.056
+    offset_y: 0.020
+    offset_z: 0.015
+
+  lidar:
+    offset_x: 0.005
+    offset_z: 0.2
+
+  bumpers:
+    - name: 'front'
+      pin: 0
+      inverted: false
+      size: [0.02, 0.30, 0.05] # x(depth), y(width), z(height)
+      offset: [0.30, 0.0, 0.0] # x, y, z
+      yaw: 0.0
+      parent_frame: 'base_link'
+
+    - name: 'rear'
+      pin: 1
+      inverted: false
+      size: [0.02, 0.30, 0.05]
+      offset: [-0.30, 0.0, 0.0]
+      yaw: 3.14159
+      parent_frame: 'base_link'
+
+    - name: 'left'
+      pin: 2
+      inverted: false
+      size: [0.02, 0.20, 0.05]
+      offset: [0.0, 0.30, 0.0]
+      yaw: 1.5708
+      parent_frame: 'base_link'
+
+    - name: 'right'
+      pin: 3
+      inverted: false
+      size: [0.02, 0.20, 0.05]
+      offset: [0.0, -0.30, 0.0]
+      yaw: -1.5708
+      parent_frame: 'base_link'
+
+  cliff_sensors:
+    - name: 'fl'
+      pin: 0
+      size: [0.02, 0.02, 0.02]
+      offset: [0.25, 0.20, 0.0]
+      yaw: 0.0
+      parent_frame: 'base_link'
+
+    - name: 'fr'
+      pin: 1
+      size: [0.02, 0.02, 0.02]
+      offset: [0.25, -0.20, 0.0]
+      yaw: 0.0
+      parent_frame: 'base_link'
+
+    - name: 'rl'
+      pin: 2
+      size: [0.02, 0.02, 0.02]
+      offset: [-0.25, 0.20, 0.0]
+      yaw: 3.14159
+      parent_frame: 'base_link'
+
+    - name: 'rr'
+      pin: 3
+      size: [0.02, 0.02, 0.02]
+      offset: [-0.25, -0.20, 0.0]
+      yaw: 3.14159
+      parent_frame: 'base_link'

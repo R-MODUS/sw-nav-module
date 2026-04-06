@@ -4,7 +4,8 @@ import asyncio
 import math
 from typing import Dict, List, Optional
 
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import PoseStamped, Twist
+from nav_msgs.msg import OccupancyGrid, Path
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, QoSProfile
 from sensor_msgs.msg import Imu, LaserScan, Range
@@ -16,8 +17,12 @@ from rmodus_interface.msg import PiStatus
 from rmodus_brain.webbridge.config import (
     BUMPER_TOPIC_PREFIX,
     CLIFF_TOPIC_PREFIX,
+    GOAL_POSE_TOPIC,
     IMU_TOPIC,
     LIDAR_TOPIC,
+    MAP_TOPIC,
+    MAP_UPDATES_TOPIC,
+    PLAN_TOPIC,
     SENSOR_DISCOVERY_RATE_HZ,
     TF_BROADCAST_RATE_HZ,
     TF_ROOT_FRAME,
@@ -37,6 +42,13 @@ class WebBridgeNode(Node):
         self.latest_sensor_messages: Dict[str, dict] = {}
         self.tf_frames: Dict[str, dict] = {}
         self.sensor_subscriptions: Dict[str, object] = {}
+        
+        # Map data
+        self.latest_map = None
+        self.latest_plan = None
+        
+        # Goal publisher
+        self.publisher_goal_pose = self.create_publisher(PoseStamped, GOAL_POSE_TOPIC, 10)
 
         self.publisher_cmd = self.create_publisher(Twist, "/vector", 10)
         self.publisher_cmd_vel = self.create_publisher(Twist, "/cmd_vel", 10)
@@ -45,6 +57,13 @@ class WebBridgeNode(Node):
         self._create_static_sensor_subscriptions()
         self._discover_dynamic_topics()
         self._create_tf_subscriptions()
+        
+        # Subscribe to map topics with appropriate QoS
+        qos_volatile = QoSProfile(depth=1, durability=DurabilityPolicy.VOLATILE)
+        self.sub_map = self.create_subscription(OccupancyGrid, MAP_TOPIC, self.map_callback, qos_volatile)
+        self.sub_map_updates = self.create_subscription(OccupancyGrid, MAP_UPDATES_TOPIC, self.map_updates_callback, qos_volatile)
+        self.sub_plan = self.create_subscription(Path, PLAN_TOPIC, self.plan_callback, qos_volatile)
+        
         self.create_timer(1.0 / TF_BROADCAST_RATE_HZ, self.publish_tf_snapshot)
         self.create_timer(1.0 / SENSOR_DISCOVERY_RATE_HZ, self._discover_dynamic_topics)
         self.get_logger().info("WebBridgeNode initialized.")
@@ -305,9 +324,83 @@ class WebBridgeNode(Node):
                 }
             )
 
+        if self.latest_map:
+            messages.append(self.latest_map)
+            
+        if self.latest_plan:
+            messages.append(self.latest_plan)
+
         messages.extend(self.latest_sensor_messages.values())
         return messages
 
     def get_sensor_catalog(self) -> List[dict]:
         sensors = [sensor.as_dict() for sensor in self.sensor_definitions.values()]
         return sorted(sensors, key=lambda sensor: (sensor["sensor_type"], sensor["sensor_id"]))
+    
+    def map_callback(self, msg: OccupancyGrid):
+        if not self._has_clients():
+            return
+        
+        payload = {
+            "type": "map_grid",
+            "frame_id": self._normalize_frame_id(msg.header.frame_id),
+            "width": msg.info.width,
+            "height": msg.info.height,
+            "resolution": msg.info.resolution,
+            "origin": {
+                "x": float(msg.info.origin.position.x),
+                "y": float(msg.info.origin.position.y),
+            },
+            "data": list(msg.data),
+        }
+        self.latest_map = payload
+        self._broadcast_threadsafe(payload)
+    
+    def map_updates_callback(self, msg: OccupancyGrid):
+        if not self._has_clients():
+            return
+        
+        payload = {
+            "type": "map_updates",
+            "frame_id": self._normalize_frame_id(msg.header.frame_id),
+            "width": msg.info.width,
+            "height": msg.info.height,
+            "resolution": msg.info.resolution,
+            "origin": {
+                "x": float(msg.info.origin.position.x),
+                "y": float(msg.info.origin.position.y),
+            },
+            "data": list(msg.data),
+        }
+        self._broadcast_threadsafe(payload)
+    
+    def plan_callback(self, msg: Path):
+        if not self._has_clients():
+            return
+        
+        path_points = []
+        for pose in msg.poses:
+            path_points.append({
+                "x": float(pose.pose.position.x),
+                "y": float(pose.pose.position.y),
+            })
+        
+        payload = {
+            "type": "nav_path",
+            "frame_id": self._normalize_frame_id(msg.header.frame_id),
+            "path": path_points,
+        }
+        self.latest_plan = payload
+        self._broadcast_threadsafe(payload)
+    
+    def publish_goal_pose(self, x: float, y: float, yaw: float):
+        """Publish goal pose to /goal_pose topic."""
+        goal_msg = PoseStamped()
+        goal_msg.header.frame_id = "map"
+        goal_msg.pose.position.x = x
+        goal_msg.pose.position.y = y
+        # Convert yaw to quaternion
+        half_yaw = yaw / 2.0
+        goal_msg.pose.orientation.z = math.sin(half_yaw)
+        goal_msg.pose.orientation.w = math.cos(half_yaw)
+        self.publisher_goal_pose.publish(goal_msg)

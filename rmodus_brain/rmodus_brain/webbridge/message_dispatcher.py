@@ -30,6 +30,7 @@ class MessageDispatcher:
             "request_admin": self.handle_request_admin,
             "kick_operator": self.handle_kick_operator,
             "cmd_joy": self.handle_cmd_joy,
+            "set_goal_pose": self.handle_set_goal_pose,
         }
 
     async def dispatch(self, websocket: WebSocket, data: dict, ros_node: Optional[WebBridgeNode]):
@@ -106,3 +107,16 @@ class MessageDispatcher:
 
         if ros_node:
             ros_node.publish_joystick_cmd(data)
+
+    async def handle_set_goal_pose(self, websocket: WebSocket, data: dict, ros_node: Optional[WebBridgeNode]):
+        if websocket != self.role_state.current_operator:
+            await self.manager.send_personal_message(
+                {"type": "info", "message": "You are not the operator."}, websocket
+            )
+            return
+
+        if ros_node:
+            x = data.get("x", 0.0)
+            y = data.get("y", 0.0)
+            yaw = data.get("yaw", 0.0)
+            ros_node.publish_goal_pose(float(x), float(y), float(yaw))

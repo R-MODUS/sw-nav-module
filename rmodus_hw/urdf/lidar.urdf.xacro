@@ -1,0 +1,19 @@
+<?xml version='1.0'?>
+<!-- Lidar TF frame - no Gazebo plugins -->
+
+<robot xmlns:xacro='http://www.ros.org/wiki/xacro'>
+
+<link name='lidar_beam'>
+  <visual>
+    <geometry><cylinder radius='0.01' length='0.04'/></geometry>
+    <material name='red'/>
+  </visual>
+</link>
+
+<joint name='lidar_joint' type='fixed'>
+  <parent link='nav_module_mount'/>
+  <child link='lidar_beam'/>
+  <origin xyz='${lidar_cfg["offset_x"]} 0 ${lidar_cfg["offset_z"]}' rpy='0 0 0'/>
+</joint>
+
+</robot>

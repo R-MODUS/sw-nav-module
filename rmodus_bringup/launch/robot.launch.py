@@ -30,7 +30,7 @@ def generate_launch_description():
         DeclareLaunchArgument('navigation', default_value='true'),
         DeclareLaunchArgument('slam', default_value='true'),
         DeclareLaunchArgument('rf2o', default_value='false'),
-        DeclareLaunchArgument('rviz', default_value='true'),
+        DeclareLaunchArgument('rviz', default_value='false'),
         DeclareLaunchArgument(
             'user_params_file',
             default_value=PathJoinSubstitution([pkg_share, 'config', 'user_params.yaml']),

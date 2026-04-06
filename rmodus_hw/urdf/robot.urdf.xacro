@@ -117,12 +117,6 @@
   </visual>
 </link>
 
-<!-- CLIFF SENSOR LINKS (4 rohy) -->
-<xacro:cliff_sensor_link name='cliff_fl'/>
-<xacro:cliff_sensor_link name='cliff_fr'/>
-<xacro:cliff_sensor_link name='cliff_rl'/>
-<xacro:cliff_sensor_link name='cliff_rr'/>
-
 <!-- JOINTS -->
 
 <joint name='body_link_joint' type='fixed'>

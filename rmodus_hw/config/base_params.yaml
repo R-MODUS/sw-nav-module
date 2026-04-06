@@ -53,7 +53,7 @@ sharp_sensors_node:
         depth: 0.02
         height: 0.05
         offset: [0.30, 0.0, 0.0] # x, y, z
-        rotation: [0, 0, 0] # r, p, y
+        rotation: [0.0, 0.0, 0.0] # r, p, y
 
       - name: "rear"
         pin: 1
@@ -62,7 +62,7 @@ sharp_sensors_node:
         depth: 0.02
         height: 0.05
         offset: [-0.30, 0.0, 0.0]
-        rotation: [0, 0, 3.14]
+        rotation: [0.0, 0.0, 3.14]
 
       - name: "left"
         pin: 2
@@ -71,7 +71,7 @@ sharp_sensors_node:
         depth: 0.02
         height: 0.05
         offset: [0.0, 0.30, 0.0]
-        rotation: [0, 0, 1.57]
+        rotation: [0.0, 0.0, 1.57]
 
       - name: "right"
         pin: 3
@@ -80,4 +80,4 @@ sharp_sensors_node:
         depth: 0.02
         height: 0.05
         offset: [0.0, -0.30, 0.0]
-        rotation: [0, 0, -1.57]
+        rotation: [0.0, 0.0, -1.57]

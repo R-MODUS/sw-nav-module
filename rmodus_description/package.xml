@@ -1,22 +1,14 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>rmodus_sim</name>
+  <name>rmodus_description</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>Robot description - shared URDF and sensor config for hw and sim</description>
   <maintainer email="pi@todo.todo">pi</maintainer>
   <license>TODO: License declaration</license>
 
-  <depend>rclpy</depend>
-  <depend>nav_msgs</depend>
-  <depend>sensor_msgs</depend>
-  <depend>geometry_msgs</depend>
-  <depend>rmodus_interface</depend>
-
-  <exec_depend>ros_gz_sim</exec_depend>
-  <exec_depend>ros_gz_bridge</exec_depend>
-  <exec_depend>ros_gz_interfaces</exec_depend>
-  <exec_depend>rmodus_description</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>xacro</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
@@ -25,10 +17,5 @@
 
   <export>
     <build_type>ament_python</build_type>
-    <condition>
-      <and>
-        <distro>jazzy</distro>
-      </and>
-    </condition>
   </export>
 </package>

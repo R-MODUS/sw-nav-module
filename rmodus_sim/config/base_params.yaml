@@ -1,7 +1,6 @@
 /**:
   ros__parameters:
 
-
     base_link:
       mass: 5.0
       size: [0.5, 0.5, 0.1] # x, y, z

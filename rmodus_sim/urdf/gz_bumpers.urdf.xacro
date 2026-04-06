@@ -1,0 +1,60 @@
+<?xml version='1.0'?>
+<!-- Sim-only: Gazebo contact sensor plugins for bumpers.
+     TF links/joints are defined in rmodus_description/urdf/bumpers.urdf.xacro -->
+
+<robot xmlns:xacro='http://www.ros.org/wiki/xacro'
+       xmlns:gz='http://gazebosim.org/schema'>
+
+<!-- Contact system plugin (one instance for all bumpers) -->
+<gazebo>
+  <plugin filename='libgz-sim-contact-system.so' name='gz::sim::systems::Contact'/>
+</gazebo>
+
+<xacro:macro name='gz_bumper_sensors' params='b'>
+
+  <gazebo reference='bumper_${b["name"]}_joint'>
+    <preserveFixedJoint>true</preserveFixedJoint>
+  </gazebo>
+
+  <gazebo reference='bumper_${b["name"]}_link'>
+    <sensor name='bumper_${b["name"]}_sensor' type='contact'>
+      <always_on>1</always_on>
+      <update_rate>30</update_rate>
+      <topic>/bumper/${b["name"]}</topic>
+      <contact>
+        <collision>bumper_${b["name"]}_link_collision</collision>
+      </contact>
+    </sensor>
+  </gazebo>
+
+  <!-- Contact frame (sim-specific) -->
+  <link name='bumper_${b["name"]}_contact_frame'>
+    <inertial>
+      <mass value='0.001'/>
+      <inertia ixx='0.00001' ixy='0' ixz='0' iyy='0.00001' iyz='0' izz='0.00001'/>
+    </inertial>
+  </link>
+
+  <joint name='bumper_${b["name"]}_contact_joint' type='fixed'>
+    <parent link='bumper_${b["name"]}_link'/>
+    <child link='bumper_${b["name"]}_contact_frame'/>
+    <origin xyz='${b["size"][0]} 0 0' rpy='0 0 0'/>
+  </joint>
+
+  <gazebo reference='bumper_${b["name"]}_contact_joint'>
+    <preserveFixedJoint>true</preserveFixedJoint>
+  </gazebo>
+
+</xacro:macro>
+
+<xacro:macro name='gz_bumper_loop' params='items'>
+  <xacro:if value='${items}'>
+    <xacro:property name='current_b' value='${items.pop(0)}'/>
+    <xacro:gz_bumper_sensors b='${current_b}'/>
+    <xacro:gz_bumper_loop items='${items}'/>
+  </xacro:if>
+</xacro:macro>
+
+<xacro:gz_bumper_loop items='${list(bumpers)}'/>
+
+</robot>

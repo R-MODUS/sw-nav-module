@@ -1,21 +1,27 @@
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
-from launch.substitutions import PathJoinSubstitution, LaunchConfiguration, Command
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import PathJoinSubstitution, LaunchConfiguration
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
-from launch_ros.parameter_descriptions import ParameterValue
+from ament_index_python.packages import get_package_share_directory
 
 import os
-import json
-import yaml
 
 def generate_launch_description():
     pkg_name = 'rmodus_hw'
-    pkg_share = FindPackageShare(pkg_name)
-    config_dir = PathJoinSubstitution([pkg_share, 'config'])
+    config_dir = PathJoinSubstitution([FindPackageShare(pkg_name), 'config'])
 
     params_base = PathJoinSubstitution([config_dir, 'base_params.yaml'])
     params_xsens = PathJoinSubstitution([config_dir, 'xsens_mti_node.yaml'])
+
+    robot_config_path = os.path.join(
+        get_package_share_directory('rmodus_description'), 'config', 'robot_config.yaml'
+    )
+
+    description_launch = PathJoinSubstitution([
+        FindPackageShare('rmodus_description'), 'launch', 'description.launch.py'
+    ])
 
     params_user_arg = DeclareLaunchArgument(
         'user_params_file',
@@ -26,23 +32,15 @@ def generate_launch_description():
     params_user = LaunchConfiguration('user_params_file')
     params = [params_base, params_user]
 
-    robot_xacro = PathJoinSubstitution([pkg_share, 'urdf', 'robot.urdf.xacro'])
-
     return LaunchDescription([
         params_user_arg,
 
-        Node(
-            package='robot_state_publisher',
-            executable='robot_state_publisher',
-            parameters=[{
-                'use_sim_time': False,
-                'robot_description': ParameterValue(Command([
-                    'xacro ', robot_xacro,
-                ]),
-                value_type=str
-                )
-            }],
-            output='screen',
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(description_launch),
+            launch_arguments={
+                'use_sim_time': 'false',
+                'config_path': robot_config_path,
+            }.items(),
         ),
 
         Node(package=pkg_name, executable='get_wifi', name='wifi_service', parameters=params),

@@ -18,7 +18,7 @@ def generate_launch_description():
 
     src_str = os.path.join(get_package_share_directory(pkg_name), '..')
     bridge_config_str = os.path.join(get_package_share_directory(pkg_name), 'config', 'bridge_parameters.yaml')
-    config_str = os.path.join(get_package_share_directory(pkg_name), 'config', 'base_params.yaml')
+    config_str = os.path.join(get_package_share_directory('rmodus_description'), 'config', 'robot_config.yaml')
 
     # merge static bridge config with dynamic sensor topics from robot config
     final_bridge_config_path, bumper_names = create_combined_bridge_config(

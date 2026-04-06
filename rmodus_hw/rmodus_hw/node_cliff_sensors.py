@@ -1,8 +1,6 @@
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Range
-from scipy.interpolate import CubicSpline
-import numpy as np
 import board
 import busio
 import adafruit_ads1x15.ads1115 as ADS
@@ -11,21 +9,6 @@ from adafruit_ads1x15.analog_in import AnalogIn
 class SharpSensorNode(Node):
     def __init__(self):
         super().__init__('sharp_sensors_node')
-
-
-        self.declare_parameter('v_points', [0.4, 2.5])
-        self.declare_parameter('d_points', [0.20, 0.02])
-        self.v_points = self.get_parameter('v_points').value
-        self.d_points = self.get_parameter('d_points').value
-
-        if len(self.v_points) != len(self.d_points): # pyright: ignore[reportArgumentType]
-            self.get_logger().error("v_points a d_points musí mít stejnou délku!")
-
-        try:
-            self.spline = CubicSpline(self.v_points, self.d_points, bc_type='natural')
-        except Exception as e:
-            self.get_logger().error(f"Chyba při tvorbě splajnu: {e}")
-            self.spline = None
         
         # Inicializace I2C a ADS1115
         try:
@@ -52,13 +35,22 @@ class SharpSensorNode(Node):
             self.pubs.append(self.create_publisher(Range, topic, 10))
 
         self.timer = self.create_timer(0.1, self.timer_callback)
-
     def voltage_to_distance(self, voltage):
-        if self.spline is None:
+        # Osetreni limitnich stavu podle grafu
+        if voltage > 2.5: # Maximum v grafu je cca 2.45V
+            return 0.02
+        if voltage < 0.3: # Minimum pro 20cm
+            return 0.20
+        
+        # Aproximace krivky pro Sharp 2-20cm (GP2Y0A41SK0F)
+        # Vzorec upraveny podle bodu v grafu: 2V -> cca 2cm, 0.4V -> 15cm
+	# 2 to 15 cm
+        try:
+            # d = a * (V ^ b) - c
+            distance_cm = 3.5 * pow(voltage, -0.75) + 0.0
+            return distance_cm / 100.0 # Prevod na metry pro ROS 2
+        except:
             return -1.0
-            
-        dist_m = float(self.spline(voltage))
-        return np.clip(dist_m, min(self.d_points), max(self.d_points)) # pyright: ignore[reportArgumentType]
 
     def timer_callback(self):
         for i in range(4):

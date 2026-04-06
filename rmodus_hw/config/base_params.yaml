@@ -47,7 +47,7 @@ sharp_sensors_node:
   ros__parameters:
     bumpers:
       - name: "front"
-        pin: 0
+        pin: 0.0
         inverted: false # true=NC, false=NO
         width: 0.30
         depth: 0.02
@@ -56,7 +56,7 @@ sharp_sensors_node:
         rotation: [0.0, 0.0, 0.0] # r, p, y
 
       - name: "rear"
-        pin: 1
+        pin: 1.0
         inverted: false
         width: 0.30
         depth: 0.02
@@ -65,7 +65,7 @@ sharp_sensors_node:
         rotation: [0.0, 0.0, 3.14]
 
       - name: "left"
-        pin: 2
+        pin: 2.0
         inverted: false
         width: 0.20
         depth: 0.02
@@ -74,7 +74,7 @@ sharp_sensors_node:
         rotation: [0.0, 0.0, 1.57]
 
       - name: "right"
-        pin: 3
+        pin: 3.0
         inverted: false
         width: 0.20
         depth: 0.02

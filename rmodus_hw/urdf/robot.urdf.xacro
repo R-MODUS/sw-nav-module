@@ -84,7 +84,7 @@
   <xacro:box_inertia m='${base_mass}' x='${base_size_x}' y='${base_size_y}' z='${base_size_z}'/>
   <visual>
     <geometry>
-      <mesh filename='package://${meshes_dir}/base.obj' scale='${creo_scale} ${creo_scale} ${creo_scale}'/>
+      <box size='${base_size_x} ${base_size_y} ${base_size_z}'/>
     </geometry>
     <material name='blue'/>
   </visual>
@@ -98,7 +98,7 @@
 <link name='nav_module_mount'>
   <visual>
     <origin xyz='0 0 0' rpy='0 0 0'/>
-    <geometry> <mesh filename='package://${meshes_dir}/navigation.obj' scale='${creo_scale} ${creo_scale} ${creo_scale}'/> </geometry>
+    <geometry> <cylinder radius='0.01' length='0.04'/> </geometry>
     <material name='gray'/>
   </visual>
 </link>

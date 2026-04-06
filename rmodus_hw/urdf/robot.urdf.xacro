@@ -76,36 +76,6 @@
   </inertial>
 </xacro:macro>
 
-<!-- MACRO: Cliff sensor link (visual only, fixed joint) -->
-<xacro:macro name='cliff_sensor_link' params='name'>
-  <link name='${name}_link'>
-    <xacro:box_inertia m='${cliff_sensor_mass}' x='0.015' y='0.015' z='0.02'/>
-    <visual>
-      <geometry><box size='0.015 0.015 0.02'/></geometry>
-      <material name='red'/>
-    </visual>
-  </link>
-</xacro:macro>
-
-<!-- BUMPERS -->
-<xacro:foreach items="${bumpers}" name="b">
-  <link name="bumper_${b['name']}_link">
-    <xacro:box_inertia m="${bumper_mass}" x="${b['depth']}" y="${b['width']}" z="${b['height']}"/>
-    <visual>
-      <geometry><box size="${b['depth']} ${b['width']} ${b['height']}"/></geometry>
-      <material name="red"/>
-    </visual>
-  </link>
-
-  <joint name="bumper_${b['name']}_joint" type="fixed">
-    <parent link="$(arg bumper_parent)"/>
-    <child link="bumper_${b['name']}_link"/>
-    <origin xyz="${b['offset'][0]} ${b['offset'][1]} ${b['offset'][2]}" 
-            rpy="${b['rotation'][0]} ${b['rotation'][1]} ${b['rotation'][2]}"/>
-  </joint>
-</xacro:foreach>
-<!-- /BUMPERS -->
-
 <!-- LINKS -->
 <link name='base_footprint'>
 </link>
@@ -177,56 +147,6 @@
   <parent link='nav_module_mount'/>
   <child link='imu_mount'/>
   <origin xyz='$(arg imu_offset_x) $(arg imu_offset_y) $(arg imu_offset_z)' rpy='0 0 0'/>
-</joint>
-
-<!-- CLIFF SENSOR JOINTS -->
-<joint name='cliff_fl_joint' type='fixed'>
-  <parent link='base_link'/>
-  <child link='cliff_fl_link'/>
-  <origin xyz='${base_size_x/2} ${base_size_y/2} $(arg cliff_sensor_z)' rpy='0 ${pi/2} 0'/>
-</joint>
-
-<joint name='cliff_fr_joint' type='fixed'>
-  <parent link='base_link'/>
-  <child link='cliff_fr_link'/>
-  <origin xyz='${base_size_x/2} ${-base_size_y/2} $(arg cliff_sensor_z)' rpy='0 ${pi/2} 0'/>
-</joint>
-
-<joint name='cliff_rl_joint' type='fixed'>
-  <parent link='base_link'/>
-  <child link='cliff_rl_link'/>
-  <origin xyz='${-base_size_x/2} ${base_size_y/2} $(arg cliff_sensor_z)' rpy='0 ${pi/2} 0'/>
-</joint>
-
-<joint name='cliff_rr_joint' type='fixed'>
-  <parent link='base_link'/>
-  <child link='cliff_rr_link'/>
-  <origin xyz='${-base_size_x/2} ${-base_size_y/2} $(arg cliff_sensor_z)' rpy='0 ${pi/2} 0'/>
-</joint>
-
-<!-- BUMPER JOINTS (strany, panel těsně vně těla robota) -->
-<joint name='bumper_front_joint' type='fixed'>
-  <parent link='base_link'/>
-  <child link='bumper_front_link'/>
-  <origin xyz='${base_size_x/2 + bumper_thickness/2} 0 0' rpy='0 0 0'/>
-</joint>
-
-<joint name='bumper_rear_joint' type='fixed'>
-  <parent link='base_link'/>
-  <child link='bumper_rear_link'/>
-  <origin xyz='${-(base_size_x/2 + bumper_thickness/2)} 0 0' rpy='0 0 0'/>
-</joint>
-
-<joint name='bumper_left_joint' type='fixed'>
-  <parent link='base_link'/>
-  <child link='bumper_left_link'/>
-  <origin xyz='0 ${base_size_y/2 + bumper_thickness/2} 0' rpy='0 0 0'/>
-</joint>
-
-<joint name='bumper_right_joint' type='fixed'>
-  <parent link='base_link'/>
-  <child link='bumper_right_link'/>
-  <origin xyz='0 ${-(base_size_y/2 + bumper_thickness/2)} 0' rpy='0 0 0'/>
 </joint>
 
 </robot>

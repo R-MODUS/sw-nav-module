@@ -3,10 +3,6 @@
 <robot xmlns:xacro='http://www.ros.org/wiki/xacro'
        xmlns:gz='http://gazebosim.org/schema'>
 
-<!-- PROPERTY -->
-<xacro:property name='lidar_offset_z' value='0.2'/>
-<xacro:property name='lidar_offset_x' value='0.005'/>
-
 <!-- LIDAR -->
 <link name='lidar_beam'>
   <visual>
@@ -18,7 +14,7 @@
 <joint name='lidar_joint' type='fixed'>
   <parent link='nav_module_mount'/>
   <child link='lidar_beam'/>
-  <origin xyz='${lidar_offset_x} 0 ${lidar_offset_z}' rpy='0 0 0'/>
+  <origin xyz='${lidar_cfg["offset_x"]} 0 ${lidar_cfg["offset_z"]}' rpy='0 0 0'/>
 </joint>
 
 <gazebo>

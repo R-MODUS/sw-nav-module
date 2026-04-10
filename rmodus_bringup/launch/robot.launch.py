@@ -34,7 +34,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'user_params_file',
             default_value=PathJoinSubstitution([pkg_share, 'config', 'user_params.yaml']),
-            description='Optional override params for rmodus_hw nodes',
+            description='Global override params file for all packages',
         ),
 
         IncludeLaunchDescription(
@@ -45,6 +45,9 @@ def generate_launch_description():
 
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(sim_launch),
+            launch_arguments={
+                'global_params_file': user_params_file,
+            }.items(),
             condition=mode_is_sim,
         ),
 
@@ -55,6 +58,7 @@ def generate_launch_description():
                 'navigation': navigation,
                 'slam': slam,
                 'rf2o': rf2o,
+                'global_params_file': user_params_file,
             }.items(),
         ),
 

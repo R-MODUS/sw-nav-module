@@ -8,7 +8,7 @@ from .utils.wifi import get_ip_address
 
 class DisplayNode(Node):
     def __init__(self):
-        super().__init__('display_node')
+        super().__init__('display')
         
         self.status_data = None
         self.current_mode = "STATUS"

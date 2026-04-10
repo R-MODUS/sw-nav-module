@@ -12,7 +12,19 @@
       offset_x: 0.032
       offset_z: 0.0
 
+    wheel_odom:
+      enabled: true
+      type: 'odom'
+      topic: '/odom'
+
+    lidar_odom:
+      enabled: false
+      type: 'odom'
+      topic: '/odom_lidar'
+
     imu:
+      enabled: true
+      type: 'imu'
       name: 'imu'
       topic: '/imu/data'
       frame_id: 'imu_link'
@@ -21,9 +33,16 @@
       offset_z: 0.015
 
     lidar:
+      enabled: true
       name: 'lidar'
       topic: '/scan'
       frame_id: 'lidar_link'
+      port: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.2:1.0-port0'
+      motor_pin: 19
+      frequency: 10000
+      target_rpm: 300
+      angle_min: 0.0
+      angle_max: 6.28319
       range_min: 0.1
       range_max: 10.0
       fov: 360
@@ -32,14 +51,24 @@
       offset_z: 0.2
 
     flow_sensor:
+      enabled: true
+      type: 'twist'
       name: 'flow_front'
-      topic: '/flow/front'
+      topic: '/visual_flow/data'
       frame_id: 'flow_front_link'
+      spi_port: 0
+      spi_cs: 0
+      deadzone: 3
+      timer_period: 0.05
+      z_height: 0.025
+      fov_deg: 42.0
+      res_pix: 35
       offset: [0.3, 0.0, 0.0] # x, y, z
       yaw: 0.0
 
     bumpers:
       - name: 'front'
+        enabled: true
         pin: 0
         inverted: false
         size: [0.02, 0.30, 0.05] # x(depth), y(width), z(height)
@@ -48,6 +77,7 @@
         parent_frame: 'base_link'
 
       - name: 'rear'
+        enabled: true
         pin: 1
         inverted: false
         size: [0.02, 0.30, 0.05]
@@ -56,6 +86,7 @@
         parent_frame: 'base_link'
 
       - name: 'left'
+        enabled: true
         pin: 2
         inverted: false
         size: [0.02, 0.20, 0.05]
@@ -64,6 +95,7 @@
         parent_frame: 'base_link'
 
       - name: 'right'
+        enabled: true
         pin: 3
         inverted: false
         size: [0.02, 0.20, 0.05]
@@ -73,29 +105,58 @@
 
     cliff_sensors:
       - name: 'fl'
+        enabled: true
         pin: 0
+        v_points: [0.3, 0.4, 0.8, 1.2, 2.0, 2.5]
+        d_points: [0.20, 0.15, 0.08, 0.05, 0.03, 0.02]
         size: [0.02, 0.02, 0.02]
         offset: [0.25, 0.20, 0.0]
         yaw: 0.0
         parent_frame: 'base_link'
 
       - name: 'fr'
+        enabled: true
         pin: 1
+        v_points: [0.3, 0.4, 0.8, 1.2, 2.0, 2.5]
+        d_points: [0.20, 0.15, 0.08, 0.05, 0.03, 0.02]
         size: [0.02, 0.02, 0.02]
         offset: [0.25, -0.20, 0.0]
         yaw: 0.0
         parent_frame: 'base_link'
 
       - name: 'rl'
+        enabled: true
         pin: 2
+        v_points: [0.3, 0.4, 0.8, 1.2, 2.0, 2.5]
+        d_points: [0.20, 0.15, 0.08, 0.05, 0.03, 0.02]
         size: [0.02, 0.02, 0.02]
         offset: [-0.25, 0.20, 0.0]
         yaw: 3.14159
         parent_frame: 'base_link'
 
       - name: 'rr'
+        enabled: true
         pin: 3
+        v_points: [0.3, 0.4, 0.8, 1.2, 2.0, 2.5]
+        d_points: [0.20, 0.15, 0.08, 0.05, 0.03, 0.02]
         size: [0.02, 0.02, 0.02]
         offset: [-0.25, -0.20, 0.0]
         yaw: 3.14159
         parent_frame: 'base_link'
+
+    motors_node:
+      port: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0-port0'
+      max_speed: 255
+
+    display:
+      width: 128
+      height: 32
+      orientation: 2
+      brightness: 5
+
+    fan:
+      fan_pin: 13
+      frequency: 10
+      min_to_run: 0.25
+      user_power: [0.0, 0.5, 1.0]
+

@@ -10,7 +10,8 @@ from launch_ros.substitutions import FindPackageShare
 def generate_launch_description():
 	brain_share = FindPackageShare('rmodus_brain')
 
-	ekf_params = LaunchConfiguration('ekf_params_file')
+	robot_config_file = LaunchConfiguration('robot_config_file')
+	global_params_file = LaunchConfiguration('global_params_file')
 	rf2o_params = LaunchConfiguration('rf2o_params_file')
 	slam_params = LaunchConfiguration('slam_params_file')
 	nav2_params = LaunchConfiguration('nav2_params_file')
@@ -20,6 +21,7 @@ def generate_launch_description():
 	navigation = LaunchConfiguration('navigation')
 	rf2o = LaunchConfiguration('rf2o')
 
+	ekf_launch = PathJoinSubstitution([brain_share, 'launch', 'ekf_dynamic.launch.py'])
 	nav2_launch = PathJoinSubstitution([brain_share, 'launch', 'nav2.launch.py'])
 	slam_toolbox_launch = PathJoinSubstitution(
 		[FindPackageShare('slam_toolbox'), 'launch', 'online_async_launch.py']
@@ -31,9 +33,18 @@ def generate_launch_description():
 		DeclareLaunchArgument('navigation', default_value='true'),
 		DeclareLaunchArgument('rf2o', default_value='false'),
 		DeclareLaunchArgument(
-			'ekf_params_file',
-			default_value=PathJoinSubstitution([brain_share, 'config', 'ekf_params.yaml']),
-			description='EKF parameters file',
+			'global_params_file',
+			default_value='',
+			description='Path to optional global params file',
+		),
+		DeclareLaunchArgument(
+			'robot_config_file',
+			default_value=PathJoinSubstitution([
+				FindPackageShare('rmodus_description'),
+				'config',
+				'robot_config.yaml',
+			]),
+			description='Path to robot config file',
 		),
 		DeclareLaunchArgument(
 			'rf2o_params_file',
@@ -59,13 +70,13 @@ def generate_launch_description():
 			emulate_tty=True,
 		),
 
-		Node(
-			package='robot_localization',
-			executable='ekf_node',
-			name='ekf_filter_node',
-			parameters=[ekf_params, {'use_sim_time': use_sim_time}],
-			output='screen',
-			emulate_tty=True,
+		IncludeLaunchDescription(
+			PythonLaunchDescriptionSource(ekf_launch),
+			launch_arguments={
+				'use_sim_time': use_sim_time,
+				'robot_config_file': robot_config_file,
+				'global_params_file': global_params_file,
+			}.items(),
 		),
 
 		Node(

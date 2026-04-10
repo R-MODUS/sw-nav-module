@@ -9,7 +9,7 @@ from .utils.pwm_control import PWMControl
 
 class FanControlNode(Node):
     def __init__(self):
-        super().__init__('fan_control_node')
+        super().__init__('fan')
         
         self.sub = self.create_subscription(PiStatus, 'system/pi_status', self.status_cb, 10)
         

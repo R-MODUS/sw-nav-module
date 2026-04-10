@@ -3,11 +3,6 @@
 <robot xmlns:xacro='http://www.ros.org/wiki/xacro'
        xmlns:gz='http://gazebosim.org/schema'>
 
-<!-- PROPERTY -->
-<xacro:property name='imu_offset_z' value='0.015'/>
-<xacro:property name='imu_offset_x' value='0.056'/>
-<xacro:property name='imu_offset_y' value='0.020'/>
-
 <!-- IMU -->
 <link name='imu_mount'>
   <visual>
@@ -19,7 +14,7 @@
 <joint name='imu_joint' type='fixed'>
   <parent link='nav_module_mount'/>
   <child link='imu_mount'/>
-  <origin xyz='${imu_offset_x} ${imu_offset_y} ${imu_offset_z}' rpy='0 0 0'/>
+  <origin xyz='${imu_cfg["offset_x"]} ${imu_cfg["offset_y"]} ${imu_cfg["offset_z"]}' rpy='0 0 0'/>
 </joint>
 
 <gazebo>

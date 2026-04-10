@@ -29,15 +29,6 @@ fan_control_node:
     min_to_run: 0.25
     user_power: [0.0, 0.5, 1.0]
 
-robot_geometry:
-  ros__parameters:
-    lidar_offset_z: 0.2
-    lidar_offset_x: 0.005
-    imu_offset_z: 0.015
-    imu_offset_x: 0.056
-    imu_offset_y: 0.020
-    cliff_sensor_z: -0.02
-
 sharp_sensors_node:
   ros__parameters:
     v_points: [0.3, 0.4, 0.8, 1.2, 2.0, 2.5]

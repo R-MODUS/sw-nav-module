@@ -8,7 +8,7 @@ from adafruit_ads1x15.analog_in import AnalogIn
 
 class SharpSensorNode(Node):
     def __init__(self):
-        super().__init__('sharp_sensors_node')
+        super().__init__('cliff_sensors_node')
         
         # Inicializace I2C a ADS1115
         try:
@@ -34,6 +34,13 @@ class SharpSensorNode(Node):
             topic = f'range/sensor_{i}'
             self.pubs.append(self.create_publisher(Range, topic, 10))
 
+        self.v_points = self.declare_parameter(
+            'v_points', [0.3, 0.4, 0.8, 1.2, 2.0, 2.5]
+        ).get_parameter_value().double_array_value
+        self.d_points = self.declare_parameter(
+            'd_points', [0.20, 0.15, 0.08, 0.05, 0.03, 0.02]
+        ).get_parameter_value().double_array_value
+
         self.timer = self.create_timer(0.1, self.timer_callback)
     def voltage_to_distance(self, voltage):
         # Osetreni limitnich stavu podle grafu
@@ -46,7 +53,26 @@ class SharpSensorNode(Node):
         # Vzorec upraveny podle bodu v grafu: 2V -> cca 2cm, 0.4V -> 15cm
 	# 2 to 15 cm
         try:
-            # d = a * (V ^ b) - c
+            # Piecewise linear interpolation from calibration points.
+            if len(self.v_points) >= 2 and len(self.v_points) == len(self.d_points):
+                for i in range(len(self.v_points) - 1):
+                    v0 = float(self.v_points[i])
+                    v1 = float(self.v_points[i + 1])
+                    d0 = float(self.d_points[i])
+                    d1 = float(self.d_points[i + 1])
+                    if (v0 <= voltage <= v1) or (v1 <= voltage <= v0):
+                        if abs(v1 - v0) < 1e-9:
+                            return d0
+                        ratio = (voltage - v0) / (v1 - v0)
+                        return d0 + ratio * (d1 - d0)
+
+                if voltage <= min(self.v_points):
+                    idx = self.v_points.index(min(self.v_points))
+                    return float(self.d_points[idx])
+                idx = self.v_points.index(max(self.v_points))
+                return float(self.d_points[idx])
+
+            # Fallback approximation if calibration is invalid.
             distance_cm = 3.5 * pow(voltage, -0.75) + 0.0
             return distance_cm / 100.0 # Prevod na metry pro ROS 2
         except:

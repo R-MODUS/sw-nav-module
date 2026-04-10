@@ -17,7 +17,7 @@ class OpticalFlowTwistPublisher(Node):
                 ('spi_cs', 0),
                 ('deadzone', 3),
                 ('timer_period', 0.05),
-                ('sensor_frame', 'flow_sensor_link'),
+                ('frame_id', 'flow_sensor_link'),
                 ('z_height', 0.025), # Výška senzoru nad zemí v metrech
                 ('fov_deg', 42.0),    # Field of View senzoru
                 ('res_pix', 35),     # Rozlišení senzoru (standard pro PMW3901)
@@ -29,7 +29,7 @@ class OpticalFlowTwistPublisher(Node):
         cs = self.get_parameter('spi_cs').value
         self.deadzone = self.get_parameter('deadzone').value
         self.timer_period = self.get_parameter('timer_period').value
-        self.sensor_frame = self.get_parameter('sensor_frame').value
+        self.sensor_frame = self.get_parameter('frame_id').value
         
         # Parametry pro přepočet na metry
         self.z_height = self.get_parameter('z_height').value

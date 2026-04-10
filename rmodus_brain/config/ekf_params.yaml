@@ -19,6 +19,14 @@ ekf_filter_node:
     odom0_differential: false
     odom0_queue_size: 10
 
+    odom1: /odom_lidar
+    odom1_config: [true,  true,  false,   # X, Y (Lidar dává dobrou absolutní pozici)
+                  false, false, true,     # Yaw (Lidar dává dobrou orientaci)
+                  false, false, false,    # Rychlost u Lidaru často skáče, 
+                  false, false, false,    # proto ji raději nebrat, pokud máš Flow
+                  false, false, false]
+    odom1_differential: false
+
     imu0: /imu/data
     imu0_config: [false, false, false, # X, Y, Z pozice
                   true,  true,  true,  # Roll, Pitch, Yaw

@@ -15,6 +15,8 @@
 <xacro:property name="robot_cfg" value="${xacro.load_yaml('$(arg config_path)')}" />
 <xacro:property name="bumpers" value="${robot_cfg['/**']['ros__parameters']['bumpers']}" />
 <xacro:property name="cliff_sensors" value="${robot_cfg['/**']['ros__parameters']['cliff_sensors']}" />
+<xacro:property name="imu_cfg" value="${robot_cfg['/**']['ros__parameters']['imu']}" />
+<xacro:property name="lidar_cfg" value="${robot_cfg['/**']['ros__parameters']['lidar']}" />
 
 <!-- CONSTANTS -->
 <xacro:property name='base_mass' value='5'/>
@@ -31,13 +33,6 @@
 <xacro:property name='bumper_thickness' value='0.005'/>
 <xacro:property name='bumper_height'    value='0.04'/>
 <xacro:property name='bumper_mass'      value='0.01'/>
-
-<xacro:arg name='lidar_offset_z' default='0.2'/>
-<xacro:arg name='lidar_offset_x' default='0.005'/>
-<xacro:arg name='imu_offset_z'   default='0.015'/>
-<xacro:arg name='imu_offset_x'   default='0.056'/>
-<xacro:arg name='imu_offset_y'   default='0.020'/>
-<xacro:arg name='cliff_sensor_z' default='-0.02'/>
 
 <xacro:arg name='bumper_parent' default='base_link'/>
 
@@ -135,13 +130,13 @@
 <joint name='lidar_joint' type='fixed'>
   <parent link='nav_module_mount'/>
   <child link='lidar_beam'/>
-  <origin xyz='$(arg lidar_offset_x) 0 $(arg lidar_offset_z)' rpy='0 0 0'/>
+  <origin xyz='${lidar_cfg["offset_x"]} 0 ${lidar_cfg["offset_z"]}' rpy='0 0 0'/>
 </joint>
 
 <joint name='imu_joint' type='fixed'>
   <parent link='nav_module_mount'/>
   <child link='imu_mount'/>
-  <origin xyz='$(arg imu_offset_x) $(arg imu_offset_y) $(arg imu_offset_z)' rpy='0 0 0'/>
+  <origin xyz='${imu_cfg["offset_x"]} ${imu_cfg["offset_y"]} ${imu_cfg["offset_z"]}' rpy='0 0 0'/>
 </joint>
 
 </robot>

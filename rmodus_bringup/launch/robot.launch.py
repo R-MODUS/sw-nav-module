@@ -47,6 +47,7 @@ def generate_launch_description():
             PythonLaunchDescriptionSource(sim_launch),
             launch_arguments={
                 'global_params_file': user_params_file,
+                'structure_source': 'description',
             }.items(),
             condition=mode_is_sim,
         ),

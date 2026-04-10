@@ -15,9 +15,9 @@
 <gazebo reference='imu_mount'>
   <sensor name='imu_sensor' type='imu'>
     <always_on>1</always_on>
-    <update_rate>100</update_rate>
-    <visualize>false</visualize>
-    <topic>imu/data</topic>
+    <update_rate>${imu_cfg.get("update_rate", 100)}</update_rate>
+    <visualize>${str(imu_cfg.get("visualize", False)).lower()}</visualize>
+    <topic>${imu_cfg.get("topic", "/imu/data")}</topic>
     <imu>
       <angular_velocity>
         <x><noise type='gaussian'><mean>0.0</mean><stddev>1e-4</stddev></noise></x>

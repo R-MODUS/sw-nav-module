@@ -9,6 +9,8 @@
 
 <!-- ARGUMENTS -->
 <xacro:arg name='config_path' default='' />
+<xacro:arg name='structure_source' default='local' />
+<xacro:property name='structure_source' value='$(arg structure_source)'/>
 
 <!-- CONSTANTS used by sim-specific xacro (mesh paths) -->
 <xacro:property name='meshes_dir' value='rmodus_sim/meshes'/>
@@ -57,12 +59,22 @@
   </inertial>
 </xacro:macro>
 
-<!-- Include shared base components -->
-<xacro:include filename='$(find rmodus_description)/urdf/base.urdf.xacro'/>
-<xacro:include filename='$(find rmodus_description)/urdf/imu.urdf.xacro'/>
-<xacro:include filename='$(find rmodus_description)/urdf/lidar.urdf.xacro'/>
-<xacro:include filename='$(find rmodus_description)/urdf/bumpers.urdf.xacro'/>
-<xacro:include filename='$(find rmodus_description)/urdf/cliff_sensors.urdf.xacro'/>
+<!-- Structural components are switchable by source. -->
+<xacro:if value='${structure_source == "description"}'>
+  <xacro:include filename='$(find rmodus_description)/urdf/base.urdf.xacro'/>
+  <xacro:include filename='$(find rmodus_description)/urdf/imu.urdf.xacro'/>
+  <xacro:include filename='$(find rmodus_description)/urdf/lidar.urdf.xacro'/>
+  <xacro:include filename='$(find rmodus_description)/urdf/bumpers.urdf.xacro'/>
+  <xacro:include filename='$(find rmodus_description)/urdf/cliff_sensors.urdf.xacro'/>
+</xacro:if>
+
+<xacro:unless value='${structure_source == "description"}'>
+  <xacro:include filename='base.urdf.xacro'/>
+  <xacro:include filename='imu.urdf.xacro'/>
+  <xacro:include filename='lidar.urdf.xacro'/>
+  <xacro:include filename='bumpers.urdf.xacro'/>
+  <xacro:include filename='cliff_sensors.urdf.xacro'/>
+</xacro:unless>
 
 <!-- Sim-only: wheels with mesh visuals -->
 <xacro:include filename='wheels.urdf.xacro'/>

@@ -4,9 +4,8 @@ import tempfile
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import ExecuteProcess, SetEnvironmentVariable, DeclareLaunchArgument, OpaqueFunction
-from launch.substitutions import PathJoinSubstitution, Command, LaunchConfiguration
+from launch.substitutions import Command, LaunchConfiguration
 from launch_ros.actions import Node
-from launch_ros.substitutions import FindPackageShare
 from launch_ros.parameter_descriptions import ParameterValue
 
 def _deep_merge(base_obj, override_obj):
@@ -23,6 +22,7 @@ def _deep_merge(base_obj, override_obj):
 
 def _create_sim_actions(context):
     pkg_name = 'rmodus_sim'
+    structure_source = LaunchConfiguration('structure_source').perform(context)
     world = os.path.join(get_package_share_directory(pkg_name), 'worlds', 'my_world.world')
     sim_gui_config = os.path.join(get_package_share_directory(pkg_name), 'config', 'simulation.config')
     robot_xacro = os.path.join(get_package_share_directory(pkg_name), 'urdf', 'robot.urdf.xacro')
@@ -30,11 +30,18 @@ def _create_sim_actions(context):
     src_str = os.path.join(get_package_share_directory(pkg_name), '..')
     bridge_config_str = os.path.join(get_package_share_directory(pkg_name), 'config', 'bridge_parameters.yaml')
 
-    base_robot_config = os.path.join(
-        get_package_share_directory('rmodus_description'),
-        'config',
-        'robot_config.yaml',
-    )
+    if structure_source == 'description':
+        base_robot_config = os.path.join(
+            get_package_share_directory('rmodus_description'),
+            'config',
+            'robot_config.yaml',
+        )
+    else:
+        base_robot_config = os.path.join(
+            get_package_share_directory(pkg_name),
+            'config',
+            'robot_config.yaml',
+        )
     global_params_file = LaunchConfiguration('global_params_file').perform(context)
 
     final_robot_config = base_robot_config
@@ -87,7 +94,8 @@ def _create_sim_actions(context):
                 'robot_description': ParameterValue(
                     Command([
                         'xacro ', robot_xacro, ' ',
-                        'config_path:=', final_robot_config
+                        'config_path:=', final_robot_config, ' ',
+                        'structure_source:=', structure_source
                     ]),
                     value_type=str
                 )
@@ -117,6 +125,11 @@ def _create_sim_actions(context):
 def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument(
+            'structure_source',
+            default_value='local',
+            description='Robot structure source: local or description',
+        ),
+        DeclareLaunchArgument(
             'global_params_file',
             default_value='',
             description='Path to optional global params file',
@@ -137,10 +150,12 @@ def create_combined_bridge_config(static_yaml_path, robot_config_path):
     with open(robot_config_path, 'r') as f:
         robot_data = yaml.safe_load(f)
         params = robot_data.get('/**', {}).get('ros__parameters', {})
-        bumper_names = [b['name'] for b in params.get('bumpers', [])]
+        bumpers = [b for b in params.get('bumpers', []) if b.get('enabled', True)]
+        cliff_sensors = [c for c in params.get('cliff_sensors', []) if c.get('enabled', True)]
+        bumper_names = [b['name'] for b in bumpers]
 
     # 3. Přidání bumperů
-    for b in params.get('bumpers', []):
+    for b in bumpers:
         name = b['name']
         bridge_data.append({
             'ros_topic_name': f'/bumper/{name}/contact',
@@ -151,11 +166,11 @@ def create_combined_bridge_config(static_yaml_path, robot_config_path):
         })
 
     # 4. Přidání cliff senzorů
-    for c in params.get('cliff_sensors', []):
+    for c in cliff_sensors:
         name = c['name']
         bridge_data.append({
-            'ros_topic_name': f'/cliff/{name}',
-            'gz_topic_name': f'/cliff/{name}',
+            'ros_topic_name': c.get('topic', f'/cliff/{name}'),
+            'gz_topic_name': c.get('topic', f'/cliff/{name}'),
             'ros_type_name': 'sensor_msgs/msg/Range',
             'gz_type_name': 'gz.msgs.LaserScan',
             'direction': 'GZ_TO_ROS'

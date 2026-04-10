@@ -1,83 +1,39 @@
-<?xml version="1.0"?>
+<?xml version='1.0'?>
+<!-- Local sim bumper TF frames used when structure_source is local. -->
 
-<robot xmlns:xacro='http://www.ros.org/wiki/xacro'
-       xmlns:gz='http://gazebosim.org/schema'>
+<robot xmlns:xacro='http://www.ros.org/wiki/xacro'>
 
-<!-- PROPERTY -->
-<xacro:property name='bumper_mass'      value='0.01'/>
+<xacro:property name='bumper_mass' value='0.01'/>
 
-<!-- BUMPERS -->
-<gazebo>
-  <plugin filename="libgz-sim-contact-system.so" name="gz::sim::systems::Contact" />
-</gazebo>
-
-
-<xacro:macro name="render_bumper" params="b">
-
-  <!-- Bumper link -->
-  <link name="bumper_${b['name']}_link">
-    <xacro:box_inertia m="${bumper_mass}" x="${b['size'][0]}" y="${b['size'][1]}" z="${b['size'][2]}"/>
+<xacro:macro name='render_bumper' params='b'>
+  <link name='bumper_${b["name"]}_link'>
+    <xacro:box_inertia m='${bumper_mass}' x='${b["size"][0]}' y='${b["size"][1]}' z='${b["size"][2]}'/>
     <visual>
-      <origin xyz="${b['size'][0]/2} 0 0" rpy="0 0 0"/>
-      <geometry><box size="${b['size'][0]} ${b['size'][1]} ${b['size'][2]}"/></geometry>
-      <material name="red"/>
+      <origin xyz='${b["size"][0]/2} 0 0' rpy='0 0 0'/>
+      <geometry><box size='${b["size"][0]} ${b["size"][1]} ${b["size"][2]}'/></geometry>
+      <material name='red'/>
     </visual>
     <collision>
-      <origin xyz="${b['size'][0]/2} 0 0" rpy="0 0 0"/>
-      <geometry><box size="${b['size'][0]} ${b['size'][1]} ${b['size'][2]}"/></geometry>
+      <origin xyz='${b["size"][0]/2} 0 0' rpy='0 0 0'/>
+      <geometry><box size='${b["size"][0]} ${b["size"][1]} ${b["size"][2]}'/></geometry>
     </collision>
   </link>
 
-  <joint name="bumper_${b['name']}_joint" type="fixed">
-    <parent link="${b['parent_frame']}"/>
-    <child link="bumper_${b['name']}_link"/>
-    <origin xyz="${b['offset'][0]} ${b['offset'][1]} ${b['offset'][2]}" 
-            rpy="0 0 ${b['yaw']}"/>
+  <joint name='bumper_${b["name"]}_joint' type='fixed'>
+    <parent link='${b["parent_frame"]}'/>
+    <child link='bumper_${b["name"]}_link'/>
+    <origin xyz='${b["offset"][0]} ${b["offset"][1]} ${b["offset"][2]}' rpy='0 0 ${b["yaw"]}'/>
   </joint>
-
-  <gazebo reference="bumper_${b['name']}_joint">
-    <preserveFixedJoint>true</preserveFixedJoint>
-  </gazebo>
-
-  <gazebo reference="bumper_${b['name']}_link">
-    <sensor name="bumper_${b['name']}_sensor" type="contact">
-      <always_on>1</always_on>
-      <update_rate>30</update_rate>
-      <topic>/bumper/${b['name']}</topic>
-      <contact>
-        <collision>bumper_${b['name']}_link_collision</collision>
-      </contact>
-    </sensor>
-  </gazebo>
-
-  <!-- Contact frame -->
-  <link name="bumper_${b['name']}_contact_frame">
-    <inertial>
-      <mass value="0.001"/> <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/>
-    </inertial>
-  </link>
-
-  <joint name="bumper_${b['name']}_contact_joint" type="fixed">
-    <parent link="bumper_${b['name']}_link"/>
-    <child link="bumper_${b['name']}_contact_frame"/>
-    <origin xyz="${b['size'][0]} 0 0" rpy="0 0 0"/>
-  </joint>
-
-  <gazebo reference="bumper_${b['name']}_contact_joint">
-    <preserveFixedJoint>true</preserveFixedJoint>
-  </gazebo>
-
 </xacro:macro>
 
-<xacro:macro name="bumper_loop" params="items">
-  <xacro:if value="${items}">
-    <xacro:property name="current_b" value="${items.pop(0)}"/>
-    <xacro:render_bumper b="${current_b}" />
-    <xacro:bumper_loop items="${items}"/>
+<xacro:macro name='bumper_loop' params='items'>
+  <xacro:if value='${items}'>
+    <xacro:property name='current_b' value='${items.pop(0)}'/>
+    <xacro:render_bumper b='${current_b}'/>
+    <xacro:bumper_loop items='${items}'/>
   </xacro:if>
 </xacro:macro>
 
-<xacro:bumper_loop items="${list(bumpers)}"/>
-<!-- /BUMPERS -->
+<xacro:bumper_loop items='${list(bumpers)}'/>
 
 </robot>

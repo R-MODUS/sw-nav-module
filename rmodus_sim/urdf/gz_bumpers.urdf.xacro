@@ -12,6 +12,8 @@
 
 <xacro:macro name='gz_bumper_sensors' params='b'>
 
+  <xacro:if value='${b.get("enabled", True)}'>
+
   <gazebo reference='bumper_${b["name"]}_joint'>
     <preserveFixedJoint>true</preserveFixedJoint>
   </gazebo>
@@ -19,8 +21,8 @@
   <gazebo reference='bumper_${b["name"]}_link'>
     <sensor name='bumper_${b["name"]}_sensor' type='contact'>
       <always_on>1</always_on>
-      <update_rate>30</update_rate>
-      <topic>/bumper/${b["name"]}</topic>
+      <update_rate>${b.get("update_rate", 30)}</update_rate>
+      <topic>${b.get("topic", "/bumper/" + b["name"])}</topic>
       <contact>
         <collision>bumper_${b["name"]}_link_collision</collision>
       </contact>
@@ -44,6 +46,8 @@
   <gazebo reference='bumper_${b["name"]}_contact_joint'>
     <preserveFixedJoint>true</preserveFixedJoint>
   </gazebo>
+
+  </xacro:if>
 
 </xacro:macro>
 

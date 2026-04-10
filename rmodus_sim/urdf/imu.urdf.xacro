@@ -1,12 +1,11 @@
-<?xml version="1.0"?>
+<?xml version='1.0'?>
+<!-- Local sim IMU TF frame used when structure_source is local. -->
 
-<robot xmlns:xacro='http://www.ros.org/wiki/xacro'
-       xmlns:gz='http://gazebosim.org/schema'>
+<robot xmlns:xacro='http://www.ros.org/wiki/xacro'>
 
-<!-- IMU -->
 <link name='imu_mount'>
   <visual>
-    <geometry> <box size='0.02 0.02 0.01'/> </geometry>
+    <geometry><box size='0.02 0.02 0.01'/></geometry>
     <material name='red'/>
   </visual>
 </link>
@@ -16,30 +15,5 @@
   <child link='imu_mount'/>
   <origin xyz='${imu_cfg["offset_x"]} ${imu_cfg["offset_y"]} ${imu_cfg["offset_z"]}' rpy='0 0 0'/>
 </joint>
-
-<gazebo>
-  <plugin 
-    filename='libgz-sim-imu-system.so'
-    name='gz::sim::systems::Imu'>
-  </plugin>
-</gazebo>
-
-<gazebo reference='imu_mount'>
-  <sensor name='imu_sensor' type='imu'>
-    <always_on>1</always_on>
-    <update_rate>100</update_rate>
-    <visualize>false</visualize>
-    <topic>imu/data</topic>
-    <imu>
-      <angular_velocity>
-        <x><noise type='gaussian'><mean>0.0</mean><stddev>1e-4</stddev></noise></x>
-      </angular_velocity>
-      <linear_acceleration>
-        <x><noise type='gaussian'><mean>0.0</mean><stddev>1e-3</stddev></noise></x>
-      </linear_acceleration>
-    </imu>
-  </sensor>
-</gazebo>
-<!-- /IMU -->
 
 </robot>

@@ -16,23 +16,23 @@
 <gazebo reference='lidar_beam'>
   <sensor name='lidar' type='gpu_ray'>
     <always_on>1</always_on>
-    <visualize>false</visualize>
-    <update_rate>10</update_rate>
+    <visualize>${str(lidar_cfg.get("visualize", False)).lower()}</visualize>
+    <update_rate>${lidar_cfg.get("update_rate", 10)}</update_rate>
     <ray>
       <scan>
         <horizontal>
-          <samples>360</samples>
+          <samples>${max(1, int(round(lidar_cfg.get("fov", 360) / max(lidar_cfg.get("resolution", 1.0), 1e-6))))}</samples>
           <resolution>1.0</resolution>
-          <min_angle>0.0</min_angle>
-          <max_angle>${2*pi}</max_angle>
+          <min_angle>${lidar_cfg.get("angle_min", 0.0)}</min_angle>
+          <max_angle>${lidar_cfg.get("angle_max", 2 * pi)}</max_angle>
         </horizontal>
       </scan>
       <range>
-        <min>0.05</min>
-        <max>5.0</max>
+        <min>${lidar_cfg.get("range_min", 0.05)}</min>
+        <max>${lidar_cfg.get("range_max", 5.0)}</max>
       </range>
     </ray>
-    <topic>scan</topic>
+    <topic>${lidar_cfg.get("topic", "/scan")}</topic>
     <gz_frame_id>lidar_beam</gz_frame_id>
   </sensor>
 </gazebo>

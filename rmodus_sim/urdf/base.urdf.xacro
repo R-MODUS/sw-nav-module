@@ -1,50 +1,55 @@
-<?xml version="1.0"?>
+<?xml version='1.0'?>
+<!-- Local sim base structure used when structure_source is local. -->
 
-<robot xmlns:xacro='http://www.ros.org/wiki/xacro'
-       xmlns:gz='http://gazebosim.org/schema'>
+<robot xmlns:xacro='http://www.ros.org/wiki/xacro'>
 
-<!-- PROPERTY -->
-<xacro:property name='base_mass' value='5'/>
-<xacro:property name='base_size_x' value='0.3'/>
-<xacro:property name='base_size_y' value='0.3'/>
-<xacro:property name='base_size_z' value='0.1'/>
+<xacro:property name='base_mass'     value='${base_cfg["mass"]}'/>
+<xacro:property name='base_size_x'   value='${base_cfg["size"][0]}'/>
+<xacro:property name='base_size_y'   value='${base_cfg["size"][1]}'/>
+<xacro:property name='base_size_z'   value='${base_cfg["size"][2]}'/>
+<xacro:property name='base_offset_z' value='${base_cfg["offset_z"]}'/>
+<xacro:property name='nav_offset_x'  value='${base_cfg["nav_offset_x"]}'/>
+<xacro:property name='nav_offset_z'  value='${base_cfg["nav_offset_z"]}'/>
 
-<xacro:property name='base_offset_z' value='0.0973 '/> <!-- 0.0973 -->
-<xacro:property name='nav_offset_z' value='0'/>
-<xacro:property name='nav_offset_x' value='0.032'/>
-
-<!-- LINKS -->
-<link name='base_footprint'>
-</link>
+<link name='base_footprint'/>
 
 <link name='base_link'>
   <xacro:box_inertia m='${base_mass}' x='${base_size_x}' y='${base_size_y}' z='${base_size_z}'/>
   <visual>
-    <geometry>
-      <mesh filename='package://${meshes_dir}/base.obj' scale='${creo_scale} ${creo_scale} ${creo_scale}'/>
-    </geometry>
+    <xacro:if value='${use_mesh == "true"}'>
+      <geometry>
+        <mesh filename='package://${meshes_dir}/base.obj' scale='${mesh_scale} ${mesh_scale} ${mesh_scale}'/>
+      </geometry>
+    </xacro:if>
+    <xacro:unless value='${use_mesh == "true"}'>
+      <geometry><box size='${base_size_x} ${base_size_y} ${base_size_z}'/></geometry>
+    </xacro:unless>
     <material name='blue'/>
   </visual>
   <collision>
-    <geometry>
-      <box size='${base_size_x} ${base_size_y} ${base_size_z}'/>
-    </geometry>
+    <geometry><box size='${base_size_x} ${base_size_y} ${base_size_z}'/></geometry>
   </collision>
 </link>
 
 <link name='nav_module_mount'>
   <visual>
     <origin xyz='0 0 0' rpy='0 0 0'/>
-    <geometry> <mesh filename='package://${meshes_dir}/navigation.obj' scale='${creo_scale} ${creo_scale} ${creo_scale}'/> </geometry>
+    <xacro:if value='${use_mesh == "true"}'>
+      <geometry>
+        <mesh filename='package://${meshes_dir}/navigation.obj' scale='${mesh_scale} ${mesh_scale} ${mesh_scale}'/>
+      </geometry>
+    </xacro:if>
+    <xacro:unless value='${use_mesh == "true"}'>
+      <geometry><cylinder radius='0.01' length='0.04'/></geometry>
+    </xacro:unless>
     <material name='gray'/>
   </visual>
 </link>
 
-<!-- JOINTS -->
 <joint name='body_link_joint' type='fixed'>
-    <parent link='base_footprint' />
-    <child link='base_link' />
-    <origin xyz='0 0 ${base_offset_z}' rpy='0 0 0'/>
+  <parent link='base_footprint'/>
+  <child link='base_link'/>
+  <origin xyz='0 0 ${base_offset_z}' rpy='0 0 0'/>
 </joint>
 
 <joint name='nav_module_mount_joint' type='fixed'>

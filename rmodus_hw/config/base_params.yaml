@@ -42,3 +42,14 @@ sharp_sensors_node:
   ros__parameters:
     v_points: [0.3, 0.4, 0.8, 1.2, 2.0, 2.5]
     d_points: [0.20, 0.15, 0.08, 0.05, 0.03, 0.02]
+
+optical_flow_node:
+  ros__parameters:
+    spi_port: 0
+    spi_cs: 0
+    deadzone: 3
+    timer_period: 0.05
+    sensor_frame: 'flow_sensor_link'
+    z_height: 0.025
+    fov_deg: 42.0
+    res_pix: 35

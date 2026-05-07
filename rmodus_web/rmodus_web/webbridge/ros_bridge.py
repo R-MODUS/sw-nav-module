@@ -91,12 +91,12 @@ class WebBridgeNode(Node):
 
     def _create_static_sensor_subscriptions(self):
         self._register_sensor(
-            SensorDefinition("lidar", "scan", LIDAR_TOPIC, "Main lidar", "laser", "sensor_msgs/LaserScan"),
+            SensorDefinition("lidar", "scan", LIDAR_TOPIC, "Hlavní LiDAR", "laser", "sensor_msgs/LaserScan"),
             LaserScan,
             self.scan_callback,
         )
         self._register_sensor(
-            SensorDefinition("imu", "imu_data", IMU_TOPIC, "IMU", "imu_link", "sensor_msgs/Imu"),
+            SensorDefinition("imu", "imu_data", IMU_TOPIC, "IMU senzor", "imu_link", "sensor_msgs/Imu"),
             Imu,
             self.imu_callback,
         )

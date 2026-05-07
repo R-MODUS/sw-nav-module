@@ -26,14 +26,155 @@ body, html {
 
 .app-container { display: flex; height: 100vh; }
 
-/* SIDEBAR - Štíhlejší a elegantnější */
-.sidebar {
-    width: 220px; background: var(--sidebar);
+/* Levý panel: obal + skládání */
+.sidebar-shell {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    min-width: 220px;
+    width: 220px;
+    transition: min-width 0.22s ease, width 0.22s ease;
     border-right: 1px solid var(--border);
-    display: flex; flex-direction: column;
+    background: var(--sidebar);
 }
 
-.sidebar-header { padding: 40px 20px; font-weight: bold; color: var(--accent); }
+.app-container.sidebar-collapsed .sidebar-shell {
+    position: relative;
+    min-width: 10px;
+    width: 10px;
+    overflow: hidden;
+    box-shadow: inset -1px 0 0 rgba(0, 212, 255, 0.22);
+}
+
+.sidebar-rail-expand {
+    display: none;
+    flex: 1;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: transparent;
+    color: rgba(226, 232, 240, 0.16);
+    font-size: 0.92rem;
+    font-weight: 300;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    cursor: pointer;
+    transition: color 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+    opacity: 0.55;
+}
+
+.app-container.sidebar-collapsed .sidebar-rail-expand {
+    display: flex;
+    position: absolute;
+    inset: 0;
+    flex: none;
+    min-height: 0;
+    font-size: 0;
+    color: transparent;
+    opacity: 1;
+}
+
+/* Dvojitá šipka vpravo — označení, že jde panel vysunout */
+.app-container.sidebar-collapsed .sidebar-rail-expand::before,
+.app-container.sidebar-collapsed .sidebar-rail-expand::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 0;
+    height: 0;
+    margin-top: -5px;
+    border-style: solid;
+    border-width: 5px 0 5px 5px;
+    border-color: transparent transparent transparent rgba(0, 212, 255, 0.35);
+    transition: border-color 0.2s ease, filter 0.2s ease;
+    pointer-events: none;
+}
+
+.app-container.sidebar-collapsed .sidebar-rail-expand::before {
+    left: calc(50% - 4px);
+}
+
+.app-container.sidebar-collapsed .sidebar-rail-expand::after {
+    left: calc(50% - 1px);
+    border-left-color: rgba(0, 212, 255, 0.88);
+    filter: drop-shadow(0 0 5px rgba(0, 212, 255, 0.45));
+}
+
+.app-container.sidebar-collapsed .sidebar-rail-expand:hover::before,
+.app-container.sidebar-collapsed .sidebar-rail-expand:focus-visible::before {
+    border-left-color: rgba(0, 212, 255, 0.75);
+}
+
+.app-container.sidebar-collapsed .sidebar-rail-expand:hover::after,
+.app-container.sidebar-collapsed .sidebar-rail-expand:focus-visible::after {
+    border-left-color: #5cefff;
+    filter: drop-shadow(0 0 8px rgba(0, 212, 255, 0.65));
+}
+
+.app-container.sidebar-collapsed .sidebar {
+    display: none;
+}
+
+.sidebar-rail-expand:hover,
+.sidebar-rail-expand:focus-visible {
+    color: rgba(226, 232, 240, 0.45);
+    background: transparent;
+    opacity: 1;
+}
+
+.sidebar-rail-expand:focus-visible {
+    outline: 1px solid rgba(0, 212, 255, 0.2);
+    outline-offset: -2px;
+}
+
+/* SIDEBAR */
+.sidebar {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 32px 16px 24px;
+    font-weight: bold;
+}
+
+.sidebar-header .logo {
+    flex: 1;
+    min-width: 0;
+    color: var(--accent);
+}
+
+.sidebar-header-collapse {
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #1a202c;
+    color: #94a3b8;
+    font-size: 1.15rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+}
+
+.sidebar-header-collapse:hover,
+.sidebar-header-collapse:focus-visible {
+    color: var(--accent);
+    border-color: rgba(0, 212, 255, 0.35);
+}
 
 .nav-links { list-style: none; padding: 0; flex-grow: 1; }
 
@@ -170,18 +311,14 @@ body, html {
     border-radius: 10px; max-height: 70vh;
 }
 
-/* TERMINÁL */
-.terminal-container { width: 100%; max-width: 900px; }
-
-#log {
-    background: #000; color: #00ff00; height: 50vh;
-    padding: 20px; overflow-y: scroll; text-align: left;
-    border-radius: 10px; border: 1px solid var(--border);
+input {
+    flex-grow: 1;
+    background: #111;
+    border: 1px solid var(--border);
+    color: white;
+    padding: 15px;
+    border-radius: 5px;
 }
-
-.input-row { display: flex; gap: 10px; margin-top: 20px; }
-
-input { flex-grow: 1; background: #111; border: 1px solid var(--border); color: white; padding: 15px; border-radius: 5px; }
 
 button { background: var(--accent); color: black; border: none; padding: 15px 30px; font-weight: bold; border-radius: 5px; cursor: pointer; }
 
@@ -278,9 +415,17 @@ button { background: var(--accent); color: black; border: none; padding: 15px 30
 .sensors-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: center;
     gap: 24px;
     margin-bottom: 28px;
+}
+
+.sensors-main-title {
+    margin: 0;
+    font-size: 1.55rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text);
 }
 
 .page-eyebrow {
@@ -346,6 +491,10 @@ button { background: var(--accent); color: black; border: none; padding: 15px 30
     min-height: 0;
 }
 
+.sensor-card-visual .card-title-row {
+    align-items: center;
+}
+
 .sensor-card-detail {
     grid-column: 1 / span 2;
 }
@@ -365,6 +514,14 @@ button { background: var(--accent); color: black; border: none; padding: 15px 30
 .card-title-row p {
     margin: 0;
     color: #94a3b8;
+}
+
+.card-title-row .sensor-tf-lead {
+    margin: 0;
+    max-width: 520px;
+    font-size: 1.18rem;
+    line-height: 1.45;
+    color: #cbd5e1;
 }
 
 .sensor-badge {
@@ -443,7 +600,6 @@ button { background: var(--accent); color: black; border: none; padding: 15px 30
 
 .sensor-group h3 {
     margin: 0 0 10px;
-    text-transform: capitalize;
 }
 
 .sensor-group-buttons {
@@ -587,9 +743,9 @@ button { background: var(--accent); color: black; border: none; padding: 15px 30
     overflow: hidden;
 }
 
-.map-controls-left,
-.map-controls-right {
+.map-controls-left {
     width: 200px;
+    flex-shrink: 0;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -747,5 +903,4 @@ button { background: var(--accent); color: black; border: none; padding: 15px 30
 
 .coordinates strong {
     color: var(--orange);
-}
 }

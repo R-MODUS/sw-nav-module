@@ -1,17 +1,13 @@
 <div class="sensors-page">
     <div class="sensors-header">
-        <div>
-            <p class="page-eyebrow">Sensors</p>
-            <h1>Sensor diagnostics</h1>
-            <p class="page-subtitle">Inspect the robot TF layout and verify live sensor outputs from one place.</p>
-        </div>
+        <h1 class="sensors-main-title">Senzory</h1>
         <div class="sensor-summary" id="sensor-summary">
             <div class="sensor-summary-item">
-                <span class="summary-label">TF frames</span>
+                <span class="summary-label">TF rámy</span>
                 <strong id="tf-frame-count">0</strong>
             </div>
             <div class="sensor-summary-item">
-                <span class="summary-label">Sensors</span>
+                <span class="summary-label">Senzory</span>
                 <strong id="sensor-count">0</strong>
             </div>
         </div>
@@ -21,50 +17,49 @@
         <section class="sensor-card sensor-card-visual">
             <div class="card-title-row">
                 <div>
-                    <h2>Robot top view</h2>
-                    <p>2D TF overview for sensor placement checks.</p>
+                    <p class="sensor-tf-lead">2D přehled TF pro kontrolu umístění senzorů.</p>
                 </div>
                 <span class="sensor-badge" id="tf-root-frame">base_link</span>
             </div>
             <div class="tf-controls">
                 <label class="tf-control-item tf-control-check" for="tf-show-labels">
                     <input type="checkbox" id="tf-show-labels" />
-                    <span>Show TF labels</span>
+                    <span>Zobrazit popisky TF</span>
                 </label>
                 <label class="tf-control-item" for="tf-zoom">
-                    <span>Zoom</span>
+                    <span>Přiblížení</span>
                     <input type="range" id="tf-zoom" min="0.8" max="5.0" step="0.1" value="4.0" />
-                    <strong id="tf-zoom-value">1.4x</strong>
+                    <strong id="tf-zoom-value">1.4×</strong>
                 </label>
             </div>
             <canvas id="robotTfCanvas" width="640" height="520"></canvas>
-            <div class="sensor-card-footer" id="tf-status">Waiting for TF data...</div>
+            <div class="sensor-card-footer" id="tf-status">Čekání na data TF...</div>
         </section>
 
         <section class="sensor-card sensor-card-panel">
             <div class="card-title-row">
                 <div>
-                    <h2>Sensor selection</h2>
-                    <p>Choose a sensor to inspect its latest live output.</p>
+                    <h2>Výběr senzoru</h2>
+                    <p>Vyberte senzor a zobrazí se jeho aktuální výstup.</p>
                 </div>
             </div>
             <div id="sensor-selector" class="sensor-selector"></div>
-            <div class="sensor-selection-empty" id="sensor-selection-empty">No sensor catalog received yet.</div>
+            <div class="sensor-selection-empty" id="sensor-selection-empty">Zatím nebyl přijat katalog senzorů.</div>
         </section>
 
         <section class="sensor-card sensor-card-detail">
             <div class="card-title-row">
                 <div>
-                    <h2 id="sensor-detail-title">Sensor output</h2>
-                    <p id="sensor-detail-subtitle">Select a sensor from the list above.</p>
+                    <h2 id="sensor-detail-title">Výstup senzoru</h2>
+                    <p id="sensor-detail-subtitle">Vyberte senzor ze seznamu výše.</p>
                 </div>
-                <span class="sensor-badge" id="sensor-detail-type">none</span>
+                <span class="sensor-badge" id="sensor-detail-type">—</span>
             </div>
             <div class="sensor-detail-canvas-wrap">
                 <canvas id="sensorDetailCanvas" width="640" height="300"></canvas>
             </div>
             <div class="sensor-metrics" id="sensor-metrics"></div>
-            <pre class="sensor-raw-output" id="sensor-raw-output">No sensor selected.</pre>
+            <pre class="sensor-raw-output" id="sensor-raw-output">Není vybrán žádný senzor.</pre>
         </section>
     </div>
 </div>

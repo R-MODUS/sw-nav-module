@@ -5,12 +5,13 @@
       mass: 5.0
       size: [0.5, 0.5, 0.1] # x, y, z
       offset_z: 0.0973
-      nav_offset_x: 0.032
-      nav_offset_z: 0.0
 
     nav_module:
+      mass: 2.0
+      size: [0.25, 0.25, 0.05]
       offset_x: 0.032
-      offset_z: 0.0
+      offset_y: 0.0
+      offset_z: 0.02
 
     wheel_odom:
       enabled: true
@@ -31,6 +32,7 @@
       offset_x: 0.056
       offset_y: 0.020
       offset_z: 0.015
+      parent_frame: 'nav_module'
 
     lidar:
       enabled: true

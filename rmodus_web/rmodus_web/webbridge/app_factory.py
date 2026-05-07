@@ -1,6 +1,7 @@
 """Builds the FastAPI app, websocket endpoint, and ROS lifecycle wiring."""
 
 import asyncio
+import json
 import threading
 from contextlib import asynccontextmanager
 from typing import Optional
@@ -8,7 +9,7 @@ from typing import Optional
 import rclpy
 import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from rmodus_web.webbridge.config import (
@@ -20,6 +21,7 @@ from rmodus_web.webbridge.config import (
     PORT,
     STATIC_DIR,
     TESTING,
+    WEB_UI_NAV_TABS,
 )
 from rmodus_web.webbridge.connection_manager import ConnectionManager
 from rmodus_web.webbridge.message_dispatcher import MessageDispatcher
@@ -67,7 +69,14 @@ def create_app() -> FastAPI:
 
     @app.get("/")
     async def get_index():
-        return FileResponse(INDEX_HTML)
+        html = INDEX_HTML.read_text(encoding="utf-8")
+        ui_config = json.dumps({"nav_tabs": WEB_UI_NAV_TABS})
+        inject = f'<script>window.__RMODUS_UI_CONFIG__ = {ui_config};</script>\n    '
+        marker = '<script src="static/js/app.js"></script>'
+        if marker not in html:
+            return FileResponse(INDEX_HTML)
+        html = html.replace(marker, inject + marker, 1)
+        return HTMLResponse(html)
 
     @app.get("/favicon.ico", include_in_schema=False)
     async def favicon():

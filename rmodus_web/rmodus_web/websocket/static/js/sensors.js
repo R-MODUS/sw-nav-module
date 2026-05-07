@@ -1,4 +1,48 @@
 (() => {
+    const SENSOR_TYPE_LABELS = {
+        lidar: 'LiDAR',
+        imu: 'IMU',
+        bumper: 'Nárazník',
+        cliff: 'Propast',
+        optical_flow: 'Optický tok',
+    };
+
+    /** Popisky běžných polí ROS zpráv v metrikách (neznámé klíče zůstanou jak jsou). */
+    const METRIC_FIELD_LABELS = {
+        angle_min: 'Úhel min.',
+        angle_max: 'Úhel max.',
+        angle_increment: 'Krok úhlu',
+        time_increment: 'Krok času',
+        scan_time: 'Doba skenu',
+        range_min: 'Dosah min.',
+        range_max: 'Dosah max.',
+        max_range: 'Max. dosah',
+        ranges: 'Vzdálenosti',
+        intensities: 'Intenzity',
+        linear_acceleration_x: 'Zrychlení x',
+        linear_acceleration_y: 'Zrychlení y',
+        linear_acceleration_z: 'Zrychlení z',
+        angular_velocity_x: 'Úhlová rychlost x',
+        angular_velocity_y: 'Úhlová rychlost y',
+        angular_velocity_z: 'Úhlová rychlost z',
+        yaw: 'Natáčení (yaw)',
+        contact: 'Kontakt',
+        normalized_range: 'Normalizovaný dosah',
+        vx: 'Rychlost x',
+        vy: 'Rychlost y',
+    };
+
+    function sensorTypeDisplayName(sensorType) {
+        if (!sensorType) {
+            return '—';
+        }
+        return SENSOR_TYPE_LABELS[sensorType] || String(sensorType).replace(/_/g, ' ');
+    }
+
+    function metricFieldLabel(key) {
+        return METRIC_FIELD_LABELS[key] || key;
+    }
+
     const state = {
         catalog: [],
         frames: [],
@@ -52,10 +96,10 @@
             return Number.isInteger(value) ? String(value) : value.toFixed(3);
         }
         if (typeof value === 'boolean') {
-            return value ? 'true' : 'false';
+            return value ? 'ano' : 'ne';
         }
         if (Array.isArray(value)) {
-            return `${value.length} items`;
+            return `${value.length} položek`;
         }
         if (value && typeof value === 'object') {
             return JSON.stringify(value);
@@ -101,7 +145,7 @@
         if (!payload || !Array.isArray(payload.ranges)) {
             ctx.fillStyle = '#94a3b8';
             ctx.font = '14px Inter, system-ui, sans-serif';
-            ctx.fillText('No lidar data received yet.', 20, 30);
+            ctx.fillText('LiDAR data zatím nepřišla.', 20, 30);
             return;
         }
 
@@ -129,7 +173,7 @@
         ctx.fillStyle = '#94a3b8';
         ctx.font = '14px Inter, system-ui, sans-serif';
         if (!payload) {
-            ctx.fillText('No IMU data received yet.', 20, 30);
+            ctx.fillText('Údaje IMU zatím nepřišly.', 20, 30);
             return;
         }
 
@@ -153,9 +197,9 @@
         ctx.stroke();
 
         const bars = [
-            ['gyro z', payload.angular_velocity_z || 0, '#ff9500'],
-            ['acc x', payload.linear_acceleration_x || 0, '#22c55e'],
-            ['acc y', payload.linear_acceleration_y || 0, '#38bdf8'],
+            ['Úhlová z', payload.angular_velocity_z || 0, '#ff9500'],
+            ['Zrychlení x', payload.linear_acceleration_x || 0, '#22c55e'],
+            ['Zrychlení y', payload.linear_acceleration_y || 0, '#38bdf8'],
         ];
 
         bars.forEach(([label, value, color], index) => {
@@ -183,7 +227,7 @@
         metrics.innerHTML = '';
 
         if (!sensor || !payload) {
-            metrics.innerHTML = '<div class="sensor-metric-empty">No data available for the selected sensor yet.</div>';
+            metrics.innerHTML = '<div class="sensor-metric-empty">Pro vybraný senzor zatím nejsou k dispozici žádná data.</div>';
             return;
         }
 
@@ -193,7 +237,7 @@
             }
             const metric = document.createElement('div');
             metric.className = 'sensor-metric';
-            metric.innerHTML = `<span>${key}</span><strong>${formatValue(value)}</strong>`;
+            metric.innerHTML = `<span>${metricFieldLabel(key)}</span><strong>${formatValue(value)}</strong>`;
             metrics.appendChild(metric);
         });
     }
@@ -211,10 +255,10 @@
         }
 
         if (!sensor) {
-            title.textContent = 'Sensor output';
-            subtitle.textContent = 'Select a sensor from the list above.';
-            badge.textContent = 'none';
-            rawOutput.textContent = 'No sensor selected.';
+            title.textContent = 'Výstup senzoru';
+            subtitle.textContent = 'Vyberte senzor ze seznamu výše.';
+            badge.textContent = '—';
+            rawOutput.textContent = 'Není vybrán žádný senzor.';
             renderMetrics(null, null);
             drawLidarPreview(canvas, null);
             return;
@@ -224,9 +268,9 @@
         const payload = state.latestByKey[key] || null;
 
         title.textContent = sensor.label;
-        subtitle.textContent = `${sensor.topic}${sensor.frame_id ? ` | frame ${sensor.frame_id}` : ''}`;
-        badge.textContent = sensor.sensor_type;
-        rawOutput.textContent = payload ? JSON.stringify(payload, null, 2) : 'Waiting for first message...';
+        subtitle.textContent = `${sensor.topic}${sensor.frame_id ? ` · rám ${sensor.frame_id}` : ''}`;
+        badge.textContent = sensorTypeDisplayName(sensor.sensor_type);
+        rawOutput.textContent = payload ? JSON.stringify(payload, null, 2) : 'Čekání na první zprávu…';
         renderMetrics(sensor, payload);
 
         if (sensor.sensor_type === 'lidar') {
@@ -245,7 +289,7 @@
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = '#94a3b8';
         ctx.font = '14px Inter, system-ui, sans-serif';
-        ctx.fillText('Detailed chart is not defined for this sensor type yet.', 20, 30);
+        ctx.fillText('Pro tento typ senzoru není definovaný grafický náhled.', 20, 30);
         if (payload && sensor.sensor_type === 'bumper') {
             ctx.fillStyle = payload.contact ? '#ef4444' : '#22c55e';
             ctx.beginPath();
@@ -253,7 +297,7 @@
             ctx.fill();
             ctx.fillStyle = '#fff';
             ctx.font = 'bold 18px Inter, system-ui, sans-serif';
-            ctx.fillText(payload.contact ? 'CONTACT DETECTED' : 'NO CONTACT', 40, 108);
+            ctx.fillText(payload.contact ? 'KONTAKT' : 'BEZ KONTAKTU', 40, 108);
         }
         if (payload && sensor.sensor_type === 'cliff') {
             const normalized = Math.max(0, Math.min(1, payload.normalized_range ?? 0));
@@ -302,7 +346,7 @@
             const group = document.createElement('div');
             group.className = 'sensor-group';
             const title = document.createElement('h3');
-            title.textContent = sensorType.replace('_', ' ');
+            title.textContent = sensorTypeDisplayName(sensorType);
             group.appendChild(title);
 
             const buttons = document.createElement('div');
@@ -338,7 +382,8 @@
             frameCount.textContent = String(state.frames.length);
         }
         if (tfStatus) {
-            tfStatus.textContent = state.frames.length > 0 ? 'Live TF snapshot received.' : 'Waiting for TF data...';
+            tfStatus.textContent =
+                state.frames.length > 0 ? 'Živý přehled TF je k dispozici.' : 'Čekání na data TF…';
         }
         if (rootBadge) {
             rootBadge.textContent = state.rootFrame;
@@ -373,14 +418,14 @@
             if (zoomInput) {
                 const zoom = Number.parseFloat(zoomInput.value || '1.0');
                 state.robotView.setZoom(zoom);
-                if (zoomValue) {
-                    zoomValue.textContent = `${zoom.toFixed(1)}x`;
-                }
+                    if (zoomValue) {
+                        zoomValue.textContent = `${zoom.toFixed(1)}×`;
+                    }
                 zoomInput.oninput = () => {
                     const currentZoom = Number.parseFloat(zoomInput.value || '1.0');
                     state.robotView.setZoom(currentZoom);
                     if (zoomValue) {
-                        zoomValue.textContent = `${currentZoom.toFixed(1)}x`;
+                        zoomValue.textContent = `${currentZoom.toFixed(1)}×`;
                     }
                 };
             }

@@ -3,21 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Robot OS - Modular</title>
+    <title>R-MODUS</title>
     <link rel="stylesheet" href="static/css/style.css">
 </head>
 <body>
-    <div class="app-container">
-        <nav class="sidebar">
-            <div class="sidebar-header"><span class="logo">🤖 Robot OS</span></div>
+    <div class="app-container" id="app-root">
+        <aside class="sidebar-shell" aria-label="Hlavní navigace">
+            <button type="button" class="sidebar-rail-expand" id="sidebar-expand-btn" aria-label="Zobrazit nabídku" title="Zobrazit nabídku"></button>
+            <nav class="sidebar">
+            <div class="sidebar-header">
+                <span class="logo">R-MODUS</span>
+                <button type="button" class="sidebar-header-collapse" id="sidebar-collapse-btn" aria-label="Skrýt nabídku" title="Skrýt nabídku">‹</button>
+            </div>
             <ul class="nav-links">
                 <li onclick="window.loadPage('status')" id="nav-status">📊 Status</li>
                 <li onclick="window.loadPage('controls')" id="nav-controls">🕹️ Ovládání</li>
                 <li onclick="window.loadPage('map')" id="nav-map">🗺️ Mapa</li>
-                <li onclick="window.loadPage('sensors')" id="nav-sensors">🧭 Sensors</li>
-                <li onclick="window.loadPage('terminal')" id="nav-terminal">📟 Terminál</li>
+                <li onclick="window.loadPage('sensors')" id="nav-sensors">🧭 Senzory</li>
+
+
                 <li onclick="window.loadPage('docs')" id="nav-docs">📄 Manuál</li>
-                <li onclick="window.loadPage('config')" id="nav-config">⚙️ Konfig</li>
+                <li onclick="window.loadPage('config')" id="nav-config">⚙️ Konfigurace</li>
             </ul>
             <div class="sidebar-footer">
                 <ul class="nav-links-bottom">
@@ -25,7 +31,8 @@
                 </ul>
                 <p id="conn">❌ Odpojeno</p>
             </div>
-        </nav>
+            </nav>
+        </aside>
 
         <main id="main-content" class="main-view">
             <!-- Obsah se načítá dynamicky zde -->

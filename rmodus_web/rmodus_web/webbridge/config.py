@@ -26,3 +26,15 @@ MAP_TOPIC = "/map"
 MAP_UPDATES_TOPIC = "/map_updates"
 PLAN_TOPIC = "/received_global_plan"
 GOAL_POSE_TOPIC = "/goal_pose"
+
+# Viditelnost záložek v levém menu (True = zobrazit, False = skrýt).
+# Klíče odpovídají id položek navigace (nav-<klíč>).
+WEB_UI_NAV_TABS = {
+    "status": True,
+    "controls": True,
+    "map": True,
+    "sensors": True,
+    "docs": True,
+    "config": True,
+    "users": True,
+}

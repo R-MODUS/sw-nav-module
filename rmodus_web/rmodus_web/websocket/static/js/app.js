@@ -8,12 +8,75 @@ let wsConnectTimer = null;
 const WS_RECONNECT_DELAY_MS = 2000;
 const WS_CONNECT_TIMEOUT_MS = 7000;
 
+const NAV_TAB_ORDER = ['status', 'controls', 'map', 'sensors', 'docs', 'config', 'users'];
+const SIDEBAR_COLLAPSED_KEY = 'rmodus_sidebar_collapsed';
+
+function getUiNavTabs() {
+    const cfg = typeof window.__RMODUS_UI_CONFIG__ === 'object' && window.__RMODUS_UI_CONFIG__
+        ? window.__RMODUS_UI_CONFIG__.nav_tabs
+        : null;
+    return cfg && typeof cfg === 'object' ? cfg : {};
+}
+
+function applyNavTabsVisibility() {
+    const tabs = getUiNavTabs();
+    NAV_TAB_ORDER.forEach((key) => {
+        const el = document.getElementById(`nav-${key}`);
+        if (!el) return;
+        el.style.display = tabs[key] === false ? 'none' : '';
+    });
+}
+
+function getInitialPageName() {
+    const tabs = getUiNavTabs();
+    const chosen = NAV_TAB_ORDER.find((k) => tabs[k] !== false);
+    return chosen || 'status';
+}
+
+function applySidebarCollapsed(collapsed) {
+    const root = document.getElementById('app-root');
+    if (root) {
+        root.classList.toggle('sidebar-collapsed', collapsed);
+    }
+    try {
+        localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? '1' : '0');
+    } catch (_e) {
+        /* nepřístupné localStorage např. v privátním režimu */
+    }
+}
+
+function initSidebarRail() {
+    const expandBtn = document.getElementById('sidebar-expand-btn');
+    const collapseBtn = document.getElementById('sidebar-collapse-btn');
+    let collapsed = false;
+    try {
+        collapsed = localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1';
+    } catch (_e) {
+        collapsed = false;
+    }
+    applySidebarCollapsed(collapsed);
+    collapseBtn?.addEventListener('click', () => applySidebarCollapsed(true));
+    expandBtn?.addEventListener('click', () => applySidebarCollapsed(false));
+}
+
 /* === HLAVNÍ LOGIKA APLIKACE === */
 
 // Načítání stránek (SPA - Single Page Application)
 window.loadPage = async function(pageName) {
     // Nenačítat znovu, pokud je již aktivní
     if (pageName === activePage) return;
+
+    const tabs = getUiNavTabs();
+    const anyNavEnabled = NAV_TAB_ORDER.some((k) => tabs[k] !== false);
+    const navEl = document.getElementById(`nav-${pageName}`);
+    const navHidden = !!(navEl && navEl.style.display === 'none');
+    const forbidden = tabs[pageName] === false || navHidden;
+    if (forbidden && anyNavEnabled) {
+        const fallback = getInitialPageName();
+        if (fallback !== pageName) {
+            return window.loadPage(fallback);
+        }
+    }
 
     try {
         const response = await fetch(`static/pages/${pageName}.html`);
@@ -63,10 +126,11 @@ window.loadPage = async function(pageName) {
 
 /* === INICIALIZACE PO NAČTENÍ STRÁNKY === */
 function bootstrapApp() {
+    applyNavTabsVisibility();
+    initSidebarRail();
     initWebSocket();
     updateUI();
-    // Načtení výchozí stránky
-    window.loadPage('status');
+    window.loadPage(getInitialPageName());
 }
 
 if (document.readyState === 'loading') {

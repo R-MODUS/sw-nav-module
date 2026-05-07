@@ -1,0 +1,131 @@
+/**:
+  ros__parameters:
+
+    base_link:
+      mass: 5.0
+      size: [0.5, 0.5, 0.1]
+      offset_z: 0.0973
+      nav_offset_x: 0.032
+      nav_offset_z: 0.0
+
+    nav_module:
+      offset_x: 0.032
+      offset_z: 0.0
+
+    imu:
+      enabled: true
+      type: 'imu'
+      name: 'imu'
+      topic: '/imu/data'
+      update_rate: 100
+      visualize: false
+      frame_id: 'imu_link'
+      offset_x: 0.056
+      offset_y: 0.020
+      offset_z: 0.015
+
+    lidar:
+      enabled: true
+      name: 'lidar'
+      topic: '/scan'
+      update_rate: 10
+      visualize: false
+      frame_id: 'lidar_link'
+      angle_min: 0.0
+      angle_max: 6.28319
+      range_min: 0.1
+      range_max: 10.0
+      fov: 360
+      resolution: 1.0
+      offset_x: 0.005
+      offset_z: 0.2
+
+    bumpers:
+      - name: 'front'
+        enabled: true
+        inverted: false
+        update_rate: 30
+        size: [0.02, 0.30, 0.05]
+        offset: [0.30, 0.0, 0.0]
+        yaw: 0.0
+        parent_frame: 'base_link'
+
+      - name: 'rear'
+        enabled: true
+        inverted: false
+        update_rate: 30
+        size: [0.02, 0.30, 0.05]
+        offset: [-0.30, 0.0, 0.0]
+        yaw: 3.14159
+        parent_frame: 'base_link'
+
+      - name: 'left'
+        enabled: true
+        inverted: false
+        update_rate: 30
+        size: [0.02, 0.20, 0.05]
+        offset: [0.0, 0.30, 0.0]
+        yaw: 1.5708
+        parent_frame: 'base_link'
+
+      - name: 'right'
+        enabled: true
+        inverted: false
+        update_rate: 30
+        size: [0.02, 0.20, 0.05]
+        offset: [0.0, -0.30, 0.0]
+        yaw: -1.5708
+        parent_frame: 'base_link'
+
+    cliff_sensors:
+      - name: 'fl'
+        enabled: true
+        topic: '/cliff/fl'
+        update_rate: 20
+        visualize: true
+        range_min: 0.01
+        range_max: 0.5
+        range_resolution: 0.001
+        size: [0.02, 0.02, 0.02]
+        offset: [0.25, 0.20, 0.0]
+        yaw: 0.0
+        parent_frame: 'base_link'
+
+      - name: 'fr'
+        enabled: true
+        topic: '/cliff/fr'
+        update_rate: 20
+        visualize: true
+        range_min: 0.01
+        range_max: 0.5
+        range_resolution: 0.001
+        size: [0.02, 0.02, 0.02]
+        offset: [0.25, -0.20, 0.0]
+        yaw: 0.0
+        parent_frame: 'base_link'
+
+      - name: 'rl'
+        enabled: true
+        topic: '/cliff/rl'
+        update_rate: 20
+        visualize: true
+        range_min: 0.01
+        range_max: 0.5
+        range_resolution: 0.001
+        size: [0.02, 0.02, 0.02]
+        offset: [-0.25, 0.20, 0.0]
+        yaw: 3.14159
+        parent_frame: 'base_link'
+
+      - name: 'rr'
+        enabled: true
+        topic: '/cliff/rr'
+        update_rate: 20
+        visualize: true
+        range_min: 0.01
+        range_max: 0.5
+        range_resolution: 0.001
+        size: [0.02, 0.02, 0.02]
+        offset: [-0.25, -0.20, 0.0]
+        yaw: 3.14159
+        parent_frame: 'base_link'

@@ -11,7 +11,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from rmodus_brain.webbridge.config import (
+from rmodus_web.webbridge.config import (
     ADMIN_PIN,
     HOST,
     INDEX_HTML,
@@ -21,10 +21,10 @@ from rmodus_brain.webbridge.config import (
     STATIC_DIR,
     TESTING,
 )
-from rmodus_brain.webbridge.connection_manager import ConnectionManager
-from rmodus_brain.webbridge.message_dispatcher import MessageDispatcher
-from rmodus_brain.webbridge.role_state import RoleState
-from rmodus_brain.webbridge.ros_bridge import WebBridgeNode
+from rmodus_web.webbridge.connection_manager import ConnectionManager
+from rmodus_web.webbridge.message_dispatcher import MessageDispatcher
+from rmodus_web.webbridge.role_state import RoleState
+from rmodus_web.webbridge.ros_bridge import WebBridgeNode
 
 
 @asynccontextmanager

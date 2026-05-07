@@ -11,7 +11,8 @@ def generate_launch_description():
 
     hw_launch = PathJoinSubstitution([FindPackageShare('rmodus_hw'), 'launch', 'hw.launch.py'])
     sim_launch = PathJoinSubstitution([FindPackageShare('rmodus_sim'), 'launch', 'sim.launch.py'])
-    brain_launch = PathJoinSubstitution([FindPackageShare('rmodus_brain'), 'launch', 'brain.launch.py'])
+    web_launch = PathJoinSubstitution([FindPackageShare('rmodus_web'), 'launch', 'web.launch.py'])
+    autonomy_launch = PathJoinSubstitution([FindPackageShare('rmodus_autonomy'), 'launch', 'autonomy.launch.py'])
     rviz_launch = PathJoinSubstitution([pkg_share, 'launch', 'rviz.launch.py'])
 
     mode = LaunchConfiguration('mode')
@@ -53,7 +54,11 @@ def generate_launch_description():
         ),
 
         IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(brain_launch),
+            PythonLaunchDescriptionSource(web_launch),
+        ),
+
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(autonomy_launch),
             launch_arguments={
                 'use_sim_time': use_sim_time,
                 'navigation': navigation,

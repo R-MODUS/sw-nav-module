@@ -4,7 +4,6 @@ from sensor_msgs.msg import Range, PointCloud2
 from sensor_msgs_py import point_cloud2
 from std_msgs.msg import Header
 import tf2_ros
-import tf2_geometry_msgs
 
 from rmodus_interface.msg import Bumper
 
@@ -78,3 +77,17 @@ class SensorFusionNode(Node):
                     t.transform.translation.z + z]
         except Exception:
             return None
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = SensorFusionNode()
+    try:
+        rclpy.spin(node)
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()

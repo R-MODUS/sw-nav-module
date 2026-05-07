@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>rmodus_brain</name>
+  <name>rmodus_web</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>Web UI bridge package for R-Modus.</description>
   <maintainer email="pi@todo.todo">pi</maintainer>
   <license>TODO: License declaration</license>
 
@@ -14,14 +14,8 @@
   <depend>tf2_msgs</depend>
   <depend>rmodus_interface</depend>
 
-  <exec_depend>robot_localization</exec_depend>
-  <exec_depend>robot_state_publisher</exec_depend>
-  <exec_depend>rosbridge_server</exec_depend>
-  <exec_depend>joint_state_publisher_gui</exec_depend>
-  <exec_depend>xacro</exec_depend>
-  <exec_depend>python3-yaml</exec_depend>
-    <exec_depend>python3-fastapi</exec_depend>
-    <exec_depend>python3-uvicorn</exec_depend>
+  <exec_depend>python3-fastapi</exec_depend>
+  <exec_depend>python3-uvicorn</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

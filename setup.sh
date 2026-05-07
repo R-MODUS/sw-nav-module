@@ -2,9 +2,7 @@
 
 OPS_DIR="$(cd "$(dirname "$0")" && pwd)"
 WS_SRC="$HOME/ros2_ws/src"
-
-# Packages to link
-PACKAGES=("rmodus_hw" "rmodus_brain" "rmodus_interface" "rmodus_bringup")
+PACKAGES=("rmodus_hw" "rmodus_web" "rmodus_autonomy" "rmodus_interface" "rmodus_bringup")
 
 mkdir -p "$WS_SRC"
 

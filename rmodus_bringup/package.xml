@@ -13,7 +13,8 @@
   <depend>geometry_msgs</depend>
   <depend>rmodus_sim</depend>
   <depend>rmodus_hw</depend>
-  <depend>rmodus_brain</depend>
+  <depend>rmodus_web</depend>
+  <depend>rmodus_autonomy</depend>
 
 <exec_depend>robot_localization</exec_depend>
 <exec_depend>robot_state_publisher</exec_depend>

@@ -4,9 +4,9 @@ from typing import Awaitable, Callable, Dict, Optional
 
 from fastapi import WebSocket
 
-from rmodus_brain.webbridge.connection_manager import ConnectionManager
-from rmodus_brain.webbridge.role_state import RoleState
-from rmodus_brain.webbridge.ros_bridge import WebBridgeNode
+from rmodus_web.webbridge.connection_manager import ConnectionManager
+from rmodus_web.webbridge.role_state import RoleState
+from rmodus_web.webbridge.ros_bridge import WebBridgeNode
 
 Handler = Callable[[WebSocket, dict, Optional[WebBridgeNode]], Awaitable[None]]
 

@@ -163,7 +163,7 @@ def generate_launch_description():
     default_robot_config = os.path.join(
         get_package_share_directory("rmodus_description"),
         "config",
-        "robot_config.yaml",
+        "default_robot_config.yaml",
     )
 
     return LaunchDescription(

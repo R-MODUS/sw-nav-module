@@ -23,32 +23,20 @@ def _deep_merge(base_obj, override_obj):
 def _create_sim_actions(context):
     pkg_name = 'rmodus_sim'
     structure_source = LaunchConfiguration('structure_source').perform(context)
+    sim_config_file = LaunchConfiguration('sim_config_file').perform(context)
+    sim_override_file = LaunchConfiguration('sim_override_file').perform(context)
+    dynamic_bridge_base_config_file = LaunchConfiguration('dynamic_bridge_base_config_file').perform(context)
     world = os.path.join(get_package_share_directory(pkg_name), 'worlds', 'my_world.world')
     sim_gui_config = os.path.join(get_package_share_directory(pkg_name), 'config', 'simulation.config')
     robot_xacro = os.path.join(get_package_share_directory(pkg_name), 'urdf', 'robot.urdf.xacro')
 
     src_str = os.path.join(get_package_share_directory(pkg_name), '..')
-    bridge_config_str = os.path.join(get_package_share_directory(pkg_name), 'config', 'bridge_parameters.yaml')
 
-    if structure_source == 'description':
-        base_robot_config = os.path.join(
-            get_package_share_directory('rmodus_description'),
-            'config',
-            'robot_config.yaml',
-        )
-    else:
-        base_robot_config = os.path.join(
-            get_package_share_directory(pkg_name),
-            'config',
-            'robot_config.yaml',
-        )
-    global_params_file = LaunchConfiguration('global_params_file').perform(context)
-
-    final_robot_config = base_robot_config
-    if global_params_file and os.path.exists(global_params_file):
-        with open(base_robot_config, 'r', encoding='utf-8') as f:
+    final_robot_config = sim_config_file
+    if sim_override_file and os.path.exists(sim_override_file):
+        with open(sim_config_file, 'r', encoding='utf-8') as f:
             base_cfg = yaml.safe_load(f) or {}
-        with open(global_params_file, 'r', encoding='utf-8') as f:
+        with open(sim_override_file, 'r', encoding='utf-8') as f:
             global_cfg = yaml.safe_load(f) or {}
 
         merged_cfg = _deep_merge(base_cfg, global_cfg)
@@ -58,7 +46,7 @@ def _create_sim_actions(context):
         final_robot_config = tmp_cfg.name
 
     final_bridge_config_path, bumper_names = create_combined_bridge_config(
-        bridge_config_str,
+        dynamic_bridge_base_config_file,
         final_robot_config,
     )
 
@@ -126,13 +114,31 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument(
             'structure_source',
-            default_value='local',
-            description='Robot structure source: local or description',
+            default_value='description',
+            description='Robot structure source: description or local',
         ),
         DeclareLaunchArgument(
-            'global_params_file',
+            'sim_config_file',
+            default_value=os.path.join(
+                get_package_share_directory('rmodus_sim'),
+                'config',
+                'sim.yaml',
+            ),
+            description='Base simulation YAML config',
+        ),
+        DeclareLaunchArgument(
+            'sim_override_file',
             default_value='',
-            description='Path to optional global params file',
+            description='Path to optional simulation override YAML',
+        ),
+        DeclareLaunchArgument(
+            'dynamic_bridge_base_config_file',
+            default_value=os.path.join(
+                get_package_share_directory('rmodus_sim'),
+                'config',
+                'bridge_parameters.yaml',
+            ),
+            description='Base bridge config used for dynamic bridge generation',
         ),
         OpaqueFunction(function=_create_sim_actions),
     ])

@@ -77,7 +77,7 @@ Balíček je jednotným zdrojem robotického modelu, zejména kinematické struk
 **Klíčové soubory:**
 
 - [rmodus_description/launch/description.launch.py](../rmodus_description/launch/description.launch.py)
-- [rmodus_description/config/robot_config.yaml](../rmodus_description/config/robot_config.yaml)
+- [rmodus_description/config/default_robot_config.yaml](../rmodus_description/config/default_robot_config.yaml)
 - [rmodus_description/urdf/base.urdf.xacro](../rmodus_description/urdf/base.urdf.xacro)
 - [rmodus_description/urdf/lidar.urdf.xacro](../rmodus_description/urdf/lidar.urdf.xacro)
 - [rmodus_description/urdf/imu.urdf.xacro](../rmodus_description/urdf/imu.urdf.xacro)
@@ -214,7 +214,7 @@ Kombinace obou přístupů umožňuje udržet centrální semantický model robo
 
 | Vrstva | Primární soubor | Volitelný override | Poznámka |
 |---|---|---|---|
-| Description model | `rmodus_description/config/robot_config.yaml` | `override_config_path` | Deep merge v `description.launch.py` |
+| Description model | `rmodus_description/config/default_robot_config.yaml` | `override_config_path` | Deep merge v `description.launch.py` |
 | HW runtime | `rmodus_hw/config/base_params.yaml` | `user_params_file` | Plus selektivní extrakce `/**/ros__parameters` |
 | Brain EKF | `robot_config_file` (default z description) | `global_params_file` | Deep merge v `ekf_dynamic.launch.py` |
 | Brain Nav2 | `rmodus_brain/config/nav2_params.yaml` | runtime rewrites | `RewrittenYaml` pro `use_sim_time`, `autostart` |
@@ -223,7 +223,7 @@ Kombinace obou přístupů umožňuje udržet centrální semantický model robo
 
 ### 4.3 Přesné mapování centrálních bloků `/**/ros__parameters`
 
-| Blok v `robot_config.yaml` | Konzument |
+| Blok v `default_robot_config.yaml` | Konzument |
 |---|---|
 | `base_link` | `base.urdf.xacro` |
 | `nav_module` | `base.urdf.xacro` |
@@ -251,7 +251,7 @@ ros2 launch rmodus_description description.launch.py
 Důsledky:
 
 - běží `robot_state_publisher`,
-- model se staví z `robot_config.yaml`,
+- model se staví z `default_robot_config.yaml`,
 - bez override jede čistý default.
 
 Tento režim je vhodný pro ověření TF stromu a geometrie bez provozní zátěže ostatních subsystémů.

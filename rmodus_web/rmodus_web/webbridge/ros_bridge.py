@@ -102,13 +102,17 @@ class WebBridgeNode(Node):
         )
 
     def _discover_dynamic_topics(self):
+        active_dynamic_topics = set()
         for topic_name, topic_types in self.get_topic_names_and_types():
             if topic_name.startswith(BUMPER_TOPIC_PREFIX) and "rmodus_interface/msg/Bumper" in topic_types:
                 sensor = self._sensor_from_topic("bumper", topic_name, "rmodus_interface/Bumper")
                 self._register_sensor(sensor, Bumper, self.bumper_callback)
+                active_dynamic_topics.add(topic_name)
             if topic_name.startswith(CLIFF_TOPIC_PREFIX) and "sensor_msgs/msg/Range" in topic_types:
                 sensor = self._sensor_from_topic("cliff", topic_name, "sensor_msgs/Range")
                 self._register_sensor(sensor, Range, self.cliff_callback)
+                active_dynamic_topics.add(topic_name)
+        self._prune_missing_dynamic_topics(active_dynamic_topics)
 
     def _sensor_from_topic(self, sensor_type: str, topic_name: str, message_type: str) -> SensorDefinition:
         suffix = topic_name.rstrip("/").split("/")[-1]
@@ -125,6 +129,27 @@ class WebBridgeNode(Node):
         self.sensor_subscriptions[sensor.topic] = subscription
         self.sensor_definitions[sensor.topic] = sensor
         self._broadcast_sensor_catalog()
+
+    def _prune_missing_dynamic_topics(self, active_dynamic_topics: set):
+        to_remove = []
+        for topic_name, sensor in self.sensor_definitions.items():
+            if sensor.sensor_type not in ("bumper", "cliff"):
+                continue
+            if topic_name in active_dynamic_topics:
+                continue
+            to_remove.append(topic_name)
+
+        for topic_name in to_remove:
+            subscription = self.sensor_subscriptions.pop(topic_name, None)
+            if subscription is not None:
+                self.destroy_subscription(subscription)
+            sensor = self.sensor_definitions.pop(topic_name, None)
+            if sensor is None:
+                continue
+            self.latest_sensor_messages.pop(f"{sensor.sensor_type}:{sensor.sensor_id}", None)
+
+        if to_remove:
+            self._broadcast_sensor_catalog()
 
     def _broadcast_sensor_catalog(self):
         self._broadcast_threadsafe({"type": "sensor_catalog", "sensors": self.get_sensor_catalog()})

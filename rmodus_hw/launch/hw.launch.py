@@ -1,6 +1,5 @@
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, OpaqueFunction
-from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.substitutions import PathJoinSubstitution, LaunchConfiguration
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
@@ -124,32 +123,13 @@ def generate_launch_description():
 
     params_base = PathJoinSubstitution([config_dir, 'base_params.yaml'])
 
-    robot_config_base_path = os.path.join(
-        get_package_share_directory('rmodus_description'), 'config', 'robot_config.yaml'
-    )
-
-    description_launch = PathJoinSubstitution([
-        FindPackageShare('rmodus_description'), 'launch', 'description.launch.py'
-    ])
-
     params_user_arg = DeclareLaunchArgument(
         'user_params_file',
         default_value=params_base,
         description='Path to user parameter file'
     )
 
-    params_user = LaunchConfiguration('user_params_file')
-
     return LaunchDescription([
         params_user_arg,
-
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(description_launch),
-            launch_arguments={
-                'use_sim_time': 'false',
-                'base_config_path': robot_config_base_path,
-                'override_config_path': params_user,
-            }.items(),
-        ),
         OpaqueFunction(function=_create_hw_nodes),
     ])

@@ -23,6 +23,7 @@ setup(
     entry_points={
         "console_scripts": [
             "obstacle_cloud = rmodus_autonomy.node_obstacle_cloud:main",
+            "bumper_safety_stop = rmodus_autonomy.node_bumper_safety_stop:main",
         ],
     },
 )

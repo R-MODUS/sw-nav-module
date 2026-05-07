@@ -25,13 +25,14 @@ def _deep_merge(base_obj, override_obj):
 
 def _create_robot_state_publisher(context):
     use_sim_time = LaunchConfiguration('use_sim_time')
+    robot_config_file = LaunchConfiguration('robot_config_file').perform(context)
     base_config_path = LaunchConfiguration('base_config_path').perform(context)
     override_config_path = LaunchConfiguration('override_config_path').perform(context)
 
-    final_config_path = base_config_path
+    final_config_path = robot_config_file or base_config_path
 
     if override_config_path and os.path.exists(override_config_path):
-        with open(base_config_path, 'r', encoding='utf-8') as f:
+        with open(final_config_path, 'r', encoding='utf-8') as f:
             base_cfg = yaml.safe_load(f) or {}
         with open(override_config_path, 'r', encoding='utf-8') as f:
             override_cfg = yaml.safe_load(f) or {}
@@ -68,8 +69,8 @@ def _create_robot_state_publisher(context):
 
 
 def generate_launch_description():
-    default_base_config = os.path.join(
-        get_package_share_directory('rmodus_description'), 'config', 'robot_config.yaml'
+    default_robot_config_file = os.path.join(
+        get_package_share_directory('rmodus_description'), 'config', 'default_robot_config.yaml'
     )
 
     return LaunchDescription([
@@ -79,9 +80,14 @@ def generate_launch_description():
             description='Use simulation clock'
         ),
         DeclareLaunchArgument(
+            'robot_config_file',
+            default_value='',
+            description='Path to robot YAML config file (preferred argument)'
+        ),
+        DeclareLaunchArgument(
             'base_config_path',
-            default_value=default_base_config,
-            description='Path to default robot config file'
+            default_value=default_robot_config_file,
+            description='Path to robot YAML config file (legacy fallback)'
         ),
         DeclareLaunchArgument(
             'override_config_path',

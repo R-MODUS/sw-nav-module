@@ -1,7 +1,7 @@
 #!/bin/bash
 
 OPS_DIR="$(cd "$(dirname "$0")" && pwd)"
-WS_SRC="$HOME/ros2_ws/src"
+WS_SRC="$HOME/ros2_ws_jazzy/src"
 PACKAGES=("rmodus_hw" "rmodus_web" "rmodus_autonomy" "rmodus_interface" "rmodus_bringup")
 
 mkdir -p "$WS_SRC"

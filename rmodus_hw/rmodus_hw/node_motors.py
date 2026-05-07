@@ -8,7 +8,7 @@ class Motors(Node):
     def __init__(self):
         super().__init__('vector_maker')
         self.subscription = self.create_subscription(
-        Twist, '/vector', self.callback_vector, 1
+        Twist, '/vector_safe', self.callback_vector, 1
         )
 
         uart = self.declare_parameter('port', '/dev/serial0').get_parameter_value().string_value

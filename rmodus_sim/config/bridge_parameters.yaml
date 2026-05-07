@@ -1,5 +1,5 @@
-# cmd_vel (ROS -> GZ)
-- ros_topic_name: "/cmd_vel"
+# cmd_vel safe (ROS -> GZ)
+- ros_topic_name: "/cmd_vel_safe"
   gz_topic_name: "/cmd_vel"
   ros_type_name: "geometry_msgs/msg/Twist"
   gz_type_name: "gz.msgs.Twist"

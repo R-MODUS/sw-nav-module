@@ -8,7 +8,7 @@ The parameter layout was simplified to remove redundant YAML copies.
 
 Active parameter sources are now:
 
-- `rmodus_description/config/robot_config.yaml` for shared robot and sensor model.
+- `rmodus_description/config/default_robot_config.yaml` for shared robot and sensor model.
 - `rmodus_sim/config/robot_config.yaml` for standalone sim package robot model.
 - `rmodus_hw/config/base_params.yaml` for HW node default parameters.
 - `rmodus_bringup/config/user_params.yaml` for global runtime overrides.

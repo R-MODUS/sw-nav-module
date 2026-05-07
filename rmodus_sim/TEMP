@@ -1,2 +1,0 @@
-xacro ~/r-modus/sw-nav-module/rmodus_sim/urdf/robot.xacro is_sim:=true > ~/r-modus/sw-nav-module/rmodus_sim/urdf/test.urdf
-gz sdf -p ~/r-modus/sw-nav-module/rmodus_sim/urdf/test.urdf > ~/r-modus/sw-nav-module/rmodus_sim/urdf/test.sdf

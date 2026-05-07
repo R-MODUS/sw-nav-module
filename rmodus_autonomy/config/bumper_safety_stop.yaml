@@ -1,0 +1,12 @@
+bumper_safety_stop:
+  ros__parameters:
+    enabled: true
+    hold_time_sec: 2.0
+    publish_rate_hz: 50.0
+    sensor_discovery_rate_hz: 1.0
+    bumper_topic_prefix: /bumper/
+    retrigger_while_contact: false
+    cmd_vel_input_topic: /cmd_vel
+    cmd_vel_output_topic: /cmd_vel_safe
+    vector_input_topic: /vector
+    vector_output_topic: /vector_safe

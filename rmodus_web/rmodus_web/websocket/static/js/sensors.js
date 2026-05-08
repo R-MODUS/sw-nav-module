@@ -47,6 +47,7 @@
         catalog: [],
         frames: [],
         rootFrame: 'base_link',
+        tfStale: true,
         latestByKey: {},
         selectedKey: null,
         robotView: null,
@@ -382,8 +383,12 @@
             frameCount.textContent = String(state.frames.length);
         }
         if (tfStatus) {
-            tfStatus.textContent =
-                state.frames.length > 0 ? 'Živý přehled TF je k dispozici.' : 'Čekání na data TF…';
+            if (state.tfStale) {
+                tfStatus.textContent = 'TF stream je neaktivní. Probíhá automatické obnovení…';
+            } else {
+                tfStatus.textContent =
+                    state.frames.length > 0 ? 'Živý přehled TF je k dispozici.' : 'Čekání na data TF…';
+            }
         }
         if (rootBadge) {
             rootBadge.textContent = state.rootFrame;
@@ -459,14 +464,20 @@
         renderSensorDetail();
     };
 
-    window.handleTfFrames = function handleTfFrames(message) {
+    window.handleSensorsTfFrames = function handleSensorsTfFrames(message) {
         state.frames = Array.isArray(message.frames) ? message.frames : [];
         state.rootFrame = normalizeFrameId(message.root_frame) || 'base_link';
+        state.tfStale = state.frames.length === 0;
         if (state.robotView) {
             state.robotView.setFrames(state.frames, state.rootFrame);
             const sensor = currentSensor();
             state.robotView.setSelectedFrame(sensor ? normalizeFrameId(sensor.frame_id) : null);
         }
+        renderTfState();
+    };
+
+    window.handleTfStatus = function handleTfStatus(message) {
+        state.tfStale = Boolean(message && message.stale);
         renderTfState();
     };
 })();

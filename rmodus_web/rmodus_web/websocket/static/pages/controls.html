@@ -1,10 +1,17 @@
-<div class="centered-content">
-    <h1>Ruční ovládání</h1>
-    <div class="joystick-main-wrapper">
-        <div id="joy-move" class="joy-zone"><span>POHYB</span></div>
-        <div id="joy-rotate" class="joy-zone"><span>ROTACE</span></div>
+<div class="page-shell">
+    <div class="page-head">
+        <div>
+            <h1 class="page-title">Ruční ovládání</h1>
+            <p class="page-subtitle">Lokální ovládání robota přes virtuální joystick nebo gamepad.</p>
+        </div>
     </div>
-    <div style="text-align: center; margin-top: 20px;">
-        <button id="gamepad-status" class="button" onclick="initGamepad()">Aktivovat gamepad</button>
+    <div class="panel panel-pad">
+        <div class="joystick-main-wrapper">
+            <div id="joy-move" class="joy-zone"><span>POHYB</span></div>
+            <div id="joy-rotate" class="joy-zone"><span>ROTACE</span></div>
+        </div>
+        <div class="controls-actions">
+            <button id="gamepad-status" class="btn btn-secondary" onclick="initGamepad()">Aktivovat gamepad</button>
+        </div>
     </div>
 </div>

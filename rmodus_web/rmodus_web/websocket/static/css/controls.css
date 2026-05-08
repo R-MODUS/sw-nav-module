@@ -1,0 +1,33 @@
+/* OVLÁDÁNÍ - Joysticky vedle sebe */
+.joystick-main-wrapper {
+    display: flex; gap: 100px; justify-content: center;
+    background: #000; padding: 60px; border-radius: 30px; margin-top: 40px;
+}
+
+.joy-zone {
+    width: 200px; height: 200px; border-radius: 50%;
+    background: radial-gradient(circle, #222, #000); border: 2px solid #333;
+    transition: opacity 0.3s;
+}
+
+.joystick-main-wrapper {
+    display: flex;
+    gap: 100px;
+    justify-content: center;
+    background: #000;
+    padding: 60px;
+    border-radius: 30px;
+    margin-top: 40px;
+    min-height: 320px; /* Přidáno pro stabilitu */
+}
+
+.joy-zone {
+    position: relative; /* Kritické pro nipplejs mode: static */
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #222, #000);
+    border: 2px solid #333;
+    /* Zabráníme nechtěnému posouvání stránky na mobilu při ovládání */
+    touch-action: none; 
+}

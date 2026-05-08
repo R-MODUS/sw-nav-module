@@ -11,6 +11,8 @@ LOG_LEVEL = "info"
 TF_ROOT_FRAME = "base_link"
 TF_BROADCAST_RATE_HZ = 5.0
 SENSOR_DISCOVERY_RATE_HZ = 1.0
+TF_STALE_TIMEOUT_SEC = 3.0
+TF_RESUBSCRIBE_COOLDOWN_SEC = 8.0
 
 HERE = Path(__file__).resolve().parent.parent
 WEBSOCKET_DIR = HERE / "websocket"

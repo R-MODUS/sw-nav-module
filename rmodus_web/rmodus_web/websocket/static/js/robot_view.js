@@ -1,4 +1,7 @@
 (() => {
+    const MIN_ZOOM = 0.5;
+    const MAX_ZOOM = 8.0;
+
     function normalizeAngle(angle) {
         while (angle > Math.PI) angle -= Math.PI * 2;
         while (angle < -Math.PI) angle += Math.PI * 2;
@@ -45,7 +48,7 @@
             frames: [],
             selectedFrameId: null,
             showLabels: false,
-            zoom: 1.4,
+            zoom: 2.0,
         };
 
         function normalizeFrameId(frameId) {
@@ -190,8 +193,8 @@
                 this.draw();
             },
             setZoom(zoomValue) {
-                const zoom = Number.isFinite(zoomValue) ? zoomValue : 1.0;
-                state.zoom = Math.min(2.5, Math.max(0.5, zoom));
+                const zoom = Number.isFinite(zoomValue) ? zoomValue : state.zoom;
+                state.zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom));
                 this.draw();
             },
             draw() {

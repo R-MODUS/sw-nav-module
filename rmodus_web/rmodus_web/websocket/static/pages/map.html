@@ -1,12 +1,15 @@
-<div class="map-page">
-    <div class="map-header">
-        <h1>🗺️ Lokace robota</h1>
+<div class="page-shell page-shell-map">
+    <div class="page-head page-head-map">
+        <div>
+            <h1 class="page-title">Mapa</h1>
+            <p class="page-subtitle">Interaktivni nahled mapy a zadavani cile.</p>
+        </div>
         <div class="map-info">
             <span id="goalStatus">Klikněte na mapu pro zadání cíle</span>
         </div>
     </div>
 
-    <div class="map-container">
+    <div class="map-container panel panel-pad">
         <div class="map-controls-left">
             <div class="control-panel">
                 <h3>Legenda</h3>
@@ -34,6 +37,10 @@
                     <label>Zoom</label>
                     <input type="range" id="mapZoom" min="0.5" max="3" step="0.1" value="1">
                 </div>
+                <label class="map-toggle">
+                    <input type="checkbox" id="autoCenterToggle">
+                    <span>Centrovat na robota</span>
+                </label>
                 <div class="button-group">
                     <button id="btnCancelGoal" style="display: none;">❌ Zrušit</button>
                     <button id="btnSendGoal" style="display: none;">✓ Poslat cíl</button>
@@ -56,5 +63,3 @@
 
     </div>
 </div>
-
-<script src="../js/map.js"></script>

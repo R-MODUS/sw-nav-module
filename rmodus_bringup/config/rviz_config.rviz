@@ -59,6 +59,38 @@ Visualization Manager:
           Value: true
         base_link:
           Value: false
+        bumper_front_contact_frame:
+          Value: true
+        bumper_front_link:
+          Value: true
+        bumper_left_contact_frame:
+          Value: true
+        bumper_left_link:
+          Value: true
+        bumper_rear_contact_frame:
+          Value: true
+        bumper_rear_link:
+          Value: true
+        bumper_right_contact_frame:
+          Value: true
+        bumper_right_link:
+          Value: true
+        cliff_sensor_fl_beam_frame:
+          Value: true
+        cliff_sensor_fl_link:
+          Value: true
+        cliff_sensor_fr_beam_frame:
+          Value: true
+        cliff_sensor_fr_link:
+          Value: true
+        cliff_sensor_rl_beam_frame:
+          Value: true
+        cliff_sensor_rl_link:
+          Value: true
+        cliff_sensor_rr_beam_frame:
+          Value: true
+        cliff_sensor_rr_link:
+          Value: true
         front_left_wheel:
           Value: false
         front_right_wheel:
@@ -87,6 +119,30 @@ Visualization Manager:
           odom:
             base_footprint:
               base_link:
+                bumper_front_link:
+                  bumper_front_contact_frame:
+                    {}
+                bumper_left_link:
+                  bumper_left_contact_frame:
+                    {}
+                bumper_rear_link:
+                  bumper_rear_contact_frame:
+                    {}
+                bumper_right_link:
+                  bumper_right_contact_frame:
+                    {}
+                cliff_sensor_fl_link:
+                  cliff_sensor_fl_beam_frame:
+                    {}
+                cliff_sensor_fr_link:
+                  cliff_sensor_fr_beam_frame:
+                    {}
+                cliff_sensor_rl_link:
+                  cliff_sensor_rl_beam_frame:
+                    {}
+                cliff_sensor_rr_link:
+                  cliff_sensor_rr_beam_frame:
+                    {}
                 front_left_wheel:
                   {}
                 front_right_wheel:
@@ -148,6 +204,78 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
         base_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        bumper_front_contact_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        bumper_front_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        bumper_left_contact_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        bumper_left_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        bumper_rear_contact_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        bumper_rear_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        bumper_right_contact_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        bumper_right_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        cliff_sensor_fl_beam_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        cliff_sensor_fl_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        cliff_sensor_fr_beam_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        cliff_sensor_fr_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        cliff_sensor_rl_beam_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        cliff_sensor_rl_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        cliff_sensor_rr_beam_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        cliff_sensor_rr_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -271,34 +399,23 @@ Visualization Manager:
       Use rainbow: true
       Value: true
     - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
       Axis: Z
-      Class: rviz_default_plugins/PointCloud2
-      Color: 255; 64; 64
-      Color Transformer: FlatColor
-      Decay Time: 0
-      Enabled: true
-      Name: Obstacles
-      Position Transformer: XYZ
-      Selectable: true
-      Size (Pixels): 4
-      Size (m): 0.05000000074505806
-      Style: Flat Squares
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        Filter size: 10
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /sensors/combined_cloud
-      Use Fixed Frame: true
-      Value: true
-    - Alpha: 1
-      Axis: Z
+      Channel Name: intensity
       Class: rviz_default_plugins/PointCloud2
       Color: 64; 255; 64
       Color Transformer: FlatColor
       Decay Time: 0
       Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 4096
+      Min Color: 0; 0; 0
+      Min Intensity: 0
       Name: Obstacles_Map
       Position Transformer: XYZ
       Selectable: true
@@ -308,11 +425,11 @@ Visualization Manager:
       Topic:
         Depth: 5
         Durability Policy: Volatile
-        Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /sensors/combined_cloud_map
       Use Fixed Frame: true
+      Use rainbow: true
       Value: true
   Enabled: true
   Global Options:
@@ -351,11 +468,11 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 73.0329818725586
+      Scale: 65.98175811767578
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz_default_plugins)
-      X: -0.015703296288847923
-      Y: 0.01544723566621542
+      X: -0.3111743927001953
+      Y: -2.2826757431030273
     Saved:
       - Angle: -1.5700000524520874
         Class: rviz_default_plugins/TopDownOrtho
@@ -388,5 +505,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1200
-  X: 0
-  Y: 960
+  X: 1532
+  Y: 471

@@ -1,0 +1,228 @@
+/* MAP PAGE - Nový layout */
+.page-shell-map {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    gap: 18px;
+    overflow: hidden;
+    max-width: 1220px;
+}
+
+.page-head-map {
+    align-items: center;
+}
+
+.map-info {
+    padding: 9px 14px;
+    background: rgba(245, 158, 11, 0.16);
+    border: 1px solid rgba(245, 158, 11, 0.28);
+    border-radius: 10px;
+    font-size: 0.86rem;
+    color: #f9d79b;
+    white-space: nowrap;
+}
+
+.map-container {
+    display: flex;
+    gap: 16px;
+    flex: 1;
+    overflow: hidden;
+    min-height: 560px;
+}
+
+.map-controls-left {
+    width: 240px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+}
+
+.map-canvas-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: #4e5e5e;
+    border: 1px solid var(--ui-border);
+    border-radius: 12px;
+    padding: 12px;
+    position: relative;
+    overflow: hidden;
+}
+
+#mapCanvas {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 8px;
+    background: #000;
+    cursor: crosshair;
+}
+
+.map-instructions {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--accent);
+    border: 1px solid var(--ui-border);
+}
+
+.control-panel {
+    background: rgba(21, 25, 33, 0.84);
+    border: 1px solid var(--ui-border);
+    border-radius: 12px;
+    padding: 14px;
+}
+
+.control-panel h3 {
+    margin: 0 0 12px 0;
+    color: var(--ui-primary);
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 0.82rem;
+    color: var(--ui-text-muted);
+}
+
+.legend-item:last-child {
+    margin-bottom: 0;
+}
+
+.legend-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.legend-color.robot {
+    background: #7c3aed;
+    box-shadow: 0 0 10px rgba(124, 58, 237, 0.5);
+}
+
+.legend-color.goal {
+    background: rgba(74, 222, 128, 0.7);
+    box-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
+}
+
+.legend-color.path {
+    background: #4f46e5;
+}
+
+.legend-color.occupied {
+    background: #101010;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.map-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    font-size: 12px;
+    color: #cbd5e1;
+    user-select: none;
+    cursor: pointer;
+}
+
+.map-toggle input[type="checkbox"] {
+    accent-color: var(--accent);
+}
+
+.input-group {
+    margin-bottom: 15px;
+}
+
+.input-group label {
+    display: block;
+    font-size: 12px;
+    margin-bottom: 6px;
+    color: var(--ui-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.input-group input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent);
+}
+
+.button-group {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.button-group button {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 12px;
+    background: var(--ui-primary);
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.2s;
+}
+
+.button-group button:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.button-group button:active {
+    transform: translateY(0);
+}
+
+#btnCancelGoal {
+    background: var(--ui-danger) !important;
+}
+
+.coordinates {
+    background: rgba(255, 149, 0, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 12px;
+}
+
+.coordinates p {
+    margin: 6px 0;
+    color: #fff;
+}
+
+.coordinates strong {
+    color: #f9d79b;
+}
+
+@media (max-width: 980px) {
+    .map-container {
+        flex-direction: column;
+        min-height: 0;
+    }
+
+    .map-controls-left {
+        width: 100%;
+        flex-direction: row;
+        overflow-x: auto;
+        overflow-y: hidden;
+    }
+
+    .control-panel {
+        min-width: 280px;
+    }
+}

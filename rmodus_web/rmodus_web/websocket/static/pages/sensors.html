@@ -1,6 +1,9 @@
-<div class="sensors-page">
-    <div class="sensors-header">
-        <h1 class="sensors-main-title">Senzory</h1>
+<div class="page-shell sensors-page">
+    <div class="page-head sensors-header">
+        <div>
+            <h1 class="page-title">Senzory</h1>
+            <p class="page-subtitle">Online diagnostika senzoru a TF stromu.</p>
+        </div>
         <div class="sensor-summary" id="sensor-summary">
             <div class="sensor-summary-item">
                 <span class="summary-label">TF rámy</span>
@@ -28,8 +31,8 @@
                 </label>
                 <label class="tf-control-item" for="tf-zoom">
                     <span>Přiblížení</span>
-                    <input type="range" id="tf-zoom" min="0.8" max="5.0" step="0.1" value="4.0" />
-                    <strong id="tf-zoom-value">1.4×</strong>
+                    <input type="range" id="tf-zoom" min="0.5" max="8.0" step="0.1" value="2.0" />
+                    <strong id="tf-zoom-value">2.0×</strong>
                 </label>
             </div>
             <canvas id="robotTfCanvas" width="640" height="520"></canvas>

@@ -1,0 +1,95 @@
+input {
+    flex-grow: 1;
+    background: #111;
+    border: 1px solid var(--border);
+    color: white;
+    padding: 15px;
+    border-radius: 5px;
+}
+
+button { background: var(--accent); color: black; border: none; padding: 15px 30px; font-weight: bold; border-radius: 5px; cursor: pointer; }
+
+/* DOKUMENTACE */
+.pdf-viewer { width: 100%; height: 90vh; border: none; border-radius: 10px; }
+
+/* KONFIGURACE */
+.config-view { width: 100%; max-width: 800px; }
+
+#config-editor {
+    width: 100%; height: 50vh; background: #111; color: #ccc;
+    padding: 20px; border-radius: 10px; border: 1px solid var(--border);
+    font-family: monospace; font-size: 1rem;
+}
+
+/* === SPODNÍ NAVIGACE (Uživatelé) === */
+.sidebar-footer {
+    padding: 20px;
+    border-top: 1px solid var(--border);
+}
+
+.nav-links-bottom {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 15px;
+}
+
+.nav-links-bottom li {
+    padding: 15px 25px;
+    cursor: pointer;
+    color: #888;
+    transition: 0.3s;
+    border-right: 3px solid transparent;
+}
+
+.nav-links-bottom li:hover {
+    background: #1a202c;
+    color: white;
+}
+
+.nav-links-bottom li.active {
+    color: var(--accent);
+    background: #1a202c;
+    border-right: 3px solid var(--accent);
+}
+
+/* === SEZNAM UŽIVATELŮ === */
+#user-list-container ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#user-list-container li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 1.1rem;
+}
+
+#user-list-container li:last-child {
+    border-bottom: none;
+}
+
+.user-ip {
+    font-family: monospace;
+    color: #b0c4de; /* Světlejší modrá pro IP */
+}
+
+.user-role {
+    font-weight: bold;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 0.9rem;
+}
+
+.role-operator {
+    background-color: #ff9500; /* Oranžová */
+    color: black;
+}
+
+.role-spectator {
+    background-color: #00d4ff; /* Tyrkysová */
+    color: black;
+}

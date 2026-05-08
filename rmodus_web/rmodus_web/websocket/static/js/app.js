@@ -240,8 +240,25 @@ function initWebSocket() {
                     break;
 
                 case "tf_2d":
-                    if (typeof window.handleTfFrames === "function") {
+                    if (typeof window.handleMapTfFrames === "function") {
+                        window.handleMapTfFrames(data);
+                    }
+                    if (typeof window.handleSensorsTfFrames === "function") {
+                        window.handleSensorsTfFrames(data);
+                    }
+                    /* Backward compatibility for legacy pages/scripts */
+                    if (
+                        typeof window.handleTfFrames === "function" &&
+                        window.handleTfFrames !== window.handleMapTfFrames &&
+                        window.handleTfFrames !== window.handleSensorsTfFrames
+                    ) {
                         window.handleTfFrames(data);
+                    }
+                    break;
+
+                case "tf_status":
+                    if (typeof window.handleTfStatus === "function") {
+                        window.handleTfStatus(data);
                     }
                     break;
 
@@ -260,6 +277,12 @@ function initWebSocket() {
                 case "nav_path":
                     if (typeof window.updateNavPath === "function") {
                         window.updateNavPath(data.path);
+                    }
+                    break;
+
+                case "goal_pose":
+                    if (typeof window.updateGoalPose === "function") {
+                        window.updateGoalPose(data);
                     }
                     break;
 

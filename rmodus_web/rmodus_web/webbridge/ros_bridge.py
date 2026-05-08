@@ -2,6 +2,7 @@
 
 import asyncio
 import math
+import time
 from typing import Dict, List
 
 from geometry_msgs.msg import PoseStamped, Twist
@@ -24,7 +25,9 @@ from rmodus_web.webbridge.config import (
     PLAN_TOPIC,
     SENSOR_DISCOVERY_RATE_HZ,
     TF_BROADCAST_RATE_HZ,
+    TF_RESUBSCRIBE_COOLDOWN_SEC,
     TF_ROOT_FRAME,
+    TF_STALE_TIMEOUT_SEC,
 )
 from rmodus_web.webbridge.connection_manager import ConnectionManager
 from rmodus_web.webbridge.sensor_catalog import SensorDefinition
@@ -43,6 +46,12 @@ class WebBridgeNode(Node):
         self.sensor_subscriptions: Dict[str, object] = {}
         self.latest_map = None
         self.latest_plan = None
+        self.latest_goal = None
+        self.tf_subscription = None
+        self.tf_static_subscription = None
+        self.tf_last_update_time = 0.0
+        self.tf_last_resubscribe_time = 0.0
+        self.tf_is_stale = True
 
         self.publisher_goal_pose = self.create_publisher(PoseStamped, GOAL_POSE_TOPIC, 10)
         self.publisher_cmd = self.create_publisher(Twist, "/vector", 10)
@@ -59,8 +68,10 @@ class WebBridgeNode(Node):
             OccupancyGrid, MAP_UPDATES_TOPIC, self.map_updates_callback, qos_volatile
         )
         self.sub_plan = self.create_subscription(Path, PLAN_TOPIC, self.plan_callback, qos_volatile)
+        self.sub_goal_pose = self.create_subscription(PoseStamped, GOAL_POSE_TOPIC, self.goal_pose_callback, 10)
 
         self.create_timer(1.0 / TF_BROADCAST_RATE_HZ, self.publish_tf_snapshot)
+        self.create_timer(1.0, self.check_tf_health)
         self.create_timer(1.0 / SENSOR_DISCOVERY_RATE_HZ, self._discover_dynamic_topics)
         self.get_logger().info("WebBridgeNode initialized.")
 
@@ -156,10 +167,16 @@ class WebBridgeNode(Node):
 
     def _create_tf_subscriptions(self):
         tf_static_qos = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
-        self.create_subscription(TFMessage, "/tf", self.tf_callback, 30)
-        self.create_subscription(
+        if self.tf_subscription is not None:
+            self.destroy_subscription(self.tf_subscription)
+        if self.tf_static_subscription is not None:
+            self.destroy_subscription(self.tf_static_subscription)
+        self.tf_subscription = self.create_subscription(TFMessage, "/tf", self.tf_callback, 30)
+        self.tf_static_subscription = self.create_subscription(
             TFMessage, "/tf_static", lambda msg: self.tf_callback(msg, is_static=True), tf_static_qos
         )
+        self.tf_last_resubscribe_time = time.monotonic()
+        self.get_logger().info("TF subscriptions (re)created.")
 
     def scan_callback(self, msg: LaserScan, sensor: SensorDefinition):
         if not self._has_clients():
@@ -228,8 +245,9 @@ class WebBridgeNode(Node):
         self._broadcast_sensor_catalog()
 
     def tf_callback(self, msg: TFMessage, is_static: bool = False):
-        if not self._has_clients():
-            return
+        now = time.monotonic()
+        self.tf_last_update_time = now
+        self.tf_is_stale = False
         for transform in msg.transforms:
             child_frame_id = transform.child_frame_id
             if not child_frame_id:
@@ -256,6 +274,29 @@ class WebBridgeNode(Node):
             {"type": "tf_2d", "root_frame": self.root_frame, "frames": self.get_tf_frames_snapshot()}
         )
 
+    def check_tf_health(self):
+        now = time.monotonic()
+        stale_by_timeout = (now - self.tf_last_update_time) > TF_STALE_TIMEOUT_SEC
+        has_tf_data = bool(self.tf_frames)
+        current_stale = stale_by_timeout or not has_tf_data
+        if current_stale != self.tf_is_stale:
+            self.tf_is_stale = current_stale
+            if self._has_clients():
+                self._broadcast_threadsafe(
+                    {
+                        "type": "tf_status",
+                        "stale": self.tf_is_stale,
+                        "last_update_age_sec": max(0.0, now - self.tf_last_update_time),
+                        "frame_count": len(self.tf_frames),
+                    }
+                )
+            state_text = "stale" if self.tf_is_stale else "healthy"
+            self.get_logger().info(f"TF stream state changed: {state_text}.")
+
+        if self.tf_is_stale and (now - self.tf_last_resubscribe_time) > TF_RESUBSCRIBE_COOLDOWN_SEC:
+            self.get_logger().warn("TF stream stale. Recreating /tf and /tf_static subscriptions.")
+            self._create_tf_subscriptions()
+
     def status_cb(self, msg: PiStatus):
         if not self._has_clients():
             return
@@ -281,12 +322,24 @@ class WebBridgeNode(Node):
 
     def get_initial_messages(self) -> List[dict]:
         messages = [{"type": "sensor_catalog", "sensors": self.get_sensor_catalog()}]
+        now = time.monotonic()
+        last_update_age_sec = max(0.0, now - self.tf_last_update_time) if self.tf_last_update_time > 0 else 0.0
+        messages.append(
+            {
+                "type": "tf_status",
+                "stale": self.tf_is_stale or not self.tf_frames,
+                "last_update_age_sec": last_update_age_sec,
+                "frame_count": len(self.tf_frames),
+            }
+        )
         if self.tf_frames:
             messages.append({"type": "tf_2d", "root_frame": self.root_frame, "frames": self.get_tf_frames_snapshot()})
         if self.latest_map:
             messages.append(self.latest_map)
         if self.latest_plan:
             messages.append(self.latest_plan)
+        if self.latest_goal:
+            messages.append(self.latest_goal)
         messages.extend(self.latest_sensor_messages.values())
         return messages
 
@@ -331,6 +384,33 @@ class WebBridgeNode(Node):
         self.latest_plan = payload
         self._broadcast_threadsafe(payload)
 
+    def _goal_pose_payload(self, frame_id: str, x: float, y: float, yaw: float) -> dict:
+        return {
+            "type": "goal_pose",
+            "frame_id": self._normalize_frame_id(frame_id) or "map",
+            "x": float(x),
+            "y": float(y),
+            "yaw": float(yaw),
+        }
+
+    def goal_pose_callback(self, msg: PoseStamped):
+        if not self._has_clients():
+            return
+        yaw = quaternion_to_yaw(
+            msg.pose.orientation.x,
+            msg.pose.orientation.y,
+            msg.pose.orientation.z,
+            msg.pose.orientation.w,
+        )
+        payload = self._goal_pose_payload(
+            msg.header.frame_id,
+            msg.pose.position.x,
+            msg.pose.position.y,
+            yaw,
+        )
+        self.latest_goal = payload
+        self._broadcast_threadsafe(payload)
+
     def publish_goal_pose(self, x: float, y: float, yaw: float):
         goal_msg = PoseStamped()
         goal_msg.header.frame_id = "map"
@@ -340,3 +420,6 @@ class WebBridgeNode(Node):
         goal_msg.pose.orientation.z = math.sin(half_yaw)
         goal_msg.pose.orientation.w = math.cos(half_yaw)
         self.publisher_goal_pose.publish(goal_msg)
+        payload = self._goal_pose_payload(goal_msg.header.frame_id, x, y, yaw)
+        self.latest_goal = payload
+        self._broadcast_threadsafe(payload)

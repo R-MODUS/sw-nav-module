@@ -1,68 +1,24 @@
-<div class="centered-content" style="max-width: 100%; margin-top: 20px;">
-    <div class="permissions-section" style="margin-bottom: 2rem;">
+<div class="page-shell users-layout">
+    <div class="page-head">
+        <div>
+            <h1 class="page-title">Uživatelé a role</h1>
+            <p class="page-subtitle">Správa připojených klientů a oprávnění operátora/admina.</p>
+        </div>
+    </div>
+
+    <div class="permissions-section panel panel-pad">
         <h2>Oprávnění</h2>
         <div class="role-display">
             Vaše aktuální role: <span id="role-status" class="role-label role-spectator">Spectator</span>
         </div>
-        <div class="permissions-controls">
-            <button class="btn-control" onclick="requestControl('operator')">Žádat o řízení (Operator)</button>
-            <button class="btn-control btn-admin" onclick="requestControl('admin')">Převzít jako Admin</button>
-            <button class="btn-control btn-kick" onclick="kickOperator()">Odebrat operátora (Admin)</button>
+        <div class="btn-row">
+            <button class="btn btn-secondary" onclick="requestControl('operator')">Žádat o řízení (Operator)</button>
+            <button class="btn btn-warning" onclick="requestControl('admin')">Převzít jako Admin</button>
+            <button class="btn btn-danger" onclick="kickOperator()">Odebrat operátora (Admin)</button>
         </div>
     </div>
 
-    <h1>Připojení uživatelé</h1>
-    <div id="user-list-container" class="list-container">
+    <div id="user-list-container" class="list-container panel panel-pad surface-list">
         <!-- Seznam uživatelů bude zde -->
     </div>
 </div>
-
-<style>
-    .list-container {
-        width: 100%;
-        background: #1e1e1e;
-        border-radius: 12px;
-        padding: 20px;
-        border: 1px solid var(--border);
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-    .permissions-section {
-        width: 100%;
-        background: #1e1e1e;
-        border-radius: 12px;
-        padding: 20px;
-        border: 1px solid var(--border);
-    }
-    .user-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 10px;
-        background-color: #2a2a2a;
-        border-radius: 8px;
-        border: 1px solid #333;
-    }
-    .user-info {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-    }
-    .user-ip {
-        font-family: 'Courier New', Courier, monospace;
-        color: #ddd;
-    }
-    .user-actions .btn-kick-small {
-        padding: 4px 8px;
-        font-size: 0.8rem;
-        background-color: #8b0000;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-    .btn-kick-small:hover {
-        background-color: #b90000;
-    }
-</style>

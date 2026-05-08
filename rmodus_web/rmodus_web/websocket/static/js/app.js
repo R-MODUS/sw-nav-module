@@ -6,7 +6,14 @@ let activePage = '';
 let wsReconnectTimer = null;
 let wsConnectTimer = null;
 const WS_RECONNECT_DELAY_MS = 2000;
-const WS_CONNECT_TIMEOUT_MS = 7000;
+const WS_CONNECT_TIMEOUT_MS = 15000;
+const JOYSTICK_SCRIPT_URLS = [
+    'static/vendor/nipplejs.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js',
+];
+const JOYSTICK_SCRIPT_LOAD_TIMEOUT_MS = 4000;
+let joystickScriptPromise = null;
+let gamepadListenersInitialized = false;
 
 const NAV_TAB_ORDER = ['status', 'controls', 'map', 'sensors', 'docs', 'config', 'users'];
 const SIDEBAR_COLLAPSED_KEY = 'rmodus_sidebar_collapsed';
@@ -99,8 +106,7 @@ window.loadPage = async function(pageName) {
         requestAnimationFrame(() => {
             setTimeout(() => {
                 if (pageName === 'controls') {
-                    initJoysticks();
-                    initGamepad();
+                    initControlsPage();
                 } else if (pageName === 'map') {
                     // initMap() je definována v map.js
                     if (typeof initMap === 'function') {
@@ -137,6 +143,76 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', bootstrapApp, { once: true });
 } else {
     bootstrapApp();
+}
+
+function loadScriptWithTimeout(src, timeoutMs) {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        let settled = false;
+        const timer = setTimeout(() => {
+            finish(new Error(`Timed out loading script: ${src}`));
+        }, Math.max(500, timeoutMs || JOYSTICK_SCRIPT_LOAD_TIMEOUT_MS));
+
+        const cleanup = () => {
+            script.onload = null;
+            script.onerror = null;
+            clearTimeout(timer);
+        };
+        const finish = (error) => {
+            if (settled) return;
+            settled = true;
+            cleanup();
+            if (error) {
+                script.remove();
+                reject(error);
+                return;
+            }
+            resolve();
+        };
+
+        script.src = src;
+        script.async = true;
+        script.defer = true;
+        script.onload = () => finish(null);
+        script.onerror = () => finish(new Error(`Failed to load script: ${src}`));
+        document.head.appendChild(script);
+    });
+}
+
+async function ensureJoystickLibrary() {
+    if (typeof window.nipplejs !== 'undefined') {
+        return true;
+    }
+    if (!joystickScriptPromise) {
+        joystickScriptPromise = (async () => {
+            for (const src of JOYSTICK_SCRIPT_URLS) {
+                try {
+                    await loadScriptWithTimeout(src, JOYSTICK_SCRIPT_LOAD_TIMEOUT_MS);
+                    if (typeof window.nipplejs !== 'undefined') {
+                        return true;
+                    }
+                } catch (err) {
+                    console.warn(err);
+                }
+            }
+            return false;
+        })();
+    }
+    return joystickScriptPromise;
+}
+
+async function initControlsPage() {
+    initGamepad();
+    const hasJoystickLibrary = await ensureJoystickLibrary();
+    if (!hasJoystickLibrary) {
+        const statusElem = document.getElementById('gamepad-status');
+        if (statusElem) {
+            statusElem.textContent = '⚠️ Joystick knihovna se nenačetla. Ovládání joystickem je nedostupné.';
+            statusElem.style.color = '#ff9500';
+        }
+        return;
+    }
+    initJoysticks();
 }
 
 
@@ -429,6 +505,19 @@ const joyManager = {
 };
 
 function initJoysticks() {
+    if (typeof window.nipplejs === 'undefined') {
+        console.warn('nipplejs library is not available.');
+        return;
+    }
+    if (joyManager.move) {
+        joyManager.move.destroy();
+        joyManager.move = null;
+    }
+    if (joyManager.rotate) {
+        joyManager.rotate.destroy();
+        joyManager.rotate = null;
+    }
+
     const commonOptions = {
         mode: 'static',
         position: { top: '50%', left: '50%' },
@@ -461,24 +550,29 @@ function initGamepad() {
     const statusElem = document.getElementById('gamepad-status');
     if (statusElem) statusElem.textContent = 'Hledám gamepad...';
 
-    window.addEventListener("gamepadconnected", (e) => {
-        if (statusElem) {
-            statusElem.textContent = `✅ Gamepad připojen: ${e.gamepad.id}`;
-            statusElem.style.color = 'green';
-        }
-        if (!gamepadInterval) {
-            gamepadInterval = setInterval(pollGamepads, 100);
-        }
-    });
+    if (!gamepadListenersInitialized) {
+        window.addEventListener("gamepadconnected", (e) => {
+            const currentStatusElem = document.getElementById('gamepad-status');
+            if (currentStatusElem) {
+                currentStatusElem.textContent = `✅ Gamepad připojen: ${e.gamepad.id}`;
+                currentStatusElem.style.color = 'green';
+            }
+            if (!gamepadInterval) {
+                gamepadInterval = setInterval(pollGamepads, 100);
+            }
+        });
 
-    window.addEventListener("gamepaddisconnected", () => {
-        if (statusElem) {
-            statusElem.textContent = 'Gamepad odpojen.';
-            statusElem.style.color = '#888';
-        }
-        clearInterval(gamepadInterval);
-        gamepadInterval = null;
-    });
+        window.addEventListener("gamepaddisconnected", () => {
+            const currentStatusElem = document.getElementById('gamepad-status');
+            if (currentStatusElem) {
+                currentStatusElem.textContent = 'Gamepad odpojen.';
+                currentStatusElem.style.color = '#888';
+            }
+            clearInterval(gamepadInterval);
+            gamepadInterval = null;
+        });
+        gamepadListenersInitialized = true;
+    }
 }
 
 function pollGamepads() {

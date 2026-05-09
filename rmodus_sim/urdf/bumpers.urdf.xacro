@@ -1,28 +1,47 @@
 <?xml version='1.0'?>
-<!-- Local sim bumper TF frames used when structure_source is local. -->
+<!-- Shared bumper TF frames - no Gazebo plugins -->
 
 <robot xmlns:xacro='http://www.ros.org/wiki/xacro'>
 
 <xacro:property name='bumper_mass' value='0.01'/>
 
 <xacro:macro name='render_bumper' params='b'>
-  <link name='bumper_${b["name"]}_link'>
-    <xacro:box_inertia m='${bumper_mass}' x='${b["size"][0]}' y='${b["size"][1]}' z='${b["size"][2]}'/>
+  <xacro:property name='contact_outset' value='${b.get("contact_outset", 0.001)}'/>
+  <link name='bumper_${b["name"]}_mount'>
+    <inertial>
+      <mass value='0.001'/>
+      <inertia ixx='0.00001' ixy='0' ixz='0' iyy='0.00001' iyz='0' izz='0.00001'/>
+    </inertial>
     <visual>
-      <origin xyz='${b["size"][0]/2} 0 0' rpy='0 0 0'/>
+      <origin xyz='${b["size"][0]/2} 0 ${-b["size"][2]/2}' rpy='0 0 0'/>
       <geometry><box size='${b["size"][0]} ${b["size"][1]} ${b["size"][2]}'/></geometry>
-      <material name='red'/>
+      <material name='bumper_mount_mat'/>
     </visual>
     <collision>
-      <origin xyz='${b["size"][0]/2} 0 0' rpy='0 0 0'/>
+      <origin xyz='${b["size"][0]/2} 0 ${-b["size"][2]/2}' rpy='0 0 0'/>
       <geometry><box size='${b["size"][0]} ${b["size"][1]} ${b["size"][2]}'/></geometry>
     </collision>
   </link>
 
-  <joint name='bumper_${b["name"]}_joint' type='fixed'>
-    <parent link='${b["parent_frame"]}'/>
-    <child link='bumper_${b["name"]}_link'/>
-    <origin xyz='${b["offset"][0]} ${b["offset"][1]} ${b["offset"][2]}' rpy='0 0 ${b["yaw"]}'/>
+  <link name='bumper_${b["name"]}_contact'>
+    <inertial>
+      <mass value='0.001'/>
+      <inertia ixx='0.00001' ixy='0' ixz='0' iyy='0.00001' iyz='0' izz='0.00001'/>
+    </inertial>
+  </link>
+
+  <joint name='bumper_${b["name"]}_mount_joint' type='fixed'>
+    <parent link='${b.get("mount_parent_frame", b.get("parent_frame", "base_link"))}'/>
+    <child link='bumper_${b["name"]}_mount'/>
+    <origin xyz='${b.get("mount_offset", b.get("offset", [0.0, 0.0, 0.0]))[0]} ${b.get("mount_offset", b.get("offset", [0.0, 0.0, 0.0]))[1]} ${b.get("mount_offset", b.get("offset", [0.0, 0.0, 0.0]))[2]}'
+            rpy='${b.get("mount_rpy", [0.0, 0.0, b.get("yaw", 0.0)])[0]} ${b.get("mount_rpy", [0.0, 0.0, b.get("yaw", 0.0)])[1]} ${b.get("mount_rpy", [0.0, 0.0, b.get("yaw", 0.0)])[2]}'/>
+  </joint>
+
+  <joint name='bumper_${b["name"]}_contact_joint' type='fixed'>
+    <parent link='bumper_${b["name"]}_mount'/>
+    <child link='bumper_${b["name"]}_contact'/>
+    <origin xyz='${b.get("contact_offset", [b["size"][0] + contact_outset, 0.0, -b["size"][2]/2])[0]} ${b.get("contact_offset", [b["size"][0] + contact_outset, 0.0, -b["size"][2]/2])[1]} ${b.get("contact_offset", [b["size"][0] + contact_outset, 0.0, -b["size"][2]/2])[2]}'
+            rpy='${b.get("contact_rpy", [0.0, 0.0, 0.0])[0]} ${b.get("contact_rpy", [0.0, 0.0, 0.0])[1]} ${b.get("contact_rpy", [0.0, 0.0, 0.0])[2]}'/>
   </joint>
 </xacro:macro>
 

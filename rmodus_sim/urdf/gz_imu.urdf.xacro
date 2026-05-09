@@ -12,7 +12,15 @@
   </plugin>
 </gazebo>
 
-<gazebo reference='imu_mount'>
+<gazebo reference='imu_mount_joint'>
+  <preserveFixedJoint>true</preserveFixedJoint>
+</gazebo>
+
+<gazebo reference='imu_joint'>
+  <preserveFixedJoint>true</preserveFixedJoint>
+</gazebo>
+
+<gazebo reference='imu_link'>
   <sensor name='imu_sensor' type='imu'>
     <always_on>1</always_on>
     <update_rate>${imu_cfg.get("update_rate", 100)}</update_rate>

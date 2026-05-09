@@ -59,37 +59,37 @@ Visualization Manager:
           Value: true
         base_link:
           Value: false
-        bumper_front_contact_frame:
+        bumper_front_contact:
           Value: true
-        bumper_front_link:
+        bumper_front_mount:
           Value: true
-        bumper_left_contact_frame:
+        bumper_left_contact:
           Value: true
-        bumper_left_link:
+        bumper_left_mount:
           Value: true
-        bumper_rear_contact_frame:
+        bumper_rear_contact:
           Value: true
-        bumper_rear_link:
+        bumper_rear_mount:
           Value: true
-        bumper_right_contact_frame:
+        bumper_right_contact:
           Value: true
-        bumper_right_link:
+        bumper_right_mount:
           Value: true
-        cliff_sensor_fl_beam_frame:
+        cliff_sensor_fl_beam:
           Value: true
-        cliff_sensor_fl_link:
+        cliff_sensor_fl_mount:
           Value: true
-        cliff_sensor_fr_beam_frame:
+        cliff_sensor_fr_beam:
           Value: true
-        cliff_sensor_fr_link:
+        cliff_sensor_fr_mount:
           Value: true
-        cliff_sensor_rl_beam_frame:
+        cliff_sensor_rl_beam:
           Value: true
-        cliff_sensor_rl_link:
+        cliff_sensor_rl_mount:
           Value: true
-        cliff_sensor_rr_beam_frame:
+        cliff_sensor_rr_beam:
           Value: true
-        cliff_sensor_rr_link:
+        cliff_sensor_rr_mount:
           Value: true
         front_left_wheel:
           Value: false
@@ -97,11 +97,15 @@ Visualization Manager:
           Value: false
         imu_mount:
           Value: false
+        imu_link:
+          Value: false
+        lidar_mount:
+          Value: false
         lidar_beam:
           Value: false
         map:
           Value: true
-        nav_module_mount:
+        main_module_mount:
           Value: false
         odom:
           Value: true
@@ -119,39 +123,41 @@ Visualization Manager:
           odom:
             base_footprint:
               base_link:
-                bumper_front_link:
-                  bumper_front_contact_frame:
+                bumper_front_mount:
+                  bumper_front_contact:
                     {}
-                bumper_left_link:
-                  bumper_left_contact_frame:
+                bumper_left_mount:
+                  bumper_left_contact:
                     {}
-                bumper_rear_link:
-                  bumper_rear_contact_frame:
+                bumper_rear_mount:
+                  bumper_rear_contact:
                     {}
-                bumper_right_link:
-                  bumper_right_contact_frame:
+                bumper_right_mount:
+                  bumper_right_contact:
                     {}
-                cliff_sensor_fl_link:
-                  cliff_sensor_fl_beam_frame:
+                cliff_sensor_fl_mount:
+                  cliff_sensor_fl_beam:
                     {}
-                cliff_sensor_fr_link:
-                  cliff_sensor_fr_beam_frame:
+                cliff_sensor_fr_mount:
+                  cliff_sensor_fr_beam:
                     {}
-                cliff_sensor_rl_link:
-                  cliff_sensor_rl_beam_frame:
+                cliff_sensor_rl_mount:
+                  cliff_sensor_rl_beam:
                     {}
-                cliff_sensor_rr_link:
-                  cliff_sensor_rr_beam_frame:
+                cliff_sensor_rr_mount:
+                  cliff_sensor_rr_beam:
                     {}
                 front_left_wheel:
                   {}
                 front_right_wheel:
                   {}
-                nav_module_mount:
+                main_module_mount:
                   imu_mount:
-                    {}
-                  lidar_beam:
-                    {}
+                    imu_link:
+                      {}
+                  lidar_mount:
+                    lidar_beam:
+                      {}
                 rear_left_wheel:
                   {}
                 rear_right_wheel:
@@ -208,74 +214,74 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
-        bumper_front_contact_frame:
+        bumper_front_contact:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        bumper_front_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        bumper_left_contact_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        bumper_left_link:
+        bumper_front_mount:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        bumper_rear_contact_frame:
+        bumper_left_contact:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        bumper_rear_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        bumper_right_contact_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        bumper_right_link:
+        bumper_left_mount:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        cliff_sensor_fl_beam_frame:
+        bumper_rear_contact:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        cliff_sensor_fl_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        cliff_sensor_fr_beam_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        cliff_sensor_fr_link:
+        bumper_rear_mount:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        cliff_sensor_rl_beam_frame:
+        bumper_right_contact:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        cliff_sensor_rl_link:
+        bumper_right_mount:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        cliff_sensor_rr_beam_frame:
+        cliff_sensor_fl_beam:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        cliff_sensor_rr_link:
+        cliff_sensor_fl_mount:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        cliff_sensor_fr_beam:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        cliff_sensor_fr_mount:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        cliff_sensor_rl_beam:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        cliff_sensor_rl_mount:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        cliff_sensor_rr_beam:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        cliff_sensor_rr_mount:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -295,12 +301,22 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
+        imu_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        lidar_mount:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
         lidar_beam:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        nav_module_mount:
+        main_module_mount:
           Alpha: 1
           Show Axes: false
           Show Trail: false

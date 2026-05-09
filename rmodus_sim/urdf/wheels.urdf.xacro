@@ -5,24 +5,31 @@
 
 <!-- PROPERTY -->
 <xacro:property name='wheel_mass' value='0.5'/>
-<xacro:property name='wheelbase' value='0.179'/>
-<xacro:property name='track_width' value='0.327'/>
-<xacro:property name='wheel_radius' value='0.05'/>
-<xacro:property name='wheel_length' value='0.03'/>
+<xacro:property name='wheelbase' value='${wheels_cfg.get("wheelbase", 0.179)}'/>
+<xacro:property name='track_width' value='${wheels_cfg.get("track_width", 0.327)}'/>
+<xacro:property name='wheel_radius' value='${wheels_cfg.get("radius", 0.05)}'/>
+<xacro:property name='wheel_length' value='${wheels_cfg.get("length", 0.03)}'/>
 
-<xacro:property name='wheel_offset_z' value='-0.0473'/>
+<xacro:property name='wheel_offset_z' value='${wheels_cfg.get("offset_z", -0.0473)}'/>
 
-<xacro:property name='wheel_mu' value='1.0'/>
-<xacro:property name='wheel_mu2' value='0.1'/>
+<xacro:property name='wheel_mu' value='${wheels_cfg.get("mu", 1.0)}'/>
+<xacro:property name='wheel_mu2' value='${wheels_cfg.get("mu2", 0.1)}'/>
 
 <!-- WHEELS -->
 <link name='front_left_wheel'>
   <xacro:sphere_inertia m='${wheel_mass}' r='${wheel_radius}' />
   <visual>
-    <geometry>
-      <mesh filename='package://${meshes_dir}/wheel.obj' scale='${creo_scale} ${creo_scale} ${creo_scale}'/>
-    </geometry>
-    <material name='green'/>
+    <xacro:if value='${use_mesh == "true"}'>
+      <geometry>
+        <mesh filename='package://${meshes_dir}/wheel.obj' scale='${creo_scale} ${creo_scale} ${creo_scale}'/>
+      </geometry>
+    </xacro:if>
+    <xacro:unless value='${use_mesh == "true"}'>
+      <geometry>
+        <sphere radius='${wheel_radius}'/>
+      </geometry>
+    </xacro:unless>
+    <material name='wheel_mat'/>
   </visual>
   <collision>
     <geometry>
@@ -34,11 +41,18 @@
 <link name='front_right_wheel'>
   <xacro:sphere_inertia m='${wheel_mass}' r='${wheel_radius}' />
   <visual>
-    <origin xyz='0 0 0' rpy='0 ${pi} 0'/>
-    <geometry>
-      <mesh filename='package://${meshes_dir}/wheel_mirror.obj' scale='${creo_scale} ${creo_scale} ${creo_scale}'/>
-    </geometry>
-    <material name='green'/>
+    <xacro:if value='${use_mesh == "true"}'>
+      <origin xyz='0 0 0' rpy='0 ${pi} 0'/>
+      <geometry>
+        <mesh filename='package://${meshes_dir}/wheel_mirror.obj' scale='${creo_scale} ${creo_scale} ${creo_scale}'/>
+      </geometry>
+    </xacro:if>
+    <xacro:unless value='${use_mesh == "true"}'>
+      <geometry>
+        <sphere radius='${wheel_radius}'/>
+      </geometry>
+    </xacro:unless>
+    <material name='wheel_mat'/>
   </visual>
   <collision>
     <geometry>
@@ -50,10 +64,17 @@
 <link name='rear_left_wheel'>
   <xacro:sphere_inertia m='${wheel_mass}' r='${wheel_radius}' />
   <visual>
-    <geometry>
-      <mesh filename='package://${meshes_dir}/wheel_mirror.obj' scale='${creo_scale} ${creo_scale} ${creo_scale}'/>
-    </geometry>
-    <material name='green'/>
+    <xacro:if value='${use_mesh == "true"}'>
+      <geometry>
+        <mesh filename='package://${meshes_dir}/wheel_mirror.obj' scale='${creo_scale} ${creo_scale} ${creo_scale}'/>
+      </geometry>
+    </xacro:if>
+    <xacro:unless value='${use_mesh == "true"}'>
+      <geometry>
+        <sphere radius='${wheel_radius}'/>
+      </geometry>
+    </xacro:unless>
+    <material name='wheel_mat'/>
   </visual>
   <collision>
     <geometry>
@@ -65,11 +86,18 @@
 <link name='rear_right_wheel'>
   <xacro:sphere_inertia m='${wheel_mass}' r='${wheel_radius}' />
   <visual>
-    <origin xyz='0 0 0' rpy='0 ${pi} 0'/>
-    <geometry>
-      <mesh filename='package://${meshes_dir}/wheel.obj' scale='${creo_scale} ${creo_scale} ${creo_scale}'/>
-    </geometry>
-    <material name='green'/>
+    <xacro:if value='${use_mesh == "true"}'>
+      <origin xyz='0 0 0' rpy='0 ${pi} 0'/>
+      <geometry>
+        <mesh filename='package://${meshes_dir}/wheel.obj' scale='${creo_scale} ${creo_scale} ${creo_scale}'/>
+      </geometry>
+    </xacro:if>
+    <xacro:unless value='${use_mesh == "true"}'>
+      <geometry>
+        <sphere radius='${wheel_radius}'/>
+      </geometry>
+    </xacro:unless>
+    <material name='wheel_mat'/>
   </visual>
   <collision>
     <geometry>

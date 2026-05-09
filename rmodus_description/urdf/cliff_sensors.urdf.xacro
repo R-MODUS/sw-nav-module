@@ -6,22 +6,27 @@
 <xacro:property name='cliff_sensor_mass' value='0.001'/>
 
 <xacro:macro name='render_cliff_sensor' params='c'>
-  <link name='cliff_sensor_${c["name"]}_link'>
+  <link name='cliff_sensor_${c["name"]}_mount'>
     <xacro:box_inertia m='${cliff_sensor_mass}' x='${c["size"][0]}' y='${c["size"][1]}' z='${c["size"][2]}'/>
     <visual>
+      <origin xyz='${c["size"][0]/2} 0 ${-c["size"][2]/2}' rpy='0 0 0'/>
       <geometry><box size='${c["size"][0]} ${c["size"][1]} ${c["size"][2]}'/></geometry>
-      <material name='red'/>
+      <material name='cliff_mount_mat'/>
     </visual>
+    <collision>
+      <origin xyz='${c["size"][0]/2} 0 ${-c["size"][2]/2}' rpy='0 0 0'/>
+      <geometry><box size='${c["size"][0]} ${c["size"][1]} ${c["size"][2]}'/></geometry>
+    </collision>
   </link>
 
-  <joint name='cliff_sensor_${c["name"]}_joint' type='fixed'>
-    <parent link='${c["parent_frame"]}'/>
-    <child link='cliff_sensor_${c["name"]}_link'/>
-    <origin xyz='${c["offset"][0]} ${c["offset"][1]} ${c["offset"][2]}' rpy='0 0 ${c.get("yaw", 0.0)}'/>
+  <joint name='cliff_sensor_${c["name"]}_mount_joint' type='fixed'>
+    <parent link='${c.get("mount_parent_frame", c.get("parent_frame", "base_link"))}'/>
+    <child link='cliff_sensor_${c["name"]}_mount'/>
+    <origin xyz='${c.get("mount_offset", c.get("offset", [0.0, 0.0, 0.0]))[0]} ${c.get("mount_offset", c.get("offset", [0.0, 0.0, 0.0]))[1]} ${c.get("mount_offset", c.get("offset", [0.0, 0.0, 0.0]))[2]}'
+            rpy='${c.get("mount_rpy", [0.0, 0.0, c.get("yaw", 0.0)])[0]} ${c.get("mount_rpy", [0.0, 0.0, c.get("yaw", 0.0)])[1]} ${c.get("mount_rpy", [0.0, 0.0, c.get("yaw", 0.0)])[2]}'/>
   </joint>
 
-  <!-- Beam frame pointing downward for range measurement -->
-  <link name='cliff_sensor_${c["name"]}_beam_frame'>
+  <link name='cliff_sensor_${c["name"]}_beam'>
     <inertial>
       <mass value='0.001'/>
       <inertia ixx='0.00001' ixy='0' ixz='0' iyy='0.00001' iyz='0' izz='0.00001'/>
@@ -29,9 +34,10 @@
   </link>
 
   <joint name='cliff_sensor_${c["name"]}_beam_joint' type='fixed'>
-    <parent link='cliff_sensor_${c["name"]}_link'/>
-    <child link='cliff_sensor_${c["name"]}_beam_frame'/>
-    <origin xyz='0 0 ${-c["size"][2]/2}' rpy='0 ${pi/2} 0'/>
+    <parent link='cliff_sensor_${c["name"]}_mount'/>
+    <child link='cliff_sensor_${c["name"]}_beam'/>
+    <origin xyz='${c.get("beam_offset", [c["size"][0], 0.0, -c["size"][2]/2])[0]} ${c.get("beam_offset", [c["size"][0], 0.0, -c["size"][2]/2])[1]} ${c.get("beam_offset", [c["size"][0], 0.0, -c["size"][2]/2])[2]}'
+            rpy='${c.get("beam_rpy", [0.0, pi/2, 0.0])[0]} ${c.get("beam_rpy", [0.0, pi/2, 0.0])[1]} ${c.get("beam_rpy", [0.0, pi/2, 0.0])[2]}'/>
   </joint>
 </xacro:macro>
 

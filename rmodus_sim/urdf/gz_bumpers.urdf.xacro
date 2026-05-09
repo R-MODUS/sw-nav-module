@@ -14,37 +14,23 @@
 
   <xacro:if value='${b.get("enabled", True)}'>
 
-  <gazebo reference='bumper_${b["name"]}_joint'>
+  <gazebo reference='bumper_${b["name"]}_mount_joint'>
     <preserveFixedJoint>true</preserveFixedJoint>
   </gazebo>
 
-  <gazebo reference='bumper_${b["name"]}_link'>
+  <gazebo reference='bumper_${b["name"]}_contact_joint'>
+    <preserveFixedJoint>true</preserveFixedJoint>
+  </gazebo>
+
+  <gazebo reference='bumper_${b["name"]}_mount'>
     <sensor name='bumper_${b["name"]}_sensor' type='contact'>
       <always_on>1</always_on>
       <update_rate>${b.get("update_rate", 30)}</update_rate>
       <topic>${b.get("topic", "/bumper/" + b["name"])}</topic>
       <contact>
-        <collision>bumper_${b["name"]}_link_collision</collision>
+        <collision>bumper_${b["name"]}_mount_collision</collision>
       </contact>
     </sensor>
-  </gazebo>
-
-  <!-- Contact frame (sim-specific) -->
-  <link name='bumper_${b["name"]}_contact_frame'>
-    <inertial>
-      <mass value='0.001'/>
-      <inertia ixx='0.00001' ixy='0' ixz='0' iyy='0.00001' iyz='0' izz='0.00001'/>
-    </inertial>
-  </link>
-
-  <joint name='bumper_${b["name"]}_contact_joint' type='fixed'>
-    <parent link='bumper_${b["name"]}_link'/>
-    <child link='bumper_${b["name"]}_contact_frame'/>
-    <origin xyz='${b["size"][0]} 0 0' rpy='0 0 0'/>
-  </joint>
-
-  <gazebo reference='bumper_${b["name"]}_contact_joint'>
-    <preserveFixedJoint>true</preserveFixedJoint>
   </gazebo>
 
   </xacro:if>

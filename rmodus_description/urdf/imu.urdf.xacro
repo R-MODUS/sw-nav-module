@@ -3,17 +3,47 @@
 
 <robot xmlns:xacro='http://www.ros.org/wiki/xacro'>
 
+<xacro:property name='imu_size' value='${imu_cfg.get("size", [0.02, 0.02, 0.01])}'/>
+<xacro:property name='imu_size_x' value='${imu_size[0]}'/>
+<xacro:property name='imu_size_y' value='${imu_size[1]}'/>
+<xacro:property name='imu_size_z' value='${imu_size[2]}'/>
+
 <link name='imu_mount'>
+  <inertial>
+    <origin xyz='0 0 ${imu_size_z/2}' rpy='0 0 0'/>
+    <mass value='0.01'/>
+    <inertia ixx='1e-6' ixy='0' ixz='0' iyy='1e-6' iyz='0' izz='1e-6'/>
+  </inertial>
+  <collision>
+    <origin xyz='0 0 ${imu_size_z/2}' rpy='0 0 0'/>
+    <geometry><box size='${imu_size_x} ${imu_size_y} ${imu_size_z}'/></geometry>
+  </collision>
   <visual>
-    <geometry><box size='0.02 0.02 0.01'/></geometry>
-    <material name='red'/>
+    <origin xyz='0 0 ${imu_size_z/2}' rpy='0 0 0'/>
+    <geometry><box size='${imu_size_x} ${imu_size_y} ${imu_size_z}'/></geometry>
+    <material name='imu_mount_mat'/>
   </visual>
 </link>
 
-<joint name='imu_joint' type='fixed'>
-  <parent link='nav_module_mount'/>
+<link name='imu_link'>
+  <inertial>
+    <mass value='0.001'/>
+    <inertia ixx='1e-7' ixy='0' ixz='0' iyy='1e-7' iyz='0' izz='1e-7'/>
+  </inertial>
+</link>
+
+<joint name='imu_mount_joint' type='fixed'>
+  <parent link='${imu_cfg.get("mount_parent_frame", "main_module_mount")}'/>
   <child link='imu_mount'/>
-  <origin xyz='${imu_cfg["offset_x"]} ${imu_cfg["offset_y"]} ${imu_cfg["offset_z"]}' rpy='0 0 0'/>
+  <origin xyz='${imu_cfg.get("mount_offset", [0.0, 0.0, 0.0])[0]} ${imu_cfg.get("mount_offset", [0.0, 0.0, 0.0])[1]} ${imu_cfg.get("mount_offset", [0.0, 0.0, 0.0])[2]}'
+          rpy='${imu_cfg.get("mount_rpy", [0.0, 0.0, 0.0])[0]} ${imu_cfg.get("mount_rpy", [0.0, 0.0, 0.0])[1]} ${imu_cfg.get("mount_rpy", [0.0, 0.0, 0.0])[2]}'/>
+</joint>
+
+<joint name='imu_joint' type='fixed'>
+  <parent link='imu_mount'/>
+  <child link='imu_link'/>
+  <origin xyz='${imu_cfg.get("offset", [imu_cfg.get("offset_x", 0.0), imu_cfg.get("offset_y", 0.0), imu_cfg.get("offset_z", 0.0)])[0]} ${imu_cfg.get("offset", [imu_cfg.get("offset_x", 0.0), imu_cfg.get("offset_y", 0.0), imu_cfg.get("offset_z", 0.0)])[1]} ${imu_cfg.get("offset", [imu_cfg.get("offset_x", 0.0), imu_cfg.get("offset_y", 0.0), imu_cfg.get("offset_z", 0.0)])[2]}'
+          rpy='${imu_cfg.get("rpy", [0.0, 0.0, 0.0])[0]} ${imu_cfg.get("rpy", [0.0, 0.0, 0.0])[1]} ${imu_cfg.get("rpy", [0.0, 0.0, 0.0])[2]}'/>
 </joint>
 
 </robot>

@@ -5,7 +5,7 @@
 
 <!-- PROPERTY -->
 <!-- mecanum dont publish odom topic in Gazebo 8.9.0 !!!, use 8.10.0 instead or diff-->
-<xacro:property name='drive' value='mecanum'/> <!-- mecanum or diff -->
+<xacro:property name='drive_mode' value='${drive_cfg.get("mode", "mecanum")}'/> <!-- mecanum or diff/differential -->
 
 <!-- JOINT STATE plugin -->
 <gazebo>
@@ -17,7 +17,7 @@
 </gazebo>
 
 <!-- DIFF DRIVE plugin -->
-<xacro:if value="${drive == 'diff'}">
+<xacro:if value="${drive_mode == 'diff' or drive_mode == 'differential'}">
   <gazebo>
     <plugin
       filename="libgz-sim-diff-drive-system.so"
@@ -41,7 +41,7 @@
 </xacro:if>
 
 <!-- MECANUM DRIVE plugin -->
-<xacro:if value="${drive == 'mecanum'}">
+<xacro:if value="${drive_mode == 'mecanum'}">
   <gazebo>
     <plugin 
       filename='libgz-sim-mecanum-drive-system.so'

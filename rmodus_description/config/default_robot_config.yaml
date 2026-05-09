@@ -28,15 +28,20 @@
       name: 'imu'
       topic: '/imu/data'
       frame_id: 'imu_link'
-      offset_x: 0.056
-      offset_y: 0.020
-      offset_z: 0.015
+      mount_parent_frame: 'main_module_mount'
+      mount_offset: [0.0, 0.0, 0.0]
+      mount_rpy: [0.0, 0.0, 0.0]
+      offset: [0.056, 0.020, 0.015]
+      rpy: [0.0, 0.0, 0.0]
 
     lidar:
       enabled: true
       name: 'lidar'
       topic: '/scan'
-      frame_id: 'lidar_link'
+      frame_id: 'lidar_beam'
+      mount_parent_frame: 'main_module_mount'
+      mount_offset: [0.0, 0.0, 0.0]
+      mount_rpy: [0.0, 0.0, 0.0]
       port: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.2:1.0-port0'
       motor_pin: 19
       frequency: 10000
@@ -47,8 +52,8 @@
       range_max: 10.0
       fov: 360
       resolution: 1.0
-      offset_x: 0.005
-      offset_z: 0.2
+      offset: [0.005, 0.0, 0.2]
+      rpy: [0.0, 0.0, 0.0]
 
     flow_sensor:
       enabled: true
@@ -72,36 +77,44 @@
         pin: 0
         inverted: false
         size: [0.02, 0.30, 0.05] # x(depth), y(width), z(height)
-        offset: [0.30, 0.0, 0.0] # x, y, z
-        yaw: 0.0
-        parent_frame: 'base_link'
+        mount_parent_frame: 'base_link'
+        mount_offset: [0.30, 0.0, 0.0] # x, y, z
+        mount_rpy: [0.0, 0.0, 0.0]
+        contact_offset: [0.02, 0.0, -0.025]
+        contact_rpy: [0.0, 0.0, 0.0]
 
       - name: 'rear'
         enabled: true
         pin: 1
         inverted: false
         size: [0.02, 0.30, 0.05]
-        offset: [-0.30, 0.0, 0.0]
-        yaw: 3.14159
-        parent_frame: 'base_link'
+        mount_parent_frame: 'base_link'
+        mount_offset: [-0.30, 0.0, 0.0]
+        mount_rpy: [0.0, 0.0, 3.14159]
+        contact_offset: [0.02, 0.0, -0.025]
+        contact_rpy: [0.0, 0.0, 0.0]
 
       - name: 'left'
         enabled: true
         pin: 2
         inverted: false
         size: [0.02, 0.20, 0.05]
-        offset: [0.0, 0.30, 0.0]
-        yaw: 1.5708
-        parent_frame: 'base_link'
+        mount_parent_frame: 'base_link'
+        mount_offset: [0.0, 0.30, 0.0]
+        mount_rpy: [0.0, 0.0, 1.5708]
+        contact_offset: [0.02, 0.0, -0.025]
+        contact_rpy: [0.0, 0.0, 0.0]
 
       - name: 'right'
         enabled: true
         pin: 3
         inverted: false
         size: [0.02, 0.20, 0.05]
-        offset: [0.0, -0.30, 0.0]
-        yaw: -1.5708
-        parent_frame: 'base_link'
+        mount_parent_frame: 'base_link'
+        mount_offset: [0.0, -0.30, 0.0]
+        mount_rpy: [0.0, 0.0, -1.5708]
+        contact_offset: [0.02, 0.0, -0.025]
+        contact_rpy: [0.0, 0.0, 0.0]
 
     cliff_sensors:
       - name: 'fl'
@@ -110,9 +123,11 @@
         v_points: [0.3, 0.4, 0.8, 1.2, 2.0, 2.5]
         d_points: [0.20, 0.15, 0.08, 0.05, 0.03, 0.02]
         size: [0.02, 0.02, 0.02]
-        offset: [0.25, 0.20, 0.0]
-        yaw: 0.0
-        parent_frame: 'base_link'
+        mount_parent_frame: 'base_link'
+        mount_offset: [0.25, 0.20, 0.0]
+        mount_rpy: [0.0, 0.0, 0.0]
+        beam_offset: [0.0, 0.0, -0.01]
+        beam_rpy: [0.0, 1.5708, 0.0]
 
       - name: 'fr'
         enabled: true
@@ -120,9 +135,11 @@
         v_points: [0.3, 0.4, 0.8, 1.2, 2.0, 2.5]
         d_points: [0.20, 0.15, 0.08, 0.05, 0.03, 0.02]
         size: [0.02, 0.02, 0.02]
-        offset: [0.25, -0.20, 0.0]
-        yaw: 0.0
-        parent_frame: 'base_link'
+        mount_parent_frame: 'base_link'
+        mount_offset: [0.25, -0.20, 0.0]
+        mount_rpy: [0.0, 0.0, 0.0]
+        beam_offset: [0.0, 0.0, -0.01]
+        beam_rpy: [0.0, 1.5708, 0.0]
 
       - name: 'rl'
         enabled: true
@@ -130,9 +147,11 @@
         v_points: [0.3, 0.4, 0.8, 1.2, 2.0, 2.5]
         d_points: [0.20, 0.15, 0.08, 0.05, 0.03, 0.02]
         size: [0.02, 0.02, 0.02]
-        offset: [-0.25, 0.20, 0.0]
-        yaw: 3.14159
-        parent_frame: 'base_link'
+        mount_parent_frame: 'base_link'
+        mount_offset: [-0.25, 0.20, 0.0]
+        mount_rpy: [0.0, 0.0, 3.14159]
+        beam_offset: [0.0, 0.0, -0.01]
+        beam_rpy: [0.0, 1.5708, 0.0]
 
       - name: 'rr'
         enabled: true
@@ -140,9 +159,11 @@
         v_points: [0.3, 0.4, 0.8, 1.2, 2.0, 2.5]
         d_points: [0.20, 0.15, 0.08, 0.05, 0.03, 0.02]
         size: [0.02, 0.02, 0.02]
-        offset: [-0.25, -0.20, 0.0]
-        yaw: 3.14159
-        parent_frame: 'base_link'
+        mount_parent_frame: 'base_link'
+        mount_offset: [-0.25, -0.20, 0.0]
+        mount_rpy: [0.0, 0.0, 3.14159]
+        beam_offset: [0.0, 0.0, -0.01]
+        beam_rpy: [0.0, 1.5708, 0.0]
 
     motors_node:
       port: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0-port0'

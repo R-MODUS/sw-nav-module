@@ -39,11 +39,11 @@ class ObstacleCloudNode(Node):
         self.declare_parameter('bumper_topics', ['/bumper/front', '/bumper/rear', '/bumper/left', '/bumper/right'])
         self.declare_parameter(
             'range_topic_frames',
-            ['/cliff/fl:cliff_sensor_fl_beam_frame', '/cliff/fr:cliff_sensor_fr_beam_frame', '/cliff/rl:cliff_sensor_rl_beam_frame', '/cliff/rr:cliff_sensor_rr_beam_frame'],
+            ['/cliff/fl:cliff_sensor_fl_beam', '/cliff/fr:cliff_sensor_fr_beam', '/cliff/rl:cliff_sensor_rl_beam', '/cliff/rr:cliff_sensor_rr_beam'],
         )
         self.declare_parameter(
             'bumper_topic_frames',
-            ['/bumper/front:bumper_front_link', '/bumper/rear:bumper_rear_link', '/bumper/left:bumper_left_link', '/bumper/right:bumper_right_link'],
+            ['/bumper/front:bumper_front_contact', '/bumper/rear:bumper_rear_contact', '/bumper/left:bumper_left_contact', '/bumper/right:bumper_right_contact'],
         )
 
         self.base_frame = str(self.get_parameter('base_frame').value)
@@ -165,12 +165,12 @@ class ObstacleCloudNode(Node):
     def _default_range_frame(self, topic):
         suffix = topic.rstrip('/').split('/')[-1]
         suffix = self.name_aliases.get(suffix, suffix)
-        return f'cliff_sensor_{suffix}_beam_frame'
+        return f'cliff_sensor_{suffix}_beam'
 
     def _default_bumper_frame(self, topic):
         suffix = topic.rstrip('/').split('/')[-1]
         suffix = self.name_aliases.get(suffix, suffix)
-        return f'bumper_{suffix}_link'
+        return f'bumper_{suffix}_contact'
 
     def bumper_cb(self, msg, topic):
         frame_id = msg.header.frame_id.strip() if msg.header.frame_id else ''

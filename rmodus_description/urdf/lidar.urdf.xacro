@@ -3,17 +3,46 @@
 
 <robot xmlns:xacro='http://www.ros.org/wiki/xacro'>
 
-<link name='lidar_beam'>
+<xacro:property name='lidar_size' value='${lidar_cfg.get("size", [0.02, 0.02])}'/>
+<xacro:property name='lidar_mount_radius' value='${lidar_size[0] / 2.0}'/>
+<xacro:property name='lidar_mount_length' value='${lidar_size[1]}'/>
+
+<link name='lidar_mount'>
+  <inertial>
+    <origin xyz='0 0 ${lidar_mount_length/2}' rpy='0 0 0'/>
+    <mass value='0.02'/>
+    <inertia ixx='2e-6' ixy='0' ixz='0' iyy='2e-6' iyz='0' izz='2e-6'/>
+  </inertial>
+  <collision>
+    <origin xyz='0 0 ${lidar_mount_length/2}' rpy='0 0 0'/>
+    <geometry><cylinder radius='${lidar_mount_radius}' length='${lidar_mount_length}'/></geometry>
+  </collision>
   <visual>
-    <geometry><cylinder radius='0.01' length='0.04'/></geometry>
-    <material name='red'/>
+    <origin xyz='0 0 ${lidar_mount_length/2}' rpy='0 0 0'/>
+    <geometry><cylinder radius='${lidar_mount_radius}' length='${lidar_mount_length}'/></geometry>
+    <material name='lidar_mount_mat'/>
   </visual>
 </link>
 
+<link name='lidar_beam'>
+  <inertial>
+    <mass value='0.001'/>
+    <inertia ixx='1e-7' ixy='0' ixz='0' iyy='1e-7' iyz='0' izz='1e-7'/>
+  </inertial>
+</link>
+
+<joint name='lidar_mount_joint' type='fixed'>
+  <parent link='${lidar_cfg.get("mount_parent_frame", "main_module_mount")}'/>
+  <child link='lidar_mount'/>
+  <origin xyz='${lidar_cfg.get("mount_offset", [0.0, 0.0, 0.0])[0]} ${lidar_cfg.get("mount_offset", [0.0, 0.0, 0.0])[1]} ${lidar_cfg.get("mount_offset", [0.0, 0.0, 0.0])[2]}'
+          rpy='${lidar_cfg.get("mount_rpy", [0.0, 0.0, 0.0])[0]} ${lidar_cfg.get("mount_rpy", [0.0, 0.0, 0.0])[1]} ${lidar_cfg.get("mount_rpy", [0.0, 0.0, 0.0])[2]}'/>
+</joint>
+
 <joint name='lidar_joint' type='fixed'>
-  <parent link='nav_module_mount'/>
+  <parent link='lidar_mount'/>
   <child link='lidar_beam'/>
-  <origin xyz='${lidar_cfg["offset_x"]} 0 ${lidar_cfg["offset_z"]}' rpy='0 0 0'/>
+  <origin xyz='${lidar_cfg.get("offset", [lidar_cfg.get("offset_x", 0.0), 0.0, lidar_cfg.get("offset_z", 0.0)])[0]} ${lidar_cfg.get("offset", [lidar_cfg.get("offset_x", 0.0), 0.0, lidar_cfg.get("offset_z", 0.0)])[1]} ${lidar_cfg.get("offset", [lidar_cfg.get("offset_x", 0.0), 0.0, lidar_cfg.get("offset_z", 0.0)])[2]}'
+          rpy='${lidar_cfg.get("rpy", [0.0, 0.0, 0.0])[0]} ${lidar_cfg.get("rpy", [0.0, 0.0, 0.0])[1]} ${lidar_cfg.get("rpy", [0.0, 0.0, 0.0])[2]}'/>
 </joint>
 
 </robot>

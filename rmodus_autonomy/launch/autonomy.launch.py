@@ -2,7 +2,7 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, PythonExpression
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
@@ -17,6 +17,7 @@ def generate_launch_description():
     nav2_params = LaunchConfiguration("nav2_params_file")
 
     use_sim_time = LaunchConfiguration("use_sim_time")
+    localization = LaunchConfiguration("localization")
     slam = LaunchConfiguration("slam")
     navigation = LaunchConfiguration("navigation")
     rf2o = LaunchConfiguration("rf2o")
@@ -33,6 +34,7 @@ def generate_launch_description():
     return LaunchDescription(
         [
             DeclareLaunchArgument("use_sim_time", default_value="false"),
+            DeclareLaunchArgument("localization", default_value="true"),
             DeclareLaunchArgument("slam", default_value="true"),
             DeclareLaunchArgument("navigation", default_value="true"),
             DeclareLaunchArgument("rf2o", default_value="false"),
@@ -77,6 +79,7 @@ def generate_launch_description():
                     "robot_config_file": robot_config_file,
                     "global_params_file": global_params_file,
                 }.items(),
+                condition=IfCondition(localization),
             ),
             Node(
                 package="rf2o_laser_odometry",
@@ -85,12 +88,16 @@ def generate_launch_description():
                 parameters=[rf2o_params, {"use_sim_time": use_sim_time}],
                 output="screen",
                 emulate_tty=True,
-                condition=IfCondition(rf2o),
+                condition=IfCondition(
+                    PythonExpression(["'", localization, "' == 'true' and '", rf2o, "' == 'true'"])
+                ),
             ),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(slam_toolbox_launch),
                 launch_arguments={"slam_params_file": slam_params, "use_sim_time": use_sim_time}.items(),
-                condition=IfCondition(slam),
+                condition=IfCondition(
+                    PythonExpression(["'", localization, "' == 'true' and '", slam, "' == 'true'"])
+                ),
             ),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(nav2_launch),

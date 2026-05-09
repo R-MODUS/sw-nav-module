@@ -23,6 +23,7 @@ def _deep_merge(base_obj, override_obj):
 def _create_sim_actions(context):
     pkg_name = 'rmodus_sim'
     structure_source = LaunchConfiguration('structure_source').perform(context)
+    use_mesh_visuals = LaunchConfiguration('use_mesh_visuals').perform(context)
     sim_config_file = LaunchConfiguration('sim_config_file').perform(context)
     sim_override_file = LaunchConfiguration('sim_override_file').perform(context)
     dynamic_bridge_base_config_file = LaunchConfiguration('dynamic_bridge_base_config_file').perform(context)
@@ -83,7 +84,8 @@ def _create_sim_actions(context):
                     Command([
                         'xacro ', robot_xacro, ' ',
                         'config_path:=', final_robot_config, ' ',
-                        'structure_source:=', structure_source
+                        'structure_source:=', structure_source, ' ',
+                        'use_mesh_visuals:=', use_mesh_visuals
                     ]),
                     value_type=str
                 )
@@ -116,6 +118,11 @@ def generate_launch_description():
             'structure_source',
             default_value='description',
             description='Robot structure source: description or local',
+        ),
+        DeclareLaunchArgument(
+            'use_mesh_visuals',
+            default_value='true',
+            description='Use mesh visuals instead of collision-like primitives',
         ),
         DeclareLaunchArgument(
             'sim_config_file',
@@ -165,7 +172,7 @@ def create_combined_bridge_config(static_yaml_path, robot_config_path):
         name = b['name']
         bridge_data.append({
             'ros_topic_name': f'/bumper/{name}/contact',
-            'gz_topic_name': f'/world/my_world/model/my_robot/link/bumper_{name}_link/sensor/bumper_{name}_sensor/contact',
+            'gz_topic_name': f'/world/my_world/model/my_robot/link/bumper_{name}_mount/sensor/bumper_{name}_sensor/contact',
             'ros_type_name': 'ros_gz_interfaces/msg/Contacts',
             'gz_type_name': 'gz.msgs.Contacts',
             'direction': 'GZ_TO_ROS'

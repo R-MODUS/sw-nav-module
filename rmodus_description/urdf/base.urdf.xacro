@@ -8,8 +8,17 @@
 <xacro:property name='base_size_y'   value='${base_cfg["size"][1]}'/>
 <xacro:property name='base_size_z'   value='${base_cfg["size"][2]}'/>
 <xacro:property name='base_offset_z' value='${base_cfg["offset_z"]}'/>
-<xacro:property name='nav_offset_x'  value='${base_cfg["nav_offset_x"]}'/>
-<xacro:property name='nav_offset_z'  value='${base_cfg["nav_offset_z"]}'/>
+<xacro:property name='nav_cfg'       value='${robot_cfg["/**"]["ros__parameters"].get("nav_module", dict())}'/>
+<xacro:property name='nav_offset'    value='${nav_cfg.get("offset", [nav_cfg.get("offset_x", base_cfg.get("nav_offset_x", 0.0)), nav_cfg.get("offset_y", 0.0), nav_cfg.get("offset_z", base_cfg.get("nav_offset_z", 0.0))])}'/>
+<xacro:property name='nav_offset_x'  value='${nav_offset[0]}'/>
+<xacro:property name='nav_offset_y'  value='${nav_offset[1]}'/>
+<xacro:property name='nav_offset_z'  value='${nav_offset[2]}'/>
+<xacro:property name='nav_rpy_r'     value='${nav_cfg.get("rpy", [0.0, 0.0, 0.0])[0]}'/>
+<xacro:property name='nav_rpy_p'     value='${nav_cfg.get("rpy", [0.0, 0.0, 0.0])[1]}'/>
+<xacro:property name='nav_rpy_y'     value='${nav_cfg.get("rpy", [0.0, 0.0, 0.0])[2]}'/>
+<xacro:property name='nav_size_x'    value='${nav_cfg.get("size", [0.20, 0.16, 0.05])[0]}'/>
+<xacro:property name='nav_size_y'    value='${nav_cfg.get("size", [0.20, 0.16, 0.05])[1]}'/>
+<xacro:property name='nav_size_z'    value='${nav_cfg.get("size", [0.20, 0.16, 0.05])[2]}'/>
 
 <link name='base_footprint'/>
 
@@ -24,14 +33,14 @@
     <xacro:unless value='${use_mesh == "true"}'>
       <geometry><box size='${base_size_x} ${base_size_y} ${base_size_z}'/></geometry>
     </xacro:unless>
-    <material name='blue'/>
+    <material name='base_mat'/>
   </visual>
   <collision>
     <geometry><box size='${base_size_x} ${base_size_y} ${base_size_z}'/></geometry>
   </collision>
 </link>
 
-<link name='nav_module_mount'>
+<link name='main_module_mount'>
   <visual>
     <origin xyz='0 0 0' rpy='0 0 0'/>
     <xacro:if value='${use_mesh == "true"}'>
@@ -40,9 +49,9 @@
       </geometry>
     </xacro:if>
     <xacro:unless value='${use_mesh == "true"}'>
-      <geometry><cylinder radius='0.01' length='0.04'/></geometry>
+      <geometry><box size='${nav_size_x} ${nav_size_y} ${nav_size_z}'/></geometry>
     </xacro:unless>
-    <material name='gray'/>
+    <material name='main_module_mat'/>
   </visual>
 </link>
 
@@ -52,10 +61,10 @@
   <origin xyz='0 0 ${base_offset_z}' rpy='0 0 0'/>
 </joint>
 
-<joint name='nav_module_mount_joint' type='fixed'>
+<joint name='main_module_mount_joint' type='fixed'>
   <parent link='base_link'/>
-  <child link='nav_module_mount'/>
-  <origin xyz='${nav_offset_x} 0 ${nav_offset_z}' rpy='0 0 0'/>
+  <child link='main_module_mount'/>
+  <origin xyz='${nav_offset_x} ${nav_offset_y} ${nav_offset_z}' rpy='${nav_rpy_r} ${nav_rpy_p} ${nav_rpy_y}'/>
 </joint>
 
 </robot>

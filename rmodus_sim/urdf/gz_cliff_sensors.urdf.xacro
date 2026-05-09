@@ -9,7 +9,7 @@
 
   <xacro:if value='${c.get("enabled", True)}'>
 
-  <gazebo reference='cliff_sensor_${c["name"]}_link'>
+  <gazebo reference='cliff_sensor_${c["name"]}_mount_joint'>
     <preserveFixedJoint>true</preserveFixedJoint>
   </gazebo>
 
@@ -17,7 +17,7 @@
     <preserveFixedJoint>true</preserveFixedJoint>
   </gazebo>
 
-  <gazebo reference='cliff_sensor_${c["name"]}_beam_frame'>
+  <gazebo reference='cliff_sensor_${c["name"]}_beam'>
     <sensor name='cliff_${c["name"]}' type='gpu_ray'>
       <always_on>1</always_on>
       <update_rate>${c.get("update_rate", 20)}</update_rate>
@@ -38,7 +38,7 @@
         </range>
       </ray>
       <topic>${c.get("topic", "/cliff/" + c["name"])}</topic>
-      <gz_frame_id>cliff_sensor_${c["name"]}_beam_frame</gz_frame_id>
+      <gz_frame_id>cliff_sensor_${c["name"]}_beam</gz_frame_id>
     </sensor>
   </gazebo>
 

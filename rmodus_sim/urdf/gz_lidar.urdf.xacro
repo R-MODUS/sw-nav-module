@@ -13,6 +13,14 @@
   </plugin>
 </gazebo>
 
+<gazebo reference='lidar_mount_joint'>
+  <preserveFixedJoint>true</preserveFixedJoint>
+</gazebo>
+
+<gazebo reference='lidar_joint'>
+  <preserveFixedJoint>true</preserveFixedJoint>
+</gazebo>
+
 <gazebo reference='lidar_beam'>
   <sensor name='lidar' type='gpu_ray'>
     <always_on>1</always_on>

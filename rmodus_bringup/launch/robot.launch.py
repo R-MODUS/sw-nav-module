@@ -18,6 +18,8 @@ def generate_launch_description():
 
     mode = LaunchConfiguration('mode')
     use_sim_time = PythonExpression(["'true' if '", LaunchConfiguration('mode'), "' == 'sim' else 'false'"])
+    localization = LaunchConfiguration('localization')
+    use_mesh_visuals = LaunchConfiguration('use_mesh_visuals')
     navigation = LaunchConfiguration('navigation')
     slam = LaunchConfiguration('slam')
     rf2o = LaunchConfiguration('rf2o')
@@ -30,6 +32,8 @@ def generate_launch_description():
 
     return LaunchDescription([
         DeclareLaunchArgument('mode', default_value='hw', description='Launch mode: hw or sim'),
+        DeclareLaunchArgument('localization', default_value='true'),
+        DeclareLaunchArgument('use_mesh_visuals', default_value='true'),
         DeclareLaunchArgument('navigation', default_value='true'),
         DeclareLaunchArgument('slam', default_value='true'),
         DeclareLaunchArgument('rf2o', default_value='false'),
@@ -68,6 +72,7 @@ def generate_launch_description():
             PythonLaunchDescriptionSource(sim_launch),
             launch_arguments={
                 'structure_source': 'description',
+                'use_mesh_visuals': use_mesh_visuals,
                 'sim_config_file': robot_config_file,
                 'sim_override_file': user_params_file,
             }.items(),
@@ -82,6 +87,7 @@ def generate_launch_description():
             PythonLaunchDescriptionSource(autonomy_launch),
             launch_arguments={
                 'use_sim_time': use_sim_time,
+                'localization': localization,
                 'navigation': navigation,
                 'slam': slam,
                 'rf2o': rf2o,

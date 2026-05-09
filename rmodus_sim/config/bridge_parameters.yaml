@@ -74,25 +74,25 @@
 
 # # Bumper senzory (GZ -> ROS)  [std_msgs/msg/Bool]
 # - ros_topic_name: "/bumper/front/contact"
-#   gz_topic_name: "/world/my_world/model/my_robot/link/bumper_front_link/sensor/bumper_front_sensor/contact"
+#   gz_topic_name: "/world/my_world/model/my_robot/link/bumper_front_contact/sensor/bumper_front_sensor/contact"
 #   ros_type_name: "ros_gz_interfaces/msg/Contacts"
 #   gz_type_name: "gz.msgs.Contacts"
 #   direction: GZ_TO_ROS
 
 # - ros_topic_name: "/bumper/rear/contact"
-#   gz_topic_name: "/world/my_world/model/my_robot/link/bumper_rear_link/sensor/bumper_rear_sensor/contact"
+#   gz_topic_name: "/world/my_world/model/my_robot/link/bumper_rear_contact/sensor/bumper_rear_sensor/contact"
 #   ros_type_name: "ros_gz_interfaces/msg/Contacts"
 #   gz_type_name: "gz.msgs.Contacts"
 #   direction: GZ_TO_ROS
 
 # - ros_topic_name: "/bumper/left/contact"
-#   gz_topic_name: "/world/my_world/model/my_robot/link/bumper_left_link/sensor/bumper_left_sensor/contact"
+#   gz_topic_name: "/world/my_world/model/my_robot/link/bumper_left_contact/sensor/bumper_left_sensor/contact"
 #   ros_type_name: "ros_gz_interfaces/msg/Contacts"
 #   gz_type_name: "gz.msgs.Contacts"
 #   direction: GZ_TO_ROS
 
 # - ros_topic_name: "/bumper/right/contact"
-#   gz_topic_name: "/world/my_world/model/my_robot/link/bumper_right_link/sensor/bumper_right_sensor/contact"
+#   gz_topic_name: "/world/my_world/model/my_robot/link/bumper_right_contact/sensor/bumper_right_sensor/contact"
 #   ros_type_name: "ros_gz_interfaces/msg/Contacts"
 #   gz_type_name: "gz.msgs.Contacts"
 #   direction: GZ_TO_ROS

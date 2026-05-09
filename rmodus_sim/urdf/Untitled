@@ -1,1 +1,33 @@
-b
+
+    imu:
+      enabled: true
+      type: 'imu'
+      name: 'imu'
+      topic: '/imu/data'
+      update_rate: 100
+      visualize: false
+      frame_id: 'imu_link'
+      mount_parent_frame: 'main_module_mount'
+      mount_offset: [-0.01, 0.05, 0.02]
+      mount_rpy: [0.0, 0.0, 0.0]
+      offset: [0.015, 0.0, 0.015]
+      rpy: [0.0, 0.0, 0.0]
+
+    lidar:
+      enabled: true
+      name: 'lidar'
+      topic: '/scan'
+      update_rate: 10
+      visualize: false
+      frame_id: 'lidar_beam'
+      mount_parent_frame: 'main_module_mount'
+      mount_offset: [0.07, 0.0, 0.03]
+      mount_rpy: [0.0, 0.0, 0.0]
+      angle_min: 0.0
+      angle_max: 6.28319
+      range_min: 0.1
+      range_max: 10.0
+      fov: 360
+      resolution: 1.0
+      offset: [0.0, 0.0, 0.07]
+      rpy: [0.0, 0.0, 0.0]

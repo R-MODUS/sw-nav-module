@@ -1,6 +1,6 @@
 lidar_node:
   ros__parameters:
-    frame_id: 'lidar_mount'
+    frame_id: 'lidar_beam'
     angle_min: 0.0
     angle_max: 6.28319
     range_max: 5.0

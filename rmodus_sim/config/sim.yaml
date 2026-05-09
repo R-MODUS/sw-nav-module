@@ -3,14 +3,40 @@
 
     base_link:
       mass: 5.0
-      size: [0.5, 0.5, 0.1]
-      offset_z: 0.0973
-      nav_offset_x: 0.032
-      nav_offset_z: 0.0
+      size: [0.52, 0.36, 0.10]
+      offset_z: 0.100
+      nav_offset_x: 0.0
+      nav_offset_z: 0.01
 
     nav_module:
-      offset_x: 0.032
-      offset_z: 0.0
+      size: [0.24, 0.18, 0.06]
+      offset: [0.08, 0.0, 0.035]
+      rpy: [0.0, 0.0, 0.08]
+
+    drive:
+      mode: 'mecanum' # mecanum | diff
+
+    wheels:
+      wheelbase: 0.24
+      track_width: 0.38
+      radius: 0.055
+      length: 0.03
+      offset_z: -0.06
+      mu: 1.1
+      mu2: 0.15
+
+    visual_colors:
+      base: [0.24, 0.26, 0.29, 1.0]
+      main_module: [0.42, 0.45, 0.49, 1.0]
+      wheel: [0.10, 0.10, 0.11, 1.0]
+      imu_mount: [0.50, 0.28, 0.92, 1.0]
+      imu_link: [0.88, 0.82, 0.95, 1.0]
+      lidar_mount: [0.20, 0.48, 0.72, 1.0]
+      lidar_beam: [0.34, 0.70, 0.93, 1.0]
+      bumper_mount: [0.68, 0.20, 0.20, 1.0]
+      bumper_contact: [0.90, 0.24, 0.24, 1.0]
+      cliff_mount: [0.18, 0.62, 0.44, 1.0]
+      cliff_beam: [0.40, 0.79, 0.56, 1.0]
 
     imu:
       enabled: true
@@ -20,9 +46,12 @@
       update_rate: 100
       visualize: false
       frame_id: 'imu_link'
-      offset_x: 0.056
-      offset_y: 0.020
-      offset_z: 0.015
+      size: [0.02, 0.02, 0.01]
+      mount_parent_frame: 'main_module_mount'
+      mount_offset: [-0.01, 0.05, 0.02]
+      mount_rpy: [0.0, 0.0, 0.0]
+      offset: [0.015, 0.0, 0.015]
+      rpy: [0.0, 0.0, 0.0]
 
     lidar:
       enabled: true
@@ -30,52 +59,68 @@
       topic: '/scan'
       update_rate: 10
       visualize: false
-      frame_id: 'lidar_link'
+      frame_id: 'lidar_beam'
+      size: [0.02, 0.02] # [diameter, length] of lidar mount cylinder
+      mount_parent_frame: 'main_module_mount'
+      mount_offset: [0.07, 0.0, 0.03]
+      mount_rpy: [0.0, 0.0, 0.0]
       angle_min: 0.0
       angle_max: 6.28319
       range_min: 0.1
       range_max: 10.0
       fov: 360
       resolution: 1.0
-      offset_x: 0.005
-      offset_z: 0.2
+      offset: [0.0, 0.0, 0.07]
+      rpy: [0.0, 0.0, 0.0]
 
     bumpers:
       - name: 'front'
         enabled: true
         inverted: false
         update_rate: 30
-        size: [0.02, 0.30, 0.05]
-        offset: [0.30, 0.0, 0.0]
-        yaw: 0.0
-        parent_frame: 'base_link'
+        size: [0.03, 0.34, 0.06]
+        mount_parent_frame: 'base_link'
+        mount_offset: [0.33, 0.0, 0.0]
+        mount_rpy: [0.0, 0.0, 0.0]
+        contact_offset: [0.031, 0.0, -0.03]
+        contact_outset: 0.001
+        contact_rpy: [0.0, 0.0, 0.0]
 
       - name: 'rear'
         enabled: true
         inverted: false
         update_rate: 30
-        size: [0.02, 0.30, 0.05]
-        offset: [-0.30, 0.0, 0.0]
-        yaw: 3.14159
-        parent_frame: 'base_link'
+        size: [0.03, 0.34, 0.06]
+        mount_parent_frame: 'base_link'
+        mount_offset: [-0.33, 0.0, 0.0]
+        mount_rpy: [0.0, 0.0, 3.14159]
+        contact_offset: [0.031, 0.0, -0.03]
+        contact_outset: 0.001
+        contact_rpy: [0.0, 0.0, 0.0]
 
       - name: 'left'
         enabled: true
         inverted: false
         update_rate: 30
-        size: [0.02, 0.20, 0.05]
-        offset: [0.0, 0.30, 0.0]
-        yaw: 1.5708
-        parent_frame: 'base_link'
+        size: [0.03, 0.24, 0.06]
+        mount_parent_frame: 'base_link'
+        mount_offset: [0.0, 0.25, 0.0]
+        mount_rpy: [0.0, 0.0, 1.5708]
+        contact_offset: [0.031, 0.0, -0.03]
+        contact_outset: 0.001
+        contact_rpy: [0.0, 0.0, 0.0]
 
       - name: 'right'
         enabled: true
         inverted: false
         update_rate: 30
-        size: [0.02, 0.20, 0.05]
-        offset: [0.0, -0.30, 0.0]
-        yaw: -1.5708
-        parent_frame: 'base_link'
+        size: [0.03, 0.24, 0.06]
+        mount_parent_frame: 'base_link'
+        mount_offset: [0.0, -0.25, 0.0]
+        mount_rpy: [0.0, 0.0, -1.5708]
+        contact_offset: [0.031, 0.0, -0.03]
+        contact_outset: 0.001
+        contact_rpy: [0.0, 0.0, 0.0]
 
     cliff_sensors:
       - name: 'fl'
@@ -87,9 +132,11 @@
         range_max: 0.5
         range_resolution: 0.001
         size: [0.02, 0.02, 0.02]
-        offset: [0.25, 0.20, 0.0]
-        yaw: 0.0
-        parent_frame: 'base_link'
+        mount_parent_frame: 'base_link'
+        mount_offset: [0.24, 0.17, -0.045]
+        mount_rpy: [0.0, 0.0, 0.0]
+        beam_offset: [0.01, 0.0, -0.02]
+        beam_rpy: [0.0, 1.5708, 0.0]
 
       - name: 'fr'
         enabled: true
@@ -100,9 +147,11 @@
         range_max: 0.5
         range_resolution: 0.001
         size: [0.02, 0.02, 0.02]
-        offset: [0.25, -0.20, 0.0]
-        yaw: 0.0
-        parent_frame: 'base_link'
+        mount_parent_frame: 'base_link'
+        mount_offset: [0.24, -0.17, -0.045]
+        mount_rpy: [0.0, 0.0, 0.0]
+        beam_offset: [0.01, 0.0, -0.02]
+        beam_rpy: [0.0, 1.5708, 0.0]
 
       - name: 'rl'
         enabled: true
@@ -113,9 +162,11 @@
         range_max: 0.5
         range_resolution: 0.001
         size: [0.02, 0.02, 0.02]
-        offset: [-0.25, 0.20, 0.0]
-        yaw: 3.14159
-        parent_frame: 'base_link'
+        mount_parent_frame: 'base_link'
+        mount_offset: [-0.24, 0.17, -0.045]
+        mount_rpy: [0.0, 0.0, 3.14159]
+        beam_offset: [0.01, 0.0, -0.02]
+        beam_rpy: [0.0, 1.5708, 0.0]
 
       - name: 'rr'
         enabled: true
@@ -126,6 +177,8 @@
         range_max: 0.5
         range_resolution: 0.001
         size: [0.02, 0.02, 0.02]
-        offset: [-0.25, -0.20, 0.0]
-        yaw: 3.14159
-        parent_frame: 'base_link'
+        mount_parent_frame: 'base_link'
+        mount_offset: [-0.24, -0.17, -0.045]
+        mount_rpy: [0.0, 0.0, 3.14159]
+        beam_offset: [0.01, 0.0, -0.02]
+        beam_rpy: [0.0, 1.5708, 0.0]

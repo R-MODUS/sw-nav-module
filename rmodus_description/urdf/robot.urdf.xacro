@@ -23,10 +23,29 @@
 
 <!-- COLORS -->
 <xacro:property name='alpha' value='1'/>
-<material name='red'>   <color rgba='0.8 0.0 0.0 ${alpha}'/> </material>
-<material name='green'> <color rgba='0.0 0.8 0.0 ${alpha}'/> </material>
-<material name='blue'>  <color rgba='0.0 0.0 0.8 ${alpha}'/> </material>
-<material name='gray'>  <color rgba='0.5 0.5 0.5 ${alpha}'/> </material>
+<xacro:property name='base_color' value='0.28 0.31 0.35 ${alpha}'/>
+<xacro:property name='main_module_color' value='0.45 0.48 0.52 ${alpha}'/>
+<xacro:property name='wheel_color' value='0.20 0.22 0.24 ${alpha}'/>
+<xacro:property name='imu_mount_color' value='1.0 0.62 0.20 ${alpha}'/>
+<xacro:property name='imu_link_color' value='1.0 0.82 0.35 ${alpha}'/>
+<xacro:property name='lidar_mount_color' value='0.30 0.62 1.0 ${alpha}'/>
+<xacro:property name='lidar_beam_color' value='0.10 0.90 0.95 ${alpha}'/>
+<xacro:property name='bumper_mount_color' value='0.90 0.78 0.12 ${alpha}'/>
+<xacro:property name='bumper_contact_color' value='1.0 0.95 0.25 ${alpha}'/>
+<xacro:property name='cliff_mount_color' value='0.78 0.35 0.88 ${alpha}'/>
+<xacro:property name='cliff_beam_color' value='0.95 0.45 1.0 ${alpha}'/>
+
+<material name='base_mat'> <color rgba='${base_color}'/> </material>
+<material name='main_module_mat'> <color rgba='${main_module_color}'/> </material>
+<material name='wheel_mat'> <color rgba='${wheel_color}'/> </material>
+<material name='imu_mount_mat'> <color rgba='${imu_mount_color}'/> </material>
+<material name='imu_link_mat'> <color rgba='${imu_link_color}'/> </material>
+<material name='lidar_mount_mat'> <color rgba='${lidar_mount_color}'/> </material>
+<material name='lidar_beam_mat'> <color rgba='${lidar_beam_color}'/> </material>
+<material name='bumper_mount_mat'> <color rgba='${bumper_mount_color}'/> </material>
+<material name='bumper_contact_mat'> <color rgba='${bumper_contact_color}'/> </material>
+<material name='cliff_mount_mat'> <color rgba='${cliff_mount_color}'/> </material>
+<material name='cliff_beam_mat'> <color rgba='${cliff_beam_color}'/> </material>
 
 <!-- INERTIA HELPERS -->
 <xacro:macro name='box_inertia' params='m x y z'>

@@ -10,7 +10,9 @@
 <!-- ARGUMENTS -->
 <xacro:arg name='config_path' default='' />
 <xacro:arg name='structure_source' default='local' />
+<xacro:arg name='use_mesh_visuals' default='true' />
 <xacro:property name='structure_source' value='$(arg structure_source)'/>
+<xacro:property name='use_mesh' value='$(arg use_mesh_visuals)' />
 
 <!-- CONSTANTS used by sim-specific xacro (mesh paths) -->
 <xacro:property name='meshes_dir' value='rmodus_sim/meshes'/>
@@ -23,14 +25,34 @@
 <xacro:property name='base_cfg' value="${robot_cfg['/**']['ros__parameters']['base_link']}" />
 <xacro:property name='imu_cfg' value="${robot_cfg['/**']['ros__parameters']['imu']}" />
 <xacro:property name='lidar_cfg' value="${robot_cfg['/**']['ros__parameters']['lidar']}" />
-<xacro:property name='use_mesh' value='true' />
+<xacro:property name='drive_cfg' value="${robot_cfg['/**']['ros__parameters'].get('drive', dict())}" />
+<xacro:property name='wheels_cfg' value="${robot_cfg['/**']['ros__parameters'].get('wheels', dict())}" />
+<xacro:property name='visual_colors_cfg' value="${robot_cfg['/**']['ros__parameters'].get('visual_colors', dict())}" />
 <xacro:property name='mesh_scale' value='${creo_scale}' />
 
-<xacro:property name='alpha' value='1'/>
-<material name='red'> <color rgba='0.8 0.0 0.0 ${alpha}'/> </material>
-<material name='green'> <color rgba='0.0 0.8 0.0 ${alpha}'/> </material>
-<material name='blue'> <color rgba='0.0 0.0 0.8 ${alpha}'/> </material>
-<material name='gray'> <color rgba='0.5 0.5 0.5 ${alpha}'/> </material>
+<xacro:property name='base_color' value='${visual_colors_cfg.get("base", [0.16, 0.17, 0.20, 1.0])}'/>
+<xacro:property name='main_module_color' value='${visual_colors_cfg.get("main_module", [0.28, 0.30, 0.34, 1.0])}'/>
+<xacro:property name='wheel_color' value='${visual_colors_cfg.get("wheel", [0.12, 0.12, 0.13, 1.0])}'/>
+<xacro:property name='imu_mount_color' value='${visual_colors_cfg.get("imu_mount", [1.0, 0.35, 0.05, 1.0])}'/>
+<xacro:property name='imu_link_color' value='${visual_colors_cfg.get("imu_link", [1.0, 0.70, 0.15, 1.0])}'/>
+<xacro:property name='lidar_mount_color' value='${visual_colors_cfg.get("lidar_mount", [0.10, 0.45, 1.0, 1.0])}'/>
+<xacro:property name='lidar_beam_color' value='${visual_colors_cfg.get("lidar_beam", [0.0, 1.0, 1.0, 1.0])}'/>
+<xacro:property name='bumper_mount_color' value='${visual_colors_cfg.get("bumper_mount", [0.65, 0.10, 1.0, 1.0])}'/>
+<xacro:property name='bumper_contact_color' value='${visual_colors_cfg.get("bumper_contact", [1.0, 0.0, 0.95, 1.0])}'/>
+<xacro:property name='cliff_mount_color' value='${visual_colors_cfg.get("cliff_mount", [0.0, 0.95, 0.25, 1.0])}'/>
+<xacro:property name='cliff_beam_color' value='${visual_colors_cfg.get("cliff_beam", [0.75, 1.0, 0.0, 1.0])}'/>
+
+<material name='base_mat'> <color rgba='${base_color[0]} ${base_color[1]} ${base_color[2]} ${base_color[3]}'/> </material>
+<material name='main_module_mat'> <color rgba='${main_module_color[0]} ${main_module_color[1]} ${main_module_color[2]} ${main_module_color[3]}'/> </material>
+<material name='wheel_mat'> <color rgba='${wheel_color[0]} ${wheel_color[1]} ${wheel_color[2]} ${wheel_color[3]}'/> </material>
+<material name='imu_mount_mat'> <color rgba='${imu_mount_color[0]} ${imu_mount_color[1]} ${imu_mount_color[2]} ${imu_mount_color[3]}'/> </material>
+<material name='imu_link_mat'> <color rgba='${imu_link_color[0]} ${imu_link_color[1]} ${imu_link_color[2]} ${imu_link_color[3]}'/> </material>
+<material name='lidar_mount_mat'> <color rgba='${lidar_mount_color[0]} ${lidar_mount_color[1]} ${lidar_mount_color[2]} ${lidar_mount_color[3]}'/> </material>
+<material name='lidar_beam_mat'> <color rgba='${lidar_beam_color[0]} ${lidar_beam_color[1]} ${lidar_beam_color[2]} ${lidar_beam_color[3]}'/> </material>
+<material name='bumper_mount_mat'> <color rgba='${bumper_mount_color[0]} ${bumper_mount_color[1]} ${bumper_mount_color[2]} ${bumper_mount_color[3]}'/> </material>
+<material name='bumper_contact_mat'> <color rgba='${bumper_contact_color[0]} ${bumper_contact_color[1]} ${bumper_contact_color[2]} ${bumper_contact_color[3]}'/> </material>
+<material name='cliff_mount_mat'> <color rgba='${cliff_mount_color[0]} ${cliff_mount_color[1]} ${cliff_mount_color[2]} ${cliff_mount_color[3]}'/> </material>
+<material name='cliff_beam_mat'> <color rgba='${cliff_beam_color[0]} ${cliff_beam_color[1]} ${cliff_beam_color[2]} ${cliff_beam_color[3]}'/> </material>
 
 <xacro:macro name='box_inertia' params='m x y z'>
   <inertial>

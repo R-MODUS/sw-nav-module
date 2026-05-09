@@ -11,6 +11,10 @@
     gap: 18px;
 }
 
+.page-shell.page-shell-map {
+    max-width: none;
+}
+
 .page-shell > .panel,
 .page-shell > .status-monitor,
 .page-shell > .map-container,

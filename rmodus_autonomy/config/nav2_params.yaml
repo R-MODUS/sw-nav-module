@@ -61,7 +61,7 @@ controller_server:
     use_sim_time: True
     controller_frequency: 12.0
     min_x_velocity_threshold: 0.001
-    min_y_velocity_threshold: 0.001
+    min_y_velocity_threshold: 0.05
     min_theta_velocity_threshold: 0.001
     failure_tolerance: 0.5
     progress_checker_plugin: "progress_checker"
@@ -74,33 +74,33 @@ controller_server:
     general_goal_checker:
       stateful: True
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.25
-      yaw_goal_tolerance: 0.15
+      xy_goal_tolerance: 0.06
+      yaw_goal_tolerance: 0.10
     FollowPath:
       plugin: "dwb_core::DWBLocalPlanner"
       debug_trajectory_details: False
       min_vel_x: 0.0
       min_vel_y: 0.0
       max_vel_x: 0.5
-      max_vel_y: 0.5
+      max_vel_y: 0.0
       max_vel_theta: 0.7
       min_speed_xy: 0.0
       max_speed_xy: 0.5
       min_speed_theta: 0.0
       acc_lim_x: 1.0
-      acc_lim_y: 1.0
+      acc_lim_y: 0.0
       acc_lim_theta: 1.5
       decel_lim_x: -1.0
-      decel_lim_y: -1.0
+      decel_lim_y: 0.0
       decel_lim_theta: -1.5
       vx_samples: 20
-      vy_samples: 5
+      vy_samples: 1
       vtheta_samples: 20
       sim_time: 1.7
       linear_granularity: 0.05
       angular_granularity: 0.025
       transform_tolerance: 0.2
-      xy_goal_tolerance: 0.25
+      xy_goal_tolerance: 0.06
       trans_stopped_velocity: 0.03
       short_circuit_trajectory_evaluation: True
       stateful: True
@@ -233,7 +233,7 @@ planner_server:
     planner_plugins: ["GridBased"]
     GridBased:
       plugin: "nav2_navfn_planner::NavfnPlanner"
-      tolerance: 0.5
+      tolerance: 0.15
       use_astar: false
       allow_unknown: true
 

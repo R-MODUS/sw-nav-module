@@ -40,7 +40,7 @@
       update_rate: 100
       visualize: false
       frame_id: 'imu_link'
-      size: [0.02, 0.02, 0.01]
+      size: [0.05, 0.05, 0.01]
       mount_parent_frame: 'main_module_mount'
       mount_offset: [-0.01, 0.05, 0.03]
       mount_rpy: [0.0, 0.0, 0.0]
@@ -54,7 +54,7 @@
       update_rate: 10
       visualize: false
       frame_id: 'lidar_beam'
-      size: [0.02, 0.02] # [diameter, height]
+      size: [0.08, 0.02] # [diameter, height]
       mount_parent_frame: 'main_module_mount'
       mount_offset: [0.07, 0.0, 0.03]
       mount_rpy: [0.0, 0.0, 0.0]
@@ -125,7 +125,7 @@
         range_min: 0.01
         range_max: 0.5
         range_resolution: 0.001
-        size: [0.02, 0.02, 0.02]
+        size: [0.02, 0.04, 0.03]
         mount_parent_frame: 'base_link'
         mount_offset: [0.24, 0.2, -0.045]
         mount_rpy: [0.0, 0.0, 0.0]
@@ -140,7 +140,7 @@
         range_min: 0.01
         range_max: 0.5
         range_resolution: 0.001
-        size: [0.02, 0.02, 0.02]
+        size: [0.02, 0.04, 0.03]
         mount_parent_frame: 'base_link'
         mount_offset: [0.24, -0.2, -0.045]
         mount_rpy: [0.0, 0.0, 0.0]

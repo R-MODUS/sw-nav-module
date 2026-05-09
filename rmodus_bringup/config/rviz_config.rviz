@@ -95,18 +95,18 @@ Visualization Manager:
           Value: false
         front_right_wheel:
           Value: false
-        imu_mount:
-          Value: false
         imu_link:
           Value: false
-        lidar_mount:
+        imu_mount:
           Value: false
         lidar_beam:
           Value: false
-        map:
-          Value: true
+        lidar_mount:
+          Value: false
         main_module_mount:
           Value: false
+        map:
+          Value: true
         odom:
           Value: true
         rear_left_wheel:
@@ -296,22 +296,20 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
+        imu_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
         imu_mount:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        imu_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        lidar_mount:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
         lidar_beam:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        lidar_mount:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -521,5 +519,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1200
-  X: 1532
-  Y: 471
+  X: 0
+  Y: 960

@@ -137,6 +137,7 @@ def _create_hw_nodes(context):
         Node(
             package='xsens_mti_ros2_driver',
             executable='xsens_mti_node',
+            name='xsens_driver',
             parameters=[params_xsens_path],
             remappings=[('/temperature', '/xsens/temperature')],
         ),

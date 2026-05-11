@@ -45,6 +45,27 @@ def _build_sensor_overrides(user_params_path):
         for key in ('v_points', 'd_points'):
             if key in first:
                 cliff_override[key] = first[key]
+        if 'range_min' in first:
+            cliff_override['range_msg_min'] = first['range_min']
+        if 'range_max' in first:
+            cliff_override['range_msg_max'] = first['range_max']
+        topics = []
+        frames = []
+        for item in cliff_cfg:
+            if not isinstance(item, dict) or not item.get('enabled', True):
+                continue
+            t = str(item.get('topic', '')).strip()
+            if t:
+                topics.append(t)
+            name = str(item.get('name', ''))
+            frame_id = item.get('frame_id')
+            if frame_id:
+                frames.append(str(frame_id))
+            elif name:
+                frames.append(f'cliff_sensor_{name}_beam')
+        if len(topics) == 4 and len(frames) == 4:
+            cliff_override['cliff_topics'] = topics
+            cliff_override['cliff_frame_ids'] = frames
 
     motors_override = {}
     for key in ('port', 'max_speed'):

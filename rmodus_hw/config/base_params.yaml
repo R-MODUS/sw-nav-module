@@ -14,23 +14,29 @@ motors_node:
   ros__parameters:
     port: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0-port0'
     max_speed: 255
+    twist_input_topics: ['/cmd_vel_safe', '/vector_safe']
 
-display_node:
+display:
   ros__parameters:
     width: 128
     height: 32
     orientation: 2
     brightness: 5
 
-fan_control_node:
+fan:
   ros__parameters:
     fan_pin: 13
     frequency: 10
     min_to_run: 0.25
     user_power: [0.0, 0.5, 1.0]
 
-sharp_sensors_node:
+cliff_sensors_node:
   ros__parameters:
+    cliff_topics: ['/cliff/fl', '/cliff/fr', '/cliff/rl', '/cliff/rr']
+    cliff_frame_ids:
+      ['cliff_sensor_fl_beam', 'cliff_sensor_fr_beam', 'cliff_sensor_rl_beam', 'cliff_sensor_rr_beam']
+    range_msg_min: 0.02
+    range_msg_max: 0.5
     v_points: [0.3, 0.4, 0.8, 1.2, 2.0, 2.5]
     d_points: [0.20, 0.15, 0.08, 0.05, 0.03, 0.02]
 
@@ -40,7 +46,18 @@ optical_flow_node:
     spi_cs: 0
     deadzone: 3
     timer_period: 0.05
-    sensor_frame: 'flow_sensor_link'
+    frame_id: 'flow_sensor_link'
     z_height: 0.025
     fov_deg: 42.0
     res_pix: 35
+
+bumper_sensors_node:
+  ros__parameters:
+    publish_rate_hz: 50.0
+    bumper_topics: ['/bumper/front', '/bumper/rear', '/bumper/left', '/bumper/right']
+    bumper_widths: [0.45, 0.45, 0.4, 0.4]
+    bumper_depths: [0.03, 0.03, 0.03, 0.03]
+    bumper_heights: [0.06, 0.06, 0.06, 0.06]
+    bumper_frame_ids:
+      ['bumper_front_contact', 'bumper_rear_contact', 'bumper_left_contact', 'bumper_right_contact']
+    corner_pin_indices: [0, 1, 2, 3]

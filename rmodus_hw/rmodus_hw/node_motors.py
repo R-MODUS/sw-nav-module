@@ -7,12 +7,19 @@ from .utils.UART import UART
 class Motors(Node):
     def __init__(self):
         super().__init__('vector_maker')
-        self.subscription = self.create_subscription(
-        Twist, '/vector_safe', self.callback_vector, 1
-        )
 
         uart = self.declare_parameter('port', '/dev/serial0').get_parameter_value().string_value
         self.max_speed = self.declare_parameter('max_speed', 300).get_parameter_value().integer_value
+        default_topics = ['/cmd_vel_safe', '/vector_safe']
+        self.declare_parameter('twist_input_topics', default_topics)
+        twist_topics = list(self.get_parameter('twist_input_topics').value)
+        if not twist_topics:
+            twist_topics = default_topics
+
+        # Nav2 / diff-base řetězec končí na /cmd_vel_safe; joystick / web číhá na /vector → /vector_safe.
+        for topic in twist_topics:
+            self.create_subscription(Twist, topic, self.callback_vector, 10)
+            self.get_logger().info(f'Motors listening on {topic}')
 
         self.uart = UART(port=uart)
 

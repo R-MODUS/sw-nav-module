@@ -9,8 +9,7 @@ from adafruit_ads1x15.analog_in import AnalogIn
 class SharpSensorNode(Node):
     def __init__(self):
         super().__init__('cliff_sensors_node')
-        
-        # Inicializace I2C a ADS1115
+
         try:
             self.i2c = busio.I2C(board.SCL, board.SDA)
             self.ads = ADS.ADS1115(self.i2c)
@@ -19,21 +18,24 @@ class SharpSensorNode(Node):
             self.get_logger().error(f"I2C/ADS1115 init failed: {e}")
             return
 
-        # DEFINICE KANÁLŮ POMOCÍ INDEXŮ (0-3)
-        # Toto obejde problém s chybějícími atributy P0, P1...
         self.channels = [
             AnalogIn(self.ads, 0),
             AnalogIn(self.ads, 1),
             AnalogIn(self.ads, 2),
-            AnalogIn(self.ads, 3)
+            AnalogIn(self.ads, 3),
         ]
 
-        # Zbytek kódu zůstává stejný...
-        self.pubs = []
-        for i in range(4):
-            topic = f'range/sensor_{i}'
-            self.pubs.append(self.create_publisher(Range, topic, 10))
-
+        default_topics = ['/cliff/fl', '/cliff/fr', '/cliff/rl', '/cliff/rr']
+        default_frames = [
+            'cliff_sensor_fl_beam', 'cliff_sensor_fr_beam',
+            'cliff_sensor_rl_beam', 'cliff_sensor_rr_beam',
+        ]
+        self.declare_parameter('cliff_topics', default_topics)
+        self.declare_parameter('cliff_frame_ids', default_frames)
+        self.declare_parameter('range_msg_min', 0.02)
+        self.declare_parameter('range_msg_max', 0.5)
+        self.declare_parameter('field_of_view', 0.05)
+        self.declare_parameter('timer_period', 0.1)
         self.v_points = self.declare_parameter(
             'v_points', [0.3, 0.4, 0.8, 1.2, 2.0, 2.5]
         ).get_parameter_value().double_array_value
@@ -41,19 +43,30 @@ class SharpSensorNode(Node):
             'd_points', [0.20, 0.15, 0.08, 0.05, 0.03, 0.02]
         ).get_parameter_value().double_array_value
 
-        self.timer = self.create_timer(0.1, self.timer_callback)
+        cliff_topics = list(self.get_parameter('cliff_topics').value)
+        cliff_frames = list(self.get_parameter('cliff_frame_ids').value)
+        if len(cliff_topics) != 4 or len(cliff_frames) != 4:
+            self.get_logger().error('cliff_topics and cliff_frame_ids must each have length 4')
+            return
+
+        self._range_min = float(self.get_parameter('range_msg_min').value)
+        self._range_max = float(self.get_parameter('range_msg_max').value)
+        self._fov = float(self.get_parameter('field_of_view').value)
+        period = float(self.get_parameter('timer_period').value)
+
+        self.pubs = [self.create_publisher(Range, cliff_topics[i], 10) for i in range(4)]
+        self._cliff_frames = cliff_frames
+
+        self.create_timer(period, self.timer_callback)
+        self.get_logger().info(f'Cliff Sharp → topics {cliff_topics}')
+
     def voltage_to_distance(self, voltage):
-        # Osetreni limitnich stavu podle grafu
-        if voltage > 2.5: # Maximum v grafu je cca 2.45V
+        if voltage > 2.5:
             return 0.02
-        if voltage < 0.3: # Minimum pro 20cm
+        if voltage < 0.3:
             return 0.20
-        
-        # Aproximace krivky pro Sharp 2-20cm (GP2Y0A41SK0F)
-        # Vzorec upraveny podle bodu v grafu: 2V -> cca 2cm, 0.4V -> 15cm
-	# 2 to 15 cm
+
         try:
-            # Piecewise linear interpolation from calibration points.
             if len(self.v_points) >= 2 and len(self.v_points) == len(self.d_points):
                 for i in range(len(self.v_points) - 1):
                     v0 = float(self.v_points[i])
@@ -72,34 +85,41 @@ class SharpSensorNode(Node):
                 idx = self.v_points.index(max(self.v_points))
                 return float(self.d_points[idx])
 
-            # Fallback approximation if calibration is invalid.
             distance_cm = 3.5 * pow(voltage, -0.75) + 0.0
-            return distance_cm / 100.0 # Prevod na metry pro ROS 2
-        except:
+            return distance_cm / 100.0
+        except Exception:
             return -1.0
 
     def timer_callback(self):
+        if not self.pubs:
+            return
         for i in range(4):
             voltage = self.channels[i].voltage
             dist_m = self.voltage_to_distance(voltage)
 
             msg = Range()
             msg.header.stamp = self.get_clock().now().to_msg()
-            msg.header.frame_id = f'sensor_{i}_link'
+            msg.header.frame_id = self._cliff_frames[i]
             msg.radiation_type = Range.INFRARED
-            msg.field_of_view = 0.05 # cca 3 stupne
-            msg.min_range = 0.02
-            msg.max_range = 0.20
-            msg.range = dist_m
+            msg.field_of_view = self._fov
+            msg.min_range = self._range_min
+            msg.max_range = self._range_max
+            msg.range = float(dist_m)
 
             self.pubs[i].publish(msg)
+
 
 def main(args=None):
     rclpy.init(args=args)
     node = SharpSensorNode()
-    rclpy.spin(node)
-    node.destroy_node()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
     rclpy.shutdown()
+
 
 if __name__ == '__main__':
     main()

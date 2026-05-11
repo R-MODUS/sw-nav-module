@@ -1,10 +1,12 @@
 import rclpy
 from rclpy.node import Node
+from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import TransformStamped
 import tf2_ros
 
 import math
+import time
 import numpy as np
 import threading
 
@@ -39,7 +41,7 @@ class LidarScanPublisher(Node):
         self.angle_max = self.get_parameter('angle_max').value
 
         # ROS2 Funkce
-        self.publisher_ = self.create_publisher(LaserScan, 'scan', 1)
+        self.publisher_ = self.create_publisher(LaserScan, 'scan', qos_profile_sensor_data)
 
         # moje Funkce
         self.lidar = Lidar(port=port)
@@ -54,9 +56,17 @@ class LidarScanPublisher(Node):
 
     def lidar_loop(self):
         while rclpy.ok():
-            ranges, intensities, rpm, scan_time = self.lidar.get_scan(startZero=True)
-            self.last_scan = (ranges, intensities, rpm, scan_time)
-            self.get_logger().info(f'{round(1/scan_time, 2)} Hz, RPM: {rpm}')
+            try:
+                # startZero=True umí navždy čekat na úhel 0 při špatných datech; False je robustnější
+                ranges, intensities, rpm, scan_time = self.lidar.get_scan(startZero=False, max_seconds=30.0)
+                self.last_scan = (ranges, intensities, rpm, scan_time)
+                self.get_logger().info(f'{round(1/scan_time, 2)} Hz, RPM: {rpm}')
+            except TimeoutError as e:
+                self.get_logger().error(str(e))
+                time.sleep(1.0)
+            except Exception as e:
+                self.get_logger().error(f'LiDAR vlákno: {type(e).__name__}: {e}')
+                time.sleep(1.0)
 
     def publish_scan(self):
         if not self.last_scan:

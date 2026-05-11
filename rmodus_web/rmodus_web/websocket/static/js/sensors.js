@@ -2,8 +2,8 @@
     const SENSOR_TYPE_LABELS = {
         lidar: 'LiDAR',
         imu: 'IMU',
-        bumper: 'Nárazník',
-        cliff: 'Propast',
+        bumper: 'Detekce kolizí',
+        cliff: 'Detekce schodiště',
         optical_flow: 'Optický tok',
     };
 

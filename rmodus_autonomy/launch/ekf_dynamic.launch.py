@@ -8,6 +8,15 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 
+def _resolve_config_path(p):
+    if p is None:
+        return ''
+    s = str(p).strip()
+    if not s:
+        return ''
+    return os.path.normpath(os.path.expanduser(s))
+
+
 def _deep_merge(base_obj, override_obj):
     if isinstance(base_obj, dict) and isinstance(override_obj, dict):
         merged = dict(base_obj)
@@ -106,8 +115,8 @@ def _append_sensor(ekf_params, counters, sensor_cfg):
 
 
 def _build_ekf(context):
-    robot_config_file = LaunchConfiguration("robot_config_file").perform(context)
-    global_params_file = LaunchConfiguration("global_params_file").perform(context)
+    robot_config_file = _resolve_config_path(LaunchConfiguration("robot_config_file").perform(context))
+    global_params_file = _resolve_config_path(LaunchConfiguration("global_params_file").perform(context))
     use_sim_time_raw = LaunchConfiguration("use_sim_time").perform(context)
     use_sim_time = use_sim_time_raw.lower() in ("1", "true", "yes", "on")
 

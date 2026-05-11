@@ -8,7 +8,7 @@ from typing import Dict, List
 from geometry_msgs.msg import PoseStamped, Twist
 from nav_msgs.msg import OccupancyGrid, Path
 from rclpy.node import Node
-from rclpy.qos import DurabilityPolicy, QoSProfile
+from rclpy.qos import DurabilityPolicy, QoSProfile, qos_profile_sensor_data
 from sensor_msgs.msg import Imu, LaserScan, Range
 from tf2_msgs.msg import TFMessage
 
@@ -52,6 +52,7 @@ class WebBridgeNode(Node):
         self.tf_last_update_time = 0.0
         self.tf_last_resubscribe_time = 0.0
         self.tf_is_stale = True
+        self._last_sensor_catalog_signature = None
 
         self.publisher_goal_pose = self.create_publisher(PoseStamped, GOAL_POSE_TOPIC, 10)
         self.publisher_cmd = self.create_publisher(Twist, "/vector", 10)
@@ -135,11 +136,14 @@ class WebBridgeNode(Node):
         if sensor.topic in self.sensor_subscriptions:
             return
         subscription = self.create_subscription(
-            message_cls, sensor.topic, lambda msg, sensor=sensor: callback(msg, sensor), 10
+            message_cls,
+            sensor.topic,
+            lambda msg, sensor=sensor: callback(msg, sensor),
+            qos_profile_sensor_data,
         )
         self.sensor_subscriptions[sensor.topic] = subscription
         self.sensor_definitions[sensor.topic] = sensor
-        self._broadcast_sensor_catalog()
+        self._broadcast_sensor_catalog(force=True)
 
     def _prune_missing_dynamic_topics(self, active_dynamic_topics: set):
         to_remove = []
@@ -160,10 +164,29 @@ class WebBridgeNode(Node):
             self.latest_sensor_messages.pop(f"{sensor.sensor_type}:{sensor.sensor_id}", None)
 
         if to_remove:
-            self._broadcast_sensor_catalog()
+            self._broadcast_sensor_catalog(force=True)
 
-    def _broadcast_sensor_catalog(self):
-        self._broadcast_threadsafe({"type": "sensor_catalog", "sensors": self.get_sensor_catalog()})
+    def _sensor_visible_for_ui(self, sensor_dict: dict) -> bool:
+        """Katalog odpovídá tomu, co je ve stromu TF — ne všechna ROS témata."""
+        if not self.tf_frames:
+            return True
+        fid = self._normalize_frame_id(sensor_dict.get("frame_id") or "")
+        st = sensor_dict.get("sensor_type") or ""
+        if fid and fid in self.tf_frames:
+            return True
+        if st == "lidar":
+            return any("lidar" in fr for fr in self.tf_frames)
+        if st == "imu":
+            return any("imu" in fr for fr in self.tf_frames)
+        return False
+
+    def _broadcast_sensor_catalog(self, *, force: bool = False):
+        catalog = self.get_sensor_catalog()
+        signature = tuple((s["sensor_type"], s["sensor_id"], s.get("frame_id")) for s in catalog)
+        if not force and signature == self._last_sensor_catalog_signature:
+            return
+        self._last_sensor_catalog_signature = signature
+        self._broadcast_threadsafe({"type": "sensor_catalog", "sensors": catalog})
 
     def _create_tf_subscriptions(self):
         tf_static_qos = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
@@ -193,6 +216,8 @@ class WebBridgeNode(Node):
         self._broadcast_threadsafe({"type": "lidar", **payload})
 
     def bumper_callback(self, msg: Bumper, sensor: SensorDefinition):
+        if msg.header.frame_id:
+            self._update_sensor_frame(sensor.topic, msg.header.frame_id)
         if not self._has_clients():
             return
         self._remember_sensor_message(sensor, {"contact": bool(msg.contact), "width": float(msg.width)})
@@ -242,7 +267,7 @@ class WebBridgeNode(Node):
         self.sensor_definitions[topic_name] = SensorDefinition(
             sensor.sensor_type, sensor.sensor_id, sensor.topic, sensor.label, normalized_frame, sensor.message_type
         )
-        self._broadcast_sensor_catalog()
+        self._broadcast_sensor_catalog(force=True)
 
     def tf_callback(self, msg: TFMessage, is_static: bool = False):
         now = time.monotonic()
@@ -273,6 +298,7 @@ class WebBridgeNode(Node):
         self._broadcast_threadsafe(
             {"type": "tf_2d", "root_frame": self.root_frame, "frames": self.get_tf_frames_snapshot()}
         )
+        self._broadcast_sensor_catalog()
 
     def check_tf_health(self):
         now = time.monotonic()
@@ -345,6 +371,7 @@ class WebBridgeNode(Node):
 
     def get_sensor_catalog(self) -> List[dict]:
         sensors = [sensor.as_dict() for sensor in self.sensor_definitions.values()]
+        sensors = [s for s in sensors if self._sensor_visible_for_ui(s)]
         return sorted(sensors, key=lambda sensor: (sensor["sensor_type"], sensor["sensor_id"]))
 
     def map_callback(self, msg: OccupancyGrid):

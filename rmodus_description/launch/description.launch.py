@@ -11,6 +11,15 @@ import tempfile
 import yaml
 
 
+def _resolve_config_path(p):
+    if p is None:
+        return ''
+    s = str(p).strip()
+    if not s:
+        return ''
+    return os.path.normpath(os.path.expanduser(s))
+
+
 def _deep_merge(base_obj, override_obj):
     if isinstance(base_obj, dict) and isinstance(override_obj, dict):
         merged = dict(base_obj)
@@ -25,9 +34,9 @@ def _deep_merge(base_obj, override_obj):
 
 def _create_robot_state_publisher(context):
     use_sim_time = LaunchConfiguration('use_sim_time')
-    robot_config_file = LaunchConfiguration('robot_config_file').perform(context)
-    base_config_path = LaunchConfiguration('base_config_path').perform(context)
-    override_config_path = LaunchConfiguration('override_config_path').perform(context)
+    robot_config_file = _resolve_config_path(LaunchConfiguration('robot_config_file').perform(context))
+    base_config_path = _resolve_config_path(LaunchConfiguration('base_config_path').perform(context))
+    override_config_path = _resolve_config_path(LaunchConfiguration('override_config_path').perform(context))
 
     final_config_path = robot_config_file or base_config_path
 

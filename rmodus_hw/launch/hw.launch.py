@@ -91,7 +91,11 @@ def _create_hw_nodes(context):
 
     params_base_path = os.path.join(pkg_share, 'config', 'base_params.yaml')
     params_xsens_path = os.path.join(pkg_share, 'config', 'xsens_mti_node.yaml')
-    params_user_path = LaunchConfiguration('user_params_file').perform(context)
+    raw_user = LaunchConfiguration('user_params_file').perform(context)
+    if raw_user and str(raw_user).strip():
+        params_user_path = os.path.normpath(os.path.expanduser(str(raw_user).strip()))
+    else:
+        params_user_path = raw_user
 
     params = [params_base_path, params_user_path]
     lidar_override, flow_override, cliff_override, motors_override, display_override, fan_override = _build_sensor_overrides(params_user_path)

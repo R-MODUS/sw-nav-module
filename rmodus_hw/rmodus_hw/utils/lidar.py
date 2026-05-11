@@ -1,6 +1,7 @@
 import serial
 import time
 
+
 class Lidar:
     def __init__(self, port='/dev/serial0'):
         self.ser = serial.Serial(
@@ -12,10 +13,15 @@ class Lidar:
             timeout=0.01
         )
 
-    def read_packet(self):
+    def read_packet(self, timeout_sec=5.0):
         packet = ""
         started = False
+        deadline = time.monotonic() + timeout_sec
         while True:
+            if time.monotonic() > deadline:
+                raise TimeoutError(
+                    f'LiDAR: za {timeout_sec}s nepřišel platný paket (port, baud 115200, napájení, motor?)'
+                )
             byte = self.ser.read(1)
             if not byte:
                 continue
@@ -57,8 +63,9 @@ class Lidar:
             })
         return points, speed_rpm
 
-    def get_scan(self, startZero=False):
+    def get_scan(self, startZero=False, max_seconds=30.0):
         t_start = time.time()
+        deadline = t_start + max_seconds
 
         ranges = [float('inf')] * 360
         intensities = [0] * 360
@@ -67,7 +74,13 @@ class Lidar:
         foundStart = False if startZero else True
 
         while True:
-            packet = self.read_packet()
+            remain = deadline - time.time()
+            if remain <= 0:
+                raise TimeoutError(
+                    'LiDAR: nestihl poskládat 360° scan v limitu '
+                    f'({max_seconds}s). Zkus startZero=False nebo HW.'
+                )
+            packet = self.read_packet(timeout_sec=min(5.0, remain))
             points, rpm = self.decode_packet(packet)
 
             if startZero and not foundStart and any(p['angle'] == 0 for p in points):

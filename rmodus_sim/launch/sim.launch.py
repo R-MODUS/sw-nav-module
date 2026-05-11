@@ -20,13 +20,24 @@ def _deep_merge(base_obj, override_obj):
     return override_obj
 
 
+def _resolve_config_path(p):
+    if p is None:
+        return ''
+    s = str(p).strip()
+    if not s:
+        return ''
+    return os.path.normpath(os.path.expanduser(s))
+
+
 def _create_sim_actions(context):
     pkg_name = 'rmodus_sim'
     structure_source = LaunchConfiguration('structure_source').perform(context)
     use_mesh_visuals = LaunchConfiguration('use_mesh_visuals').perform(context)
-    sim_config_file = LaunchConfiguration('sim_config_file').perform(context)
-    sim_override_file = LaunchConfiguration('sim_override_file').perform(context)
-    dynamic_bridge_base_config_file = LaunchConfiguration('dynamic_bridge_base_config_file').perform(context)
+    sim_config_file = _resolve_config_path(LaunchConfiguration('sim_config_file').perform(context))
+    sim_override_file = _resolve_config_path(LaunchConfiguration('sim_override_file').perform(context))
+    dynamic_bridge_base_config_file = _resolve_config_path(
+        LaunchConfiguration('dynamic_bridge_base_config_file').perform(context)
+    )
     world = os.path.join(get_package_share_directory(pkg_name), 'worlds', 'my_world.world')
     sim_gui_config = os.path.join(get_package_share_directory(pkg_name), 'config', 'simulation.config')
     robot_xacro = os.path.join(get_package_share_directory(pkg_name), 'urdf', 'robot.urdf.xacro')

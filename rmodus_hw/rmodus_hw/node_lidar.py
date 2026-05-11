@@ -1,6 +1,6 @@
 import rclpy
 from rclpy.node import Node
-from rclpy.qos import qos_profile_sensor_data
+from rclpy.qos import DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPolicy
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import TransformStamped
 import tf2_ros
@@ -40,8 +40,14 @@ class LidarScanPublisher(Node):
         self.angle_min = self.get_parameter('angle_min').value
         self.angle_max = self.get_parameter('angle_max').value
 
-        # ROS2 Funkce
-        self.publisher_ = self.create_publisher(LaserScan, 'scan', qos_profile_sensor_data)
+        # Nav2 / RViz / většina stacků očekává na /scan RELIABLE, ne sensor_data (BEST_EFFORT).
+        scan_qos = QoSProfile(
+            reliability=ReliabilityPolicy.RELIABLE,
+            durability=DurabilityPolicy.VOLATILE,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=10,
+        )
+        self.publisher_ = self.create_publisher(LaserScan, 'scan', scan_qos)
 
         # moje Funkce
         self.lidar = Lidar(port=port)

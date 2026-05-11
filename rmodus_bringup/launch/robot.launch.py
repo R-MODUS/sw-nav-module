@@ -24,8 +24,7 @@ def generate_launch_description():
     slam = LaunchConfiguration('slam')
     rf2o = LaunchConfiguration('rf2o')
     rviz = LaunchConfiguration('rviz')
-    user_params_file = LaunchConfiguration('user_params_file')
-    robot_config_file = LaunchConfiguration('robot_config_file')
+    robot_yaml = LaunchConfiguration('robot_yaml')
 
     mode_is_sim = IfCondition(PythonExpression(["'", mode, "' == 'sim'"]))
     mode_is_hw = IfCondition(PythonExpression(["'", mode, "' == 'hw'"]))
@@ -39,22 +38,15 @@ def generate_launch_description():
         DeclareLaunchArgument('rf2o', default_value='false'),
         DeclareLaunchArgument('rviz', default_value='false'),
         DeclareLaunchArgument(
-            'user_params_file',
-            default_value=PathJoinSubstitution([pkg_share, 'config', 'user_params.yaml']),
-            description='Global override params file for all packages',
-        ),
-        DeclareLaunchArgument(
-            'robot_config_file',
-            default_value=PathJoinSubstitution([
-                FindPackageShare('rmodus_description'), 'config', 'default_robot_config.yaml'
-            ]),
-            description='Path to robot YAML config file',
+            'robot_yaml',
+            default_value=PathJoinSubstitution([pkg_share, 'config', 'robot.yaml']),
+            description='Jeden soubor: URDF konfig + globální ros__parameters (stejný na Pi i PC)',
         ),
 
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(hw_launch),
             launch_arguments={
-                'user_params_file': user_params_file,
+                'user_params_file': robot_yaml,
             }.items(),
             condition=mode_is_hw,
         ),
@@ -62,8 +54,8 @@ def generate_launch_description():
             PythonLaunchDescriptionSource(description_launch),
             launch_arguments={
                 'use_sim_time': 'false',
-                'robot_config_file': robot_config_file,
-                'override_config_path': user_params_file,
+                'robot_config_file': robot_yaml,
+                'override_config_path': robot_yaml,
             }.items(),
             condition=mode_is_hw,
         ),
@@ -73,8 +65,8 @@ def generate_launch_description():
             launch_arguments={
                 'structure_source': 'description',
                 'use_mesh_visuals': use_mesh_visuals,
-                'sim_config_file': robot_config_file,
-                'sim_override_file': user_params_file,
+                'sim_config_file': robot_yaml,
+                'sim_override_file': robot_yaml,
             }.items(),
             condition=mode_is_sim,
         ),
@@ -91,7 +83,8 @@ def generate_launch_description():
                 'navigation': navigation,
                 'slam': slam,
                 'rf2o': rf2o,
-                'global_params_file': user_params_file,
+                'global_params_file': robot_yaml,
+                'robot_config_file': robot_yaml,
             }.items(),
         ),
 

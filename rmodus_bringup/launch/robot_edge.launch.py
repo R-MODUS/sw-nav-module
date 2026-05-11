@@ -1,7 +1,8 @@
-"""Spuštění na robotovi (edge): pouze HW ovladače + robot_state_publisher / TF z URDF.
+"""Spuštění na robotovi (edge): HW (+ volitelně TF z URDF na místě).
 
-Autonomii, RViz a volitelně web spusť na PC se stejným ROS_DOMAIN_ID a fungujícím
-síťovým ROS 2 discovery (viz dokumentace k RMW, typicky Cyclone DDS)."""
+TF/URDF často nechávají běžet na výkonnějším PC (`pc_dev.launch.py`, launch_description:=true),
+aby na Pi nebyl xacro / robot_state_publisher. Autonomii a RViz spouštěj na PC se stejným
+ROS_DOMAIN_ID a fungujícím ROS 2 discovery přes LAN."""
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
@@ -17,39 +18,38 @@ def generate_launch_description():
     description_launch = PathJoinSubstitution([FindPackageShare('rmodus_description'), 'launch', 'description.launch.py'])
     web_launch = PathJoinSubstitution([FindPackageShare('rmodus_web'), 'launch', 'web.launch.py'])
 
-    user_params_file = LaunchConfiguration('user_params_file')
-    robot_config_file = LaunchConfiguration('robot_config_file')
+    robot_yaml = LaunchConfiguration('robot_yaml')
     launch_web = LaunchConfiguration('launch_web')
+    launch_description = LaunchConfiguration('launch_description')
 
     return LaunchDescription([
         DeclareLaunchArgument(
-            'user_params_file',
-            default_value=PathJoinSubstitution([pkg_share, 'config', 'user_params.yaml']),
-            description='Globální YAML s přepsáními (stejný soubor jako na PC)',
-        ),
-        DeclareLaunchArgument(
-            'robot_config_file',
-            default_value=PathJoinSubstitution([
-                FindPackageShare('rmodus_description'), 'config', 'default_robot_config.yaml',
-            ]),
-            description='Konfigurace robota / URDF (stejná jako na PC)',
+            'robot_yaml',
+            default_value=PathJoinSubstitution([pkg_share, 'config', 'robot.yaml']),
+            description='Jeden konfig pro HW + URDF merge; stejný soubor na PC (`pc_dev.launch.py`).',
         ),
         DeclareLaunchArgument(
             'launch_web',
             default_value='false',
             description='true = spustit websocket UI na robotovi (jinak jen na PC)',
         ),
+        DeclareLaunchArgument(
+            'launch_description',
+            default_value='false',
+            description='true = robot_state_publisher na Pi; nechte false, když TF běží na PC',
+        ),
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(hw_launch),
-            launch_arguments={'user_params_file': user_params_file}.items(),
+            launch_arguments={'user_params_file': robot_yaml}.items(),
         ),
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(description_launch),
             launch_arguments={
                 'use_sim_time': 'false',
-                'robot_config_file': robot_config_file,
-                'override_config_path': user_params_file,
+                'robot_config_file': robot_yaml,
+                'override_config_path': robot_yaml,
             }.items(),
+            condition=IfCondition(launch_description),
         ),
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(web_launch),

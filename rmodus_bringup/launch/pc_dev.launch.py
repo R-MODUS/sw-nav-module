@@ -1,7 +1,8 @@
-"""Spuštění na vývojovém PC: autonomie (Nav2, EKF, …), volitelně web a RViz.
+"""Spuštění na vývojovém PC: autonomie, volitelně TF z URDF, web a RViz.
 
-Nepoužívej robot_state_publisher z desktopu, pokud už běží na robotovi — jinak máš
-duplicitní TF. Senzorová data a /cmd_vel musí přes DDS dojít z robota (stejný domain)."""
+Výchozí je spustit description (robot_state_publisher) zde, když na Pi neběží
+(`robot_edge.launch.py`, `launch_description:=false`). Jeden soubor `robot_yaml`
+na obou strojích. Nespouštěj description na obou najednou."""
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
@@ -13,6 +14,7 @@ from launch_ros.substitutions import FindPackageShare
 
 def generate_launch_description():
     pkg_share = FindPackageShare('rmodus_bringup')
+    description_launch = PathJoinSubstitution([FindPackageShare('rmodus_description'), 'launch', 'description.launch.py'])
     autonomy_launch = PathJoinSubstitution([FindPackageShare('rmodus_autonomy'), 'launch', 'autonomy.launch.py'])
     rviz_launch = PathJoinSubstitution([pkg_share, 'launch', 'rviz.launch.py'])
     web_launch = PathJoinSubstitution([FindPackageShare('rmodus_web'), 'launch', 'web.launch.py'])
@@ -24,8 +26,8 @@ def generate_launch_description():
     rf2o = LaunchConfiguration('rf2o')
     rviz = LaunchConfiguration('rviz')
     launch_web = LaunchConfiguration('launch_web')
-    user_params_file = LaunchConfiguration('user_params_file')
-    robot_config_file = LaunchConfiguration('robot_config_file')
+    robot_yaml = LaunchConfiguration('robot_yaml')
+    launch_description = LaunchConfiguration('launch_description')
 
     return LaunchDescription([
         DeclareLaunchArgument('use_sim_time', default_value='false', description='false při řízení skutečného robota'),
@@ -40,16 +42,23 @@ def generate_launch_description():
             description='Web UI na PC; na robotovi vypni, pokud tam už běží websocket',
         ),
         DeclareLaunchArgument(
-            'user_params_file',
-            default_value=PathJoinSubstitution([pkg_share, 'config', 'user_params.yaml']),
-            description='Stejný jako na robotovi (parametry pro EKF / globální přepsání)',
+            'robot_yaml',
+            default_value=PathJoinSubstitution([pkg_share, 'config', 'robot.yaml']),
+            description='Stejný soubor jako na robotovi (`robot_edge.launch.py`).',
         ),
         DeclareLaunchArgument(
-            'robot_config_file',
-            default_value=PathJoinSubstitution([
-                FindPackageShare('rmodus_description'), 'config', 'default_robot_config.yaml',
-            ]),
-            description='Stejný URDF konfig jako na robotovi',
+            'launch_description',
+            default_value='true',
+            description='robot_state_publisher na PC (vypni, když description už běží na Pi)',
+        ),
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(description_launch),
+            launch_arguments={
+                'use_sim_time': use_sim_time,
+                'robot_config_file': robot_yaml,
+                'override_config_path': robot_yaml,
+            }.items(),
+            condition=IfCondition(launch_description),
         ),
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(autonomy_launch),
@@ -59,8 +68,8 @@ def generate_launch_description():
                 'navigation': navigation,
                 'slam': slam,
                 'rf2o': rf2o,
-                'global_params_file': user_params_file,
-                'robot_config_file': robot_config_file,
+                'global_params_file': robot_yaml,
+                'robot_config_file': robot_yaml,
             }.items(),
         ),
         IncludeLaunchDescription(

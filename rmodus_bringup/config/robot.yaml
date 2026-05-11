@@ -110,7 +110,7 @@
         beam_rpy: [0.0, 1.5708, 0.0]
 
     motors_node:
-      port: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.1:1.0-port0'
+      port: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.0:1.0-port0'
       max_speed: 255
 
     # Adafruit SSD1306: orientation je rotace výstupu v krocích po 90° (0–3).

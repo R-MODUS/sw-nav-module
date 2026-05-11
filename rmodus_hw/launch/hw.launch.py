@@ -5,8 +5,35 @@ from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 from ament_index_python.packages import get_package_share_directory
 
+import copy
 import os
+import tempfile
 import yaml
+
+
+def _sanitize_user_params_for_rcl(user_path):
+    """rcl nepřijímá pod /**/ros__parameters pole struktur (bumpers, cliff_sensors) — jen skaláry a homogenní pole."""
+    if not user_path:
+        return None
+    if not os.path.exists(user_path):
+        return user_path
+    with open(user_path, 'r', encoding='utf-8') as f:
+        data = yaml.safe_load(f)
+    if not isinstance(data, dict):
+        return user_path
+    wild = data.get('/**')
+    if not isinstance(wild, dict):
+        return user_path
+    rp = wild.get('ros__parameters')
+    if not isinstance(rp, dict) or ('bumpers' not in rp and 'cliff_sensors' not in rp):
+        return user_path
+    data = copy.deepcopy(data)
+    data['/**']['ros__parameters'].pop('bumpers', None)
+    data['/**']['ros__parameters'].pop('cliff_sensors', None)
+    tmp = tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.yaml', encoding='utf-8')
+    yaml.safe_dump(data, tmp, allow_unicode=True, sort_keys=False)
+    tmp.close()
+    return tmp.name
 
 
 def _build_sensor_overrides(user_params_path):
@@ -97,7 +124,14 @@ def _create_hw_nodes(context):
     else:
         params_user_path = raw_user
 
-    params = [params_base_path, params_user_path]
+    safe_user_path = _sanitize_user_params_for_rcl(params_user_path) if params_user_path else None
+    params = [params_base_path]
+    if safe_user_path:
+        nbase = os.path.normpath(params_base_path)
+        nuser = os.path.normpath(str(safe_user_path))
+        if nuser != nbase:
+            params.append(safe_user_path)
+
     lidar_override, flow_override, cliff_override, motors_override, display_override, fan_override = _build_sensor_overrides(params_user_path)
 
     motors_params = list(params)

@@ -7,21 +7,40 @@
   <maintainer email="pi@todo.todo">pi</maintainer>
   <license>TODO: License declaration</license>
 
+  <buildtool_depend>ament_python</buildtool_depend>
+
   <depend>rclpy</depend>
   <depend>nav_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>geometry_msgs</depend>
+  <depend>tf2_ros</depend>
   <depend>rmodus_interface</depend>
 
-<exec_depend>robot_localization</exec_depend>
-<exec_depend>robot_state_publisher</exec_depend>
-<exec_depend>rosbridge_server</exec_depend>
-<exec_depend>joint_state_publisher_gui</exec_depend>
-<exec_depend>xacro</exec_depend>
-<exec_depend>rmodus_description</exec_depend>
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>python3-yaml</exec_depend>
 
-    <exec_depend>python3-fastapi</exec_depend>
-    <exec_depend>python3-uvicorn</exec_depend>
+  <exec_depend>robot_localization</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>rosbridge_server</exec_depend>
+  <exec_depend>joint_state_publisher_gui</exec_depend>
+  <exec_depend>xacro</exec_depend>
+  <exec_depend>rmodus_description</exec_depend>
+
+  <exec_depend>python3-fastapi</exec_depend>
+  <exec_depend>python3-uvicorn</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>python3-serial</exec_depend>
+  <exec_depend>python3-psutil</exec_depend>
+  <exec_depend>python3-gpiozero</exec_depend>
+  <exec_depend>python3-pil</exec_depend>
+  <exec_depend>python3-spidev-pip</exec_depend>
+  <exec_depend>python3-adafruit-blinka-pip</exec_depend>
+  <exec_depend>python3-adafruit-circuitpython-mcp230xx-pip</exec_depend>
+  <exec_depend>python3-adafruit-circuitpython-ads1x15-pip</exec_depend>
+  <exec_depend>rmodus-pmw3901-pip</exec_depend>
+  <exec_depend>rmodus-adafruit-ssd1306-pip</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

@@ -1,0 +1,12 @@
+# PyPI zavislosti pro rmodus_hw (install.py: pip install -r pri INSTALL_RMODUS_HW_PIP=1).
+# Doplnuje ros/apt z package.xml (PEP 668 na Ubuntu 24.04 casto vyzaduje --user u instalatoru).
+
+gpiozero
+Adafruit-Blinka
+RPi.GPIO
+adafruit-circuitpython-mcp230xx
+adafruit-circuitpython-ads1x15
+spidev
+pmw3901
+adafruit-circuitpython-ssd1306
+Pillow

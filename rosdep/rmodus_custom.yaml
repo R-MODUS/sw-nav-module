@@ -1,5 +1,6 @@
-# Doplňkové rosdep klíče pro závislosti, které nejsou v centrálním rosdistro.
-# Zaregistruj zdroj (jednou na stroji), např.:
+# Doplnkove rosdep klice pro zavislosti, ktere nejsou v centralnim rosdistro.
+# ament_python: rosdep nema klic (buildtool pro ament_python baliky) - install.py pouziva --skip-keys ament_python.
+# Zaregistruj zdroj (jednou na stroji), napr.:
 #   sudo sh -c 'echo "yaml file://$(pwd)/rosdep/rmodus_custom.yaml" > /etc/ros/rosdep/sources.list.d/20-rmodus.list'
 #   rosdep update
 #

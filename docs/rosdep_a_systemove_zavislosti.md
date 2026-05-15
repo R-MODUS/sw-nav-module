@@ -30,7 +30,7 @@ Tento dokument shrnuje **ROS 2 balíčky** a **Python/systémové závislosti** 
 | `ament_cmake`, `rosidl_default_generators`, `rosidl_default_runtime` | `rmodus_interface` (generované zprávy/služby) |
 | `std_msgs` | rozhraní + uzly |
 | `rclpy` | Python uzly |
-| `geometry_msgs`, `nav_msgs`, `sensor_msgs`, `tf2_msgs` | hw, web, autonomy, sim |
+| `geometry_msgs`, `nav_msgs`, `sensor_msgs`, `tf2_msgs` | hw, web, autonomy, sim |****
 | `tf2_ros` | lidar TF, obstacle cloud |
 | `rmodus_interface`, `rmodus_description`, `rmodus_hw`, `rmodus_sim`, `rmodus_web`, `rmodus_autonomy`, `rmodus_bringup` | interní závislosti mezi balíčky |
 | `robot_state_publisher`, `xacro` | URDF / launch |

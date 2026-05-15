@@ -5,7 +5,7 @@ from PIL import Image, ImageDraw, ImageFont
 import time
 
 class Display:
-    def __init__(self, width=128, height=32, orientation=0, addr=0x3C):
+    def __init__(self, width=128, height=32, orientation=0, addr='0x3C'):
         self.width = width
         self.height = height
 
@@ -14,6 +14,7 @@ class Display:
         # Inicializace I2C a displeje
         try:
             self.i2c = busio.I2C(board.SCL, board.SDA)
+            addr = int(addr, 16)
             self.oled = adafruit_ssd1306.SSD1306_I2C(self.width, self.height, self.i2c, addr=addr)
             self.oled.rotation = orientation
         except Exception as e:

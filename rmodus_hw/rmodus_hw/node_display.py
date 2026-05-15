@@ -18,12 +18,13 @@ class DisplayNode(Node):
         self.create_timer(5.0, self.toggle_mode)
         self.create_timer(0.1, self.render_loop)
         
+        address = self.declare_parameter('address', '0x3C').get_parameter_value().string_value
         width = self.declare_parameter('width', 128).get_parameter_value().integer_value
         height = self.declare_parameter('height', 32).get_parameter_value().integer_value
         orientation = self.declare_parameter('orientation', 0).get_parameter_value().integer_value
         brightness = self.declare_parameter('brightness', 100).get_parameter_value().integer_value
 
-        self.disp = Display(width, height, orientation=orientation)
+        self.disp = Display(width, height, orientation=orientation, addr=address)
         self.disp.set_brightness(brightness)
         
     def status_cb(self, msg):

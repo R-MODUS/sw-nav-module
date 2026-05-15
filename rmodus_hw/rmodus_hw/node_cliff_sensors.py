@@ -36,12 +36,8 @@ class SharpSensorNode(Node):
         self.declare_parameter('range_msg_max', 0.5)
         self.declare_parameter('field_of_view', 0.05)
         self.declare_parameter('timer_period', 0.1)
-        self.v_points = self.declare_parameter(
-            'v_points', [0.3, 0.4, 0.8, 1.2, 2.0, 2.5]
-        ).get_parameter_value().double_array_value
-        self.d_points = self.declare_parameter(
-            'd_points', [0.20, 0.15, 0.08, 0.05, 0.03, 0.02]
-        ).get_parameter_value().double_array_value
+        self.v_points = self.declare_parameter('v_points', [0.3, 0.4, 0.8, 1.2, 2.0, 2.5]).get_parameter_value().double_array_value
+        self.d_points = self.declare_parameter('d_points', [0.20, 0.15, 0.08, 0.05, 0.03, 0.02]).get_parameter_value().double_array_value
 
         cliff_topics = list(self.get_parameter('cliff_topics').value)
         cliff_frames = list(self.get_parameter('cliff_frame_ids').value)

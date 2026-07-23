@@ -11,8 +11,11 @@ class SharpSensorNode(Node):
         super().__init__('cliff_sensors_node')
 
         try:
+            address = self.declare_parameter('address', '0x48').get_parameter_value().string_value
+            address = int(address, 16)
+            cliff_topics = list(self.get_parameter('cliff_topics').value)
             self.i2c = busio.I2C(board.SCL, board.SDA)
-            self.ads = ADS.ADS1115(self.i2c)
+            self.ads = ADS.ADS1115(self.i2c, address=address)
             self.ads.gain = 1
         except Exception as e:
             self.get_logger().error(f"I2C/ADS1115 init failed: {e}")

@@ -87,6 +87,7 @@
     cliff_sensors:
       - name: 'fl'
         enabled: true
+        address: '0x48'
         pin: 0
         v_points: [0.3, 0.4, 0.8, 1.2, 2.0, 2.5]
         d_points: [0.20, 0.15, 0.08, 0.05, 0.03, 0.02]
@@ -99,6 +100,7 @@
 
       - name: 'fr'
         enabled: true
+        address: '0x48'
         pin: 1
         v_points: [0.3, 0.4, 0.8, 1.2, 2.0, 2.5]
         d_points: [0.20, 0.15, 0.08, 0.05, 0.03, 0.02]

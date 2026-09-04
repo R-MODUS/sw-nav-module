@@ -5,7 +5,7 @@ import math
 import time
 from typing import Dict, List
 
-from geometry_msgs.msg import PoseStamped, Twist
+from geometry_msgs.msg import PoseStamped, Twist, TwistStamped
 from nav_msgs.msg import OccupancyGrid, Path
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, QoSProfile, qos_profile_sensor_data
@@ -17,6 +17,9 @@ from rmodus_interface.msg import Bumper, PiStatus
 from rmodus_web.webbridge.config import (
     BUMPER_TOPIC_PREFIX,
     CLIFF_TOPIC_PREFIX,
+    CMD_FRAME_ID,
+    CMD_USE_TWIST_STAMPED,
+    CMD_VEL_TOPIC,
     GOAL_POSE_TOPIC,
     IMU_TOPIC,
     LIDAR_TOPIC,
@@ -54,10 +57,18 @@ class WebBridgeNode(Node):
         self.tf_is_stale = True
         self._last_sensor_catalog_signature = None
 
+        self.cmd_use_twist_stamped = bool(CMD_USE_TWIST_STAMPED)
+        self.cmd_frame_id = CMD_FRAME_ID or "base_link"
+        cmd_msg_type = TwistStamped if self.cmd_use_twist_stamped else Twist
+
         self.publisher_goal_pose = self.create_publisher(PoseStamped, GOAL_POSE_TOPIC, 10)
-        self.publisher_cmd = self.create_publisher(Twist, "/vector", 10)
-        self.publisher_cmd_vel = self.create_publisher(Twist, "/cmd_vel", 10)
+        self.publisher_cmd_vel = self.create_publisher(cmd_msg_type, CMD_VEL_TOPIC, 10)
         self.sub_status = self.create_subscription(PiStatus, "/system/pi_status", self.status_cb, 10)
+        self.get_logger().info(
+            f"Cmd output: {'TwistStamped' if self.cmd_use_twist_stamped else 'Twist'}"
+            f" on {CMD_VEL_TOPIC}"
+            + (f" (frame_id={self.cmd_frame_id})" if self.cmd_use_twist_stamped else "")
+        )
 
         self._create_static_sensor_subscriptions()
         self._discover_dynamic_topics()
@@ -336,11 +347,23 @@ class WebBridgeNode(Node):
         )
 
     def publish_joystick_cmd(self, data: dict):
-        msg = Twist()
-        msg.linear.x = float(data.get("linear_y", 0))
-        msg.linear.y = float(data.get("linear_x", 0)) * (-1)
-        msg.angular.z = float(data.get("angular_z", 0))
-        self.publisher_cmd.publish(msg)
+        linear_x = float(data.get("linear_y", 0))
+        linear_y = float(data.get("linear_x", 0)) * (-1)
+        angular_z = float(data.get("angular_z", 0))
+
+        if self.cmd_use_twist_stamped:
+            msg = TwistStamped()
+            msg.header.stamp = self.get_clock().now().to_msg()
+            msg.header.frame_id = self.cmd_frame_id
+            msg.twist.linear.x = linear_x
+            msg.twist.linear.y = linear_y
+            msg.twist.angular.z = angular_z
+        else:
+            msg = Twist()
+            msg.linear.x = linear_x
+            msg.linear.y = linear_y
+            msg.angular.z = angular_z
+
         self.publisher_cmd_vel.publish(msg)
 
     def get_tf_frames_snapshot(self) -> List[dict]:

@@ -29,6 +29,12 @@ MAP_UPDATES_TOPIC = "/map_updates"
 PLAN_TOPIC = "/received_global_plan"
 GOAL_POSE_TOPIC = "/goal_pose"
 
+# Výstup joysticku: False = geometry_msgs/Twist, True = geometry_msgs/TwistStamped.
+# Při TwistStamped se do headeru zapisuje CMD_FRAME_ID.
+CMD_USE_TWIST_STAMPED = False
+CMD_FRAME_ID = "base_link"
+CMD_VEL_TOPIC = "/cmd_vel"
+
 # Viditelnost záložek v levém menu (True = zobrazit, False = skrýt).
 # Klíče odpovídají id položek navigace (nav-<klíč>).
 WEB_UI_NAV_TABS = {

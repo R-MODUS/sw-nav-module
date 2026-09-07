@@ -40,7 +40,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'robot_yaml',
             default_value=PathJoinSubstitution([pkg_share, 'config', 'robot.yaml']),
-            description='Jeden soubor: URDF konfig + globální ros__parameters (stejný na Pi i PC)',
+            description='Jeden soubor: URDF konfig + globální ros__parameters + blok web: (stejný na Pi i PC)',
         ),
 
         IncludeLaunchDescription(
@@ -73,6 +73,7 @@ def generate_launch_description():
 
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(web_launch),
+            launch_arguments={'robot_yaml': robot_yaml}.items(),
         ),
 
         IncludeLaunchDescription(

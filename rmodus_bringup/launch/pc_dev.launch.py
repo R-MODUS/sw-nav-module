@@ -74,6 +74,7 @@ def generate_launch_description():
         ),
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(web_launch),
+            launch_arguments={'robot_yaml': robot_yaml}.items(),
             condition=IfCondition(launch_web),
         ),
         IncludeLaunchDescription(

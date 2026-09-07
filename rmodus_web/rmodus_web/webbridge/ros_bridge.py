@@ -3,7 +3,7 @@
 import asyncio
 import math
 import time
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from geometry_msgs.msg import PoseStamped, Twist, TwistStamped
 from nav_msgs.msg import OccupancyGrid, Path
@@ -14,35 +14,24 @@ from tf2_msgs.msg import TFMessage
 
 from rmodus_interface.msg import Bumper, PiStatus
 
-from rmodus_web.webbridge.config import (
-    BUMPER_TOPIC_PREFIX,
-    CLIFF_TOPIC_PREFIX,
-    CMD_FRAME_ID,
-    CMD_USE_TWIST_STAMPED,
-    CMD_VEL_TOPIC,
-    GOAL_POSE_TOPIC,
-    IMU_TOPIC,
-    LIDAR_TOPIC,
-    MAP_TOPIC,
-    MAP_UPDATES_TOPIC,
-    PLAN_TOPIC,
-    SENSOR_DISCOVERY_RATE_HZ,
-    TF_BROADCAST_RATE_HZ,
-    TF_RESUBSCRIBE_COOLDOWN_SEC,
-    TF_ROOT_FRAME,
-    TF_STALE_TIMEOUT_SEC,
-)
+from rmodus_web.webbridge.config import WebConfig
 from rmodus_web.webbridge.connection_manager import ConnectionManager
 from rmodus_web.webbridge.sensor_catalog import SensorDefinition
 from rmodus_web.webbridge.tf_utils import quaternion_to_yaw
 
 
 class WebBridgeNode(Node):
-    def __init__(self, loop: asyncio.AbstractEventLoop, manager: ConnectionManager):
+    def __init__(
+        self,
+        loop: asyncio.AbstractEventLoop,
+        manager: ConnectionManager,
+        cfg: Optional[WebConfig] = None,
+    ):
         super().__init__("web_bridge_node")
         self.loop = loop
         self.manager = manager
-        self.root_frame = TF_ROOT_FRAME
+        self.cfg = cfg or WebConfig()
+        self.root_frame = self.cfg.tf_root_frame
         self.sensor_definitions: Dict[str, SensorDefinition] = {}
         self.latest_sensor_messages: Dict[str, dict] = {}
         self.tf_frames: Dict[str, dict] = {}
@@ -57,34 +46,45 @@ class WebBridgeNode(Node):
         self.tf_is_stale = True
         self._last_sensor_catalog_signature = None
 
-        self.cmd_use_twist_stamped = bool(CMD_USE_TWIST_STAMPED)
-        self.cmd_frame_id = CMD_FRAME_ID or "base_link"
+        self.cmd_use_twist_stamped = bool(self.cfg.cmd_use_twist_stamped)
+        self.cmd_frame_id = self.cfg.cmd_frame_id or "base_link"
         cmd_msg_type = TwistStamped if self.cmd_use_twist_stamped else Twist
 
-        self.publisher_goal_pose = self.create_publisher(PoseStamped, GOAL_POSE_TOPIC, 10)
-        self.publisher_cmd_vel = self.create_publisher(cmd_msg_type, CMD_VEL_TOPIC, 10)
+        self.publisher_goal_pose = self.create_publisher(PoseStamped, self.cfg.goal_pose_topic, 10)
+        self.publisher_cmd_vel = self.create_publisher(cmd_msg_type, self.cfg.cmd_vel_topic, 10)
         self.sub_status = self.create_subscription(PiStatus, "/system/pi_status", self.status_cb, 10)
         self.get_logger().info(
             f"Cmd output: {'TwistStamped' if self.cmd_use_twist_stamped else 'Twist'}"
-            f" on {CMD_VEL_TOPIC}"
+            f" on {self.cfg.cmd_vel_topic}"
             + (f" (frame_id={self.cmd_frame_id})" if self.cmd_use_twist_stamped else "")
         )
+        self.get_logger().info(f"Web config: {self.cfg.source}")
 
         self._create_static_sensor_subscriptions()
         self._discover_dynamic_topics()
         self._create_tf_subscriptions()
 
         qos_volatile = QoSProfile(depth=1, durability=DurabilityPolicy.VOLATILE)
-        self.sub_map = self.create_subscription(OccupancyGrid, MAP_TOPIC, self.map_callback, qos_volatile)
-        self.sub_map_updates = self.create_subscription(
-            OccupancyGrid, MAP_UPDATES_TOPIC, self.map_updates_callback, qos_volatile
+        self.sub_map = self.create_subscription(
+            OccupancyGrid, self.cfg.map_topic, self.map_callback, qos_volatile
         )
-        self.sub_plan = self.create_subscription(Path, PLAN_TOPIC, self.plan_callback, qos_volatile)
-        self.sub_goal_pose = self.create_subscription(PoseStamped, GOAL_POSE_TOPIC, self.goal_pose_callback, 10)
+        self.sub_map_updates = self.create_subscription(
+            OccupancyGrid, self.cfg.map_updates_topic, self.map_updates_callback, qos_volatile
+        )
+        self.sub_plan = self.create_subscription(
+            Path, self.cfg.plan_topic, self.plan_callback, qos_volatile
+        )
+        self.sub_goal_pose = self.create_subscription(
+            PoseStamped, self.cfg.goal_pose_topic, self.goal_pose_callback, 10
+        )
 
-        self.create_timer(1.0 / TF_BROADCAST_RATE_HZ, self.publish_tf_snapshot)
+        tf_period = 1.0 / self.cfg.tf_broadcast_rate_hz if self.cfg.tf_broadcast_rate_hz > 0 else 0.2
+        discovery_period = (
+            1.0 / self.cfg.sensor_discovery_rate_hz if self.cfg.sensor_discovery_rate_hz > 0 else 1.0
+        )
+        self.create_timer(tf_period, self.publish_tf_snapshot)
         self.create_timer(1.0, self.check_tf_health)
-        self.create_timer(1.0 / SENSOR_DISCOVERY_RATE_HZ, self._discover_dynamic_topics)
+        self.create_timer(discovery_period, self._discover_dynamic_topics)
         self.get_logger().info("WebBridgeNode initialized.")
 
     def _broadcast_threadsafe(self, data: dict):
@@ -114,12 +114,14 @@ class WebBridgeNode(Node):
 
     def _create_static_sensor_subscriptions(self):
         self._register_sensor(
-            SensorDefinition("lidar", "scan", LIDAR_TOPIC, "Hlavní LiDAR", "laser", "sensor_msgs/LaserScan"),
+            SensorDefinition(
+                "lidar", "scan", self.cfg.lidar_topic, "Hlavní LiDAR", "laser", "sensor_msgs/LaserScan"
+            ),
             LaserScan,
             self.scan_callback,
         )
         self._register_sensor(
-            SensorDefinition("imu", "imu_data", IMU_TOPIC, "IMU senzor", "imu_link", "sensor_msgs/Imu"),
+            SensorDefinition("imu", "imu_data", self.cfg.imu_topic, "IMU senzor", "imu_link", "sensor_msgs/Imu"),
             Imu,
             self.imu_callback,
         )
@@ -127,11 +129,11 @@ class WebBridgeNode(Node):
     def _discover_dynamic_topics(self):
         active_dynamic_topics = set()
         for topic_name, topic_types in self.get_topic_names_and_types():
-            if topic_name.startswith(BUMPER_TOPIC_PREFIX) and "rmodus_interface/msg/Bumper" in topic_types:
+            if topic_name.startswith(self.cfg.bumper_topic_prefix) and "rmodus_interface/msg/Bumper" in topic_types:
                 sensor = self._sensor_from_topic("bumper", topic_name, "rmodus_interface/Bumper")
                 self._register_sensor(sensor, Bumper, self.bumper_callback)
                 active_dynamic_topics.add(topic_name)
-            if topic_name.startswith(CLIFF_TOPIC_PREFIX) and "sensor_msgs/msg/Range" in topic_types:
+            if topic_name.startswith(self.cfg.cliff_topic_prefix) and "sensor_msgs/msg/Range" in topic_types:
                 sensor = self._sensor_from_topic("cliff", topic_name, "sensor_msgs/Range")
                 self._register_sensor(sensor, Range, self.cliff_callback)
                 active_dynamic_topics.add(topic_name)
@@ -313,7 +315,7 @@ class WebBridgeNode(Node):
 
     def check_tf_health(self):
         now = time.monotonic()
-        stale_by_timeout = (now - self.tf_last_update_time) > TF_STALE_TIMEOUT_SEC
+        stale_by_timeout = (now - self.tf_last_update_time) > self.cfg.tf_stale_timeout_sec
         has_tf_data = bool(self.tf_frames)
         current_stale = stale_by_timeout or not has_tf_data
         if current_stale != self.tf_is_stale:
@@ -330,7 +332,7 @@ class WebBridgeNode(Node):
             state_text = "stale" if self.tf_is_stale else "healthy"
             self.get_logger().info(f"TF stream state changed: {state_text}.")
 
-        if self.tf_is_stale and (now - self.tf_last_resubscribe_time) > TF_RESUBSCRIBE_COOLDOWN_SEC:
+        if self.tf_is_stale and (now - self.tf_last_resubscribe_time) > self.cfg.tf_resubscribe_cooldown_sec:
             self.get_logger().warn("TF stream stale. Recreating /tf and /tf_static subscriptions.")
             self._create_tf_subscriptions()
 

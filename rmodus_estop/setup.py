@@ -22,6 +22,7 @@ setup(
     entry_points={
         "console_scripts": [
             "estop = rmodus_estop.node_estop:main",
+            "estop_hw = rmodus_estop.node_estop_hw:main",
         ],
     },
 )

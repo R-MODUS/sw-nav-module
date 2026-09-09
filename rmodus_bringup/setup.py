@@ -37,7 +37,7 @@ setup(
     entry_points={
         'console_scripts': [
             'rmodus-hw = rmodus_bringup.rmodus_hw:main',
-            'rmodus-sim = rmodus_bringup.rmodus_sim:main',
+            'rmodus-gazebo = rmodus_bringup.rmodus_gazebo:main',
         ],
     },
 )

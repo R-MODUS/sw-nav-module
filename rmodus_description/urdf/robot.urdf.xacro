@@ -1,7 +1,7 @@
 <?xml version='1.0'?>
 <!-- Shared robot description entry point.
      Includes all base URDF components common to both hw and sim.
-     Gazebo plugins are added by rmodus_sim/urdf/ includes. -->
+     Gazebo plugins are added by rmodus_gazebo/urdf/ includes. -->
 
 <robot
   name='my_robot'

@@ -30,7 +30,7 @@ def _resolve_config_path(p):
 
 
 def _create_sim_actions(context):
-    pkg_name = 'rmodus_sim'
+    pkg_name = 'rmodus_gazebo'
     structure_source = LaunchConfiguration('structure_source').perform(context)
     use_mesh_visuals = LaunchConfiguration('use_mesh_visuals').perform(context)
     sim_config_file = _resolve_config_path(LaunchConfiguration('sim_config_file').perform(context))
@@ -138,7 +138,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'sim_config_file',
             default_value=os.path.join(
-                get_package_share_directory('rmodus_sim'),
+                get_package_share_directory('rmodus_gazebo'),
                 'config',
                 'sim.yaml',
             ),
@@ -152,7 +152,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'dynamic_bridge_base_config_file',
             default_value=os.path.join(
-                get_package_share_directory('rmodus_sim'),
+                get_package_share_directory('rmodus_gazebo'),
                 'config',
                 'bridge_parameters.yaml',
             ),

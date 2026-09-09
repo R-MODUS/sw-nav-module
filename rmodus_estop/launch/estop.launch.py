@@ -39,19 +39,19 @@ def _create(context):
     gpio = cfg.get("gpio_button") if isinstance(cfg.get("gpio_button"), dict) else {}
     platform = cfg.get("platform") if isinstance(cfg.get("platform"), dict) else {}
 
-    params = {
+    request_topic = str(cfg.get("request_topic", "/rmodus/e_stop/request"))
+    hw_active_topic = str(cfg.get("hw_active_topic", "/rmodus/e_stop/hw_active"))
+
+    logic_params = {
         "enabled": True,
         "publish_rate_hz": float(cfg.get("publish_rate_hz", 50.0)),
         "cmd_vel_input_topic": str(cfg.get("cmd_vel_input_topic", "/cmd_vel")),
         "cmd_vel_output_topic": str(cfg.get("cmd_vel_output_topic", "/cmd_vel_safe")),
         "state_topic": str(cfg.get("state_topic", "/rmodus/e_stop")),
-        "request_topic": str(cfg.get("request_topic", "/rmodus/e_stop/request")),
+        "request_topic": request_topic,
         "reset_topic": str(cfg.get("reset_topic", "/rmodus/e_stop/reset")),
-        "require_clear_to_reset": bool(cfg.get("require_clear_to_reset", False)),
-        "gpio_button.enabled": bool(gpio.get("enabled", False)),
-        "gpio_button.pin": int(gpio.get("pin", 16)),
-        "gpio_button.active_high": bool(gpio.get("active_high", False)),
-        "gpio_button.pull_up": bool(gpio.get("pull_up", True)),
+        "hw_active_topic": hw_active_topic,
+        "require_clear_to_reset": bool(cfg.get("require_clear_to_reset", True)),
         "platform.enabled": bool(platform.get("enabled", False)),
         "platform.state_topic": str(platform.get("state_topic", "/hardware/e_stop")),
         "platform.trigger_service": str(
@@ -62,15 +62,38 @@ def _create(context):
         ),
         "platform.mode": str(platform.get("mode", "mirror_out")),
     }
-    return [
+
+    nodes = [
         Node(
             package="rmodus_estop",
             executable="estop",
             name="rmodus_estop",
-            parameters=[params],
+            parameters=[logic_params],
             output="screen",
         )
     ]
+
+    if bool(gpio.get("enabled", False)):
+        nodes.append(
+            Node(
+                package="rmodus_estop",
+                executable="estop_hw",
+                name="rmodus_estop_hw",
+                parameters=[
+                    {
+                        "enabled": True,
+                        "poll_rate_hz": float(gpio.get("poll_rate_hz", 50.0)),
+                        "pin": int(gpio.get("pin", 16)),
+                        "pull_up": bool(gpio.get("pull_up", True)),
+                        "active_high": bool(gpio.get("active_high", False)),
+                        "request_topic": request_topic,
+                        "hw_active_topic": hw_active_topic,
+                    }
+                ],
+                output="screen",
+            )
+        )
+    return nodes
 
 
 def generate_launch_description():

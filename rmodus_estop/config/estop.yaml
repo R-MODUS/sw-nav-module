@@ -1,4 +1,5 @@
-# Central e-stop (latch + cmd_vel gate). Sources only publish requests.
+# Central e-stop: latch + cmd_vel gate. Sources only publish requests.
+# HW button is a separate node in this package (gpio_button.enabled).
 rmodus_estop:
   enabled: true
   publish_rate_hz: 50.0
@@ -7,14 +8,16 @@ rmodus_estop:
   state_topic: /rmodus/e_stop
   request_topic: /rmodus/e_stop/request
   reset_topic: /rmodus/e_stop/reset
-  require_clear_to_reset: false
+  hw_active_topic: /rmodus/e_stop/hw_active
+  require_clear_to_reset: true
 
-  # Optional physical e-stop box → GPIO on Pi (no separate package)
+  # Optional physical e-stop box → GPIO on Pi (node_estop_hw)
   gpio_button:
     enabled: false
     pin: 16
     active_high: false
     pull_up: true
+    poll_rate_hz: 50.0
 
   # Optional host platform (e.g. Husarion Lynx hardware/e_stop)
   platform:

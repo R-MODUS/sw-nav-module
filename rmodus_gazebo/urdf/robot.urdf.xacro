@@ -15,7 +15,7 @@
 <xacro:property name='use_mesh' value='$(arg use_mesh_visuals)' />
 
 <!-- CONSTANTS used by sim-specific xacro (mesh paths) -->
-<xacro:property name='meshes_dir' value='rmodus_sim/meshes'/>
+<xacro:property name='meshes_dir' value='rmodus_gazebo/meshes'/>
 <xacro:property name='creo_scale' value='0.001' />
 
 <!-- Shared config and helpers -->

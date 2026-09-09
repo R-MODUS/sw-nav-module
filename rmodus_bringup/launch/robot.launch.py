@@ -28,7 +28,7 @@ def generate_launch_description():
     display_launch = PathJoinSubstitution(
         [FindPackageShare("rmodus_display"), "launch", "display.launch.py"]
     )
-    sim_launch = PathJoinSubstitution([FindPackageShare("rmodus_sim"), "launch", "sim.launch.py"])
+    sim_launch = PathJoinSubstitution([FindPackageShare("rmodus_gazebo"), "launch", "sim.launch.py"])
     description_launch = PathJoinSubstitution(
         [FindPackageShare("rmodus_description"), "launch", "description.launch.py"]
     )

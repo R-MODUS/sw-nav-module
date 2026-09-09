@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 from glob import glob
 import os
 
-package_name = 'rmodus_sim'
+package_name = 'rmodus_gazebo'
 
 setup(
     name=package_name,
@@ -36,7 +36,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'sim_bumper_bridge = rmodus_sim.sim_bumper_bridge:main',
+            'sim_bumper_bridge = rmodus_gazebo.sim_bumper_bridge:main',
         ],
     },
 )

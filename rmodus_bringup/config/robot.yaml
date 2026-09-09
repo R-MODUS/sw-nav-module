@@ -59,6 +59,7 @@
       state_topic: /rmodus/e_stop
       request_topic: /rmodus/e_stop/request
       reset_topic: /rmodus/e_stop/reset
+      hw_active_topic: /rmodus/e_stop/hw_active
       gpio_button:
         enabled: false
         pin: 16

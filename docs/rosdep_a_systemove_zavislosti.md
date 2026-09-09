@@ -32,7 +32,7 @@ Tento dokument shrnuje **ROS 2 balíčky** a **Python/systémové závislosti** 
 | `rclpy` | Python uzly |
 | `geometry_msgs`, `nav_msgs`, `sensor_msgs`, `tf2_msgs` | hw, web, autonomy, sim |****
 | `tf2_ros` | lidar TF, obstacle cloud |
-| `rmodus_interface`, `rmodus_description`, `rmodus_hw`, `rmodus_sim`, `rmodus_web`, `rmodus_autonomy`, `rmodus_bringup` | interní závislosti mezi balíčky |
+| `rmodus_interface`, `rmodus_description`, `rmodus_hw`, `rmodus_gazebo`, `rmodus_web`, `rmodus_autonomy`, `rmodus_bringup` | interní závislosti mezi balíčky |
 | `robot_state_publisher`, `xacro` | URDF / launch |
 | `joint_state_publisher_gui` | hw, bringup |
 | `rosbridge_server` | hw, bringup |
@@ -84,14 +84,14 @@ pip install --user pmw3901 adafruit-circuitpython-ssd1306
 | **rmodus_interface** | `msg/`, `srv/`, CMake generování |
 | **rmodus_description** | `urdf/`, `config/`, `launch/description.launch.py` |
 | **rmodus_hw** | uzly motorů, LiDAR, bumper, cliff, display, flow, fan, WiFi, monitor; `launch/hw.launch.py` |
-| **rmodus_sim** | `sim_bumper_bridge`, Gazebo world, `launch/sim.launch.py`, URDF pro sim |
+| **rmodus_gazebo** | `sim_bumper_bridge`, Gazebo world, `launch/sim.launch.py`, URDF pro sim |
 | **rmodus_web** | FastAPI WebSocket bridge, `launch/web.launch.py` |
 | **rmodus_autonomy** | Nav2/SLAM/EKF launch, bumper safety, obstacle cloud |
 | **rmodus_bringup** | sjednocující `robot.launch.py`, RViz, PC/edge launch |
 
 ## Poznámky
 
-- Sim balíček `rmodus_sim` má v `package.xml` export s podmínkou distro **jazzy** – na jiném ROS 2 distru ověř kompatibilitu `ros_gz_*`.
+- Sim balíček `rmodus_gazebo` má v `package.xml` export s podmínkou distro **jazzy** – na jiném ROS 2 distru ověř kompatibilitu `ros_gz_*`.
 - HW závislosti (Adafruit, SPI, GPIO) dávají smysl hlavně na **Raspberry Pi** nebo kompatibilní desce; na čistém PC pro vývoj je můžeš při `rosdep install` přeskočit pomocí `--skip-keys` pro konkrétní klíče, pokud HW nodes nespouštíš.
 
 Poslední aktualizace: odvozeno z obsahu `package.xml` a importů v `.py` souborech ve workspace.

@@ -13,7 +13,7 @@
   <depend>nav_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>geometry_msgs</depend>
-  <depend>rmodus_sim</depend>
+  <depend>rmodus_gazebo</depend>
   <depend>rmodus_hw</depend>
   <depend>rmodus_uart_output</depend>
   <depend>rmodus_estop</depend>

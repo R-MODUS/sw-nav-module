@@ -1,0 +1,6 @@
+# Default config for rmodus_uart_output (override via launch config_file).
+uart_output:
+  enabled: true
+  port: /dev/ttyUSB0
+  baudrate: 115200
+  cmd_vel_topic: /cmd_vel_safe

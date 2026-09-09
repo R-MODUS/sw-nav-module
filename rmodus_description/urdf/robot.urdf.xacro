@@ -12,8 +12,6 @@
 
 <!-- CONFIG -->
 <xacro:property name='robot_cfg'     value="${xacro.load_yaml('$(arg config_path)')}" />
-<xacro:property name='bumpers'       value="${robot_cfg['/**']['ros__parameters']['bumpers']}" />
-<xacro:property name='cliff_sensors' value="${robot_cfg['/**']['ros__parameters']['cliff_sensors']}" />
 <xacro:property name='base_cfg'      value="${robot_cfg['/**']['ros__parameters']['base_link']}" />
 <xacro:property name='imu_cfg'       value="${robot_cfg['/**']['ros__parameters']['imu']}" />
 <xacro:property name='lidar_cfg'     value="${robot_cfg['/**']['ros__parameters']['lidar']}" />
@@ -75,11 +73,10 @@
   </inertial>
 </xacro:macro>
 
-<!-- INCLUDES -->
+<!-- INCLUDES: box + optional lidar/imu TF frames.
+     Bumper / cliff TF are published by rmodus_bumper / rmodus_cliff_sensor launches. -->
 <xacro:include filename='base.urdf.xacro'/>
 <xacro:include filename='imu.urdf.xacro'/>
 <xacro:include filename='lidar.urdf.xacro'/>
-<xacro:include filename='bumpers.urdf.xacro'/>
-<xacro:include filename='cliff_sensors.urdf.xacro'/>
 
 </robot>

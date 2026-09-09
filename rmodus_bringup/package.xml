@@ -15,6 +15,12 @@
   <depend>geometry_msgs</depend>
   <depend>rmodus_sim</depend>
   <depend>rmodus_hw</depend>
+  <depend>rmodus_uart_output</depend>
+  <depend>rmodus_estop</depend>
+  <depend>rmodus_bumper</depend>
+  <depend>rmodus_cliff_sensor</depend>
+  <depend>rmodus_flow_sensor</depend>
+  <depend>rmodus_display</depend>
   <depend>rmodus_web</depend>
   <depend>rmodus_autonomy</depend>
 

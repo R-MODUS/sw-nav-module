@@ -20,8 +20,9 @@
 
 <!-- Shared config and helpers -->
 <xacro:property name='robot_cfg' value="${xacro.load_yaml('$(arg config_path)')}" />
-<xacro:property name='bumpers' value="${robot_cfg['/**']['ros__parameters']['bumpers']}" />
-<xacro:property name='cliff_sensors' value="${robot_cfg['/**']['ros__parameters']['cliff_sensors']}" />
+<!-- bumpers/cliff: list (legacy) or {items: [...]} (module config) -->
+<xacro:property name='bumpers' value="${(lambda b: (b.get('items', []) if isinstance(b, dict) else (b or [])))(robot_cfg['/**']['ros__parameters'].get('bumpers', []))}" />
+<xacro:property name='cliff_sensors' value="${(lambda c: (c.get('items', []) if isinstance(c, dict) else (c or [])))(robot_cfg['/**']['ros__parameters'].get('cliff_sensors', []))}" />
 <xacro:property name='base_cfg' value="${robot_cfg['/**']['ros__parameters']['base_link']}" />
 <xacro:property name='imu_cfg' value="${robot_cfg['/**']['ros__parameters']['imu']}" />
 <xacro:property name='lidar_cfg' value="${robot_cfg['/**']['ros__parameters']['lidar']}" />

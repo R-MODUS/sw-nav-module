@@ -1,0 +1,15 @@
+# Standalone Neato LDS driver (not an R-MODUS module).
+# TF mount belongs in the robot profile / description — this package only
+# publishes LaserScan with header.frame_id.
+neato_lidar:
+  enabled: true
+  topic: /scan
+  frame_id: lidar_beam
+  port: /dev/ttyUSB0
+  motor_pin: 19
+  frequency: 10000
+  target_rpm: 300
+  range_min: 0.05
+  range_max: 5.0
+  angle_min: 0.0
+  angle_max: 6.283185307179586

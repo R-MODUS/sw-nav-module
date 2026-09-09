@@ -22,8 +22,6 @@ def generate_launch_description():
     navigation = LaunchConfiguration("navigation")
     rf2o = LaunchConfiguration("rf2o")
     obstacle_cloud = LaunchConfiguration("obstacle_cloud")
-    bumper_safety_stop = LaunchConfiguration("bumper_safety_stop")
-    bumper_safety_stop_params = LaunchConfiguration("bumper_safety_stop_params_file")
 
     ekf_launch = PathJoinSubstitution([autonomy_share, "launch", "ekf_dynamic.launch.py"])
     nav2_launch = PathJoinSubstitution([autonomy_share, "launch", "nav2.launch.py"])
@@ -39,7 +37,6 @@ def generate_launch_description():
             DeclareLaunchArgument("navigation", default_value="true"),
             DeclareLaunchArgument("rf2o", default_value="false"),
             DeclareLaunchArgument("obstacle_cloud", default_value="true"),
-            DeclareLaunchArgument("bumper_safety_stop", default_value="true"),
             DeclareLaunchArgument(
                 "global_params_file",
                 default_value="",
@@ -66,11 +63,6 @@ def generate_launch_description():
                 "nav2_params_file",
                 default_value=PathJoinSubstitution([autonomy_share, "config", "nav2_params.yaml"]),
                 description="Nav2 parameters file",
-            ),
-            DeclareLaunchArgument(
-                "bumper_safety_stop_params_file",
-                default_value=PathJoinSubstitution([autonomy_share, "config", "bumper_safety_stop.yaml"]),
-                description="Bumper safety stop parameters file",
             ),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(ekf_launch),
@@ -112,15 +104,6 @@ def generate_launch_description():
                 output="screen",
                 emulate_tty=True,
                 condition=IfCondition(obstacle_cloud),
-            ),
-            Node(
-                package="rmodus_autonomy",
-                executable="bumper_safety_stop",
-                name="bumper_safety_stop",
-                parameters=[bumper_safety_stop_params, {"use_sim_time": use_sim_time}],
-                output="screen",
-                emulate_tty=True,
-                condition=IfCondition(bumper_safety_stop),
             ),
         ]
     )

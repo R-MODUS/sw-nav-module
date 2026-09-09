@@ -1,22 +1,18 @@
-# sw-nav-module
+# Parameter layout after modular HW split.
 
-ROS 2 navigation workspace for R-Modus packages.
+Active sources:
 
-## Parameter Config Migration
+- `rmodus_description/config/default_robot_config.yaml` — shared TF / EKF model (lidar/IMU contract)
+- `rmodus_bringup/config/robot.yaml` — profile passed to bringup (modules + autonomy + web)
+- Per-module defaults: `rmodus_bumper`, `rmodus_cliff_sensor`, `rmodus_flow_sensor`, `rmodus_display`, `rmodus_uart_output`
+- `rmodus_hw/config/base_params.yaml` — fan / box services only
 
-The parameter layout was simplified to remove redundant YAML copies.
+Optional packages (each: `enabled`, topic, mount_parent_frame, mount_offset, mount_rpy):
 
-Active parameter sources are now:
+- `rmodus_uart_output` — `/cmd_vel_safe` → UART (no kinematics, no `/vector`)
+- `rmodus_bumper`, `rmodus_cliff_sensor`, `rmodus_flow_sensor`, `rmodus_display`
 
-- `rmodus_description/config/default_robot_config.yaml` for shared robot and sensor model.
-- `rmodus_sim/config/robot_config.yaml` for standalone sim package robot model.
-- `rmodus_hw/config/base_params.yaml` for HW node default parameters.
-- `rmodus_bringup/config/user_params.yaml` for global runtime overrides.
+Lidar/IMU drivers are **not** part of R-MODUS core.
 
-Removed redundant files:
-
-- `rmodus_hw/config/robot_config.yaml`
-- `rmodus_bringup/config/base_params.yaml`
-- `rmodus_sim/config/base_params.yaml`
-
-If you used any removed file in custom scripts, switch to the active sources listed above.
+- Optional vendor package in this repo: `neato_lidar` (`ros2 launch neato_lidar neato_lidar.launch.py`)
+- Xsens / other IMUs: install upstream driver separately; profile only sets `topic` + TF

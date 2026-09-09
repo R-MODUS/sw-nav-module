@@ -41,6 +41,9 @@ web:
     plan: /received_global_plan
     goal_pose: /goal_pose
     cmd_vel: /cmd_vel              # výstup joysticku z UI
+    e_stop_state: /rmodus/e_stop           # stav (true = stop aktivní)
+    e_stop_request: /rmodus/e_stop/request # podnět k zastavení (UI tlačítko později)
+    e_stop_reset: /rmodus/e_stop/reset     # podnět k resetu
     discovery_rate_hz: 1.0         # perioda znovuobjevení bumper/cliff topiců (Hz)
 
   cmd:

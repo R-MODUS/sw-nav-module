@@ -48,6 +48,9 @@ class WebConfig:
     cmd_use_twist_stamped: bool = False
     cmd_frame_id: str = "base_link"
     cmd_vel_topic: str = "/cmd_vel"
+    e_stop_state_topic: str = "/rmodus/e_stop"
+    e_stop_request_topic: str = "/rmodus/e_stop/request"
+    e_stop_reset_topic: str = "/rmodus/e_stop/reset"
     web_ui_nav_tabs: dict = field(default_factory=lambda: dict(DEFAULT_NAV_TABS))
     source: str = "defaults"
 
@@ -75,6 +78,9 @@ GOAL_POSE_TOPIC = "/goal_pose"
 CMD_USE_TWIST_STAMPED = False
 CMD_FRAME_ID = "base_link"
 CMD_VEL_TOPIC = "/cmd_vel"
+E_STOP_STATE_TOPIC = "/rmodus/e_stop"
+E_STOP_REQUEST_TOPIC = "/rmodus/e_stop/request"
+E_STOP_RESET_TOPIC = "/rmodus/e_stop/reset"
 WEB_UI_NAV_TABS = dict(DEFAULT_NAV_TABS)
 
 
@@ -161,6 +167,11 @@ def _web_config_from_block(defaults: WebConfig, block: Mapping[str, Any], source
         ),
         cmd_frame_id=_as_str(cmd.get("frame_id"), defaults.cmd_frame_id),
         cmd_vel_topic=_as_str(topics.get("cmd_vel"), defaults.cmd_vel_topic),
+        e_stop_state_topic=_as_str(topics.get("e_stop_state"), defaults.e_stop_state_topic),
+        e_stop_request_topic=_as_str(
+            topics.get("e_stop_request"), defaults.e_stop_request_topic
+        ),
+        e_stop_reset_topic=_as_str(topics.get("e_stop_reset"), defaults.e_stop_reset_topic),
         web_ui_nav_tabs=nav_tabs,
         source=source,
     )

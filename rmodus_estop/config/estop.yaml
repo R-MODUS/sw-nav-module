@@ -1,0 +1,25 @@
+# Central e-stop (latch + cmd_vel gate). Sources only publish requests.
+rmodus_estop:
+  enabled: true
+  publish_rate_hz: 50.0
+  cmd_vel_input_topic: /cmd_vel
+  cmd_vel_output_topic: /cmd_vel_safe
+  state_topic: /rmodus/e_stop
+  request_topic: /rmodus/e_stop/request
+  reset_topic: /rmodus/e_stop/reset
+  require_clear_to_reset: false
+
+  # Optional physical e-stop box → GPIO on Pi (no separate package)
+  gpio_button:
+    enabled: false
+    pin: 16
+    active_high: false
+    pull_up: true
+
+  # Optional host platform (e.g. Husarion Lynx hardware/e_stop)
+  platform:
+    enabled: false
+    state_topic: /hardware/e_stop
+    trigger_service: /hardware/e_stop_trigger
+    reset_service: /hardware/e_stop_reset
+    mode: mirror_out   # mirror_out | follow_in | both

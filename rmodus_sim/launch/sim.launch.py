@@ -174,8 +174,16 @@ def create_combined_bridge_config(static_yaml_path, robot_config_path):
     with open(robot_config_path, 'r') as f:
         robot_data = yaml.safe_load(f)
         params = robot_data.get('/**', {}).get('ros__parameters', {})
-        bumpers = [b for b in params.get('bumpers', []) if b.get('enabled', True)]
-        cliff_sensors = [c for c in params.get('cliff_sensors', []) if c.get('enabled', True)]
+
+        def _as_item_list(block):
+            if isinstance(block, dict):
+                return [i for i in (block.get('items') or []) if isinstance(i, dict) and i.get('enabled', True)]
+            if isinstance(block, list):
+                return [i for i in block if isinstance(i, dict) and i.get('enabled', True)]
+            return []
+
+        bumpers = _as_item_list(params.get('bumpers', []))
+        cliff_sensors = _as_item_list(params.get('cliff_sensors', []))
         bumper_names = [b['name'] for b in bumpers]
 
     # 3. Přidání bumperů

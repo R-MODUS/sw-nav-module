@@ -10,6 +10,7 @@ from nav_msgs.msg import OccupancyGrid, Path
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, QoSProfile, qos_profile_sensor_data
 from sensor_msgs.msg import Imu, LaserScan, Range
+from std_msgs.msg import Bool
 from tf2_msgs.msg import TFMessage
 
 from rmodus_interface.msg import Bumper, PiStatus
@@ -39,6 +40,7 @@ class WebBridgeNode(Node):
         self.latest_map = None
         self.latest_plan = None
         self.latest_goal = None
+        self.latest_e_stop = None
         self.tf_subscription = None
         self.tf_static_subscription = None
         self.tf_last_update_time = 0.0
@@ -52,11 +54,22 @@ class WebBridgeNode(Node):
 
         self.publisher_goal_pose = self.create_publisher(PoseStamped, self.cfg.goal_pose_topic, 10)
         self.publisher_cmd_vel = self.create_publisher(cmd_msg_type, self.cfg.cmd_vel_topic, 10)
+        self.publisher_e_stop_request = self.create_publisher(
+            Bool, self.cfg.e_stop_request_topic, 10
+        )
+        self.publisher_e_stop_reset = self.create_publisher(Bool, self.cfg.e_stop_reset_topic, 10)
         self.sub_status = self.create_subscription(PiStatus, "/system/pi_status", self.status_cb, 10)
+        self.sub_e_stop = self.create_subscription(
+            Bool, self.cfg.e_stop_state_topic, self.e_stop_callback, 10
+        )
         self.get_logger().info(
             f"Cmd output: {'TwistStamped' if self.cmd_use_twist_stamped else 'Twist'}"
             f" on {self.cfg.cmd_vel_topic}"
             + (f" (frame_id={self.cmd_frame_id})" if self.cmd_use_twist_stamped else "")
+        )
+        self.get_logger().info(
+            f"E-stop topics: state={self.cfg.e_stop_state_topic} "
+            f"request={self.cfg.e_stop_request_topic} reset={self.cfg.e_stop_reset_topic}"
         )
         self.get_logger().info(f"Web config: {self.cfg.source}")
 
@@ -348,6 +361,23 @@ class WebBridgeNode(Node):
             }
         )
 
+    def e_stop_callback(self, msg: Bool):
+        payload = {"type": "e_stop", "active": bool(msg.data)}
+        self.latest_e_stop = payload
+        if not self._has_clients():
+            return
+        self._broadcast_threadsafe(payload)
+
+    def publish_e_stop_request(self):
+        msg = Bool()
+        msg.data = True
+        self.publisher_e_stop_request.publish(msg)
+
+    def publish_e_stop_reset(self):
+        msg = Bool()
+        msg.data = True
+        self.publisher_e_stop_reset.publish(msg)
+
     def publish_joystick_cmd(self, data: dict):
         linear_x = float(data.get("linear_y", 0))
         linear_y = float(data.get("linear_x", 0)) * (-1)
@@ -391,6 +421,8 @@ class WebBridgeNode(Node):
             messages.append(self.latest_plan)
         if self.latest_goal:
             messages.append(self.latest_goal)
+        if self.latest_e_stop:
+            messages.append(self.latest_e_stop)
         messages.extend(self.latest_sensor_messages.values())
         return messages
 

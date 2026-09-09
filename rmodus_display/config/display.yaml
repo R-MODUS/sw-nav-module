@@ -7,6 +7,6 @@ display:
   brightness: 5
   # Optional TF (omit or leave empty parent to skip)
   frame_id: display_link
-  mount_parent_frame: main_module_mount
+  mount_parent_frame: rmodus_mount
   mount_offset: [0.0, 0.0, 0.0]
   mount_rpy: [0.0, 0.0, 0.0]

@@ -1,0 +1,31 @@
+<?xml version='1.0'?>
+<!-- Krabička: rmodus_mount fixed on base_link. Expects module_cfg in scope. -->
+
+<robot xmlns:xacro='http://www.ros.org/wiki/xacro'>
+
+<xacro:property name='mod_offset' value='${module_cfg.get("offset", [module_cfg.get("offset_x", 0.0), module_cfg.get("offset_y", 0.0), module_cfg.get("offset_z", 0.0)])}'/>
+<xacro:property name='mod_offset_x' value='${mod_offset[0]}'/>
+<xacro:property name='mod_offset_y' value='${mod_offset[1]}'/>
+<xacro:property name='mod_offset_z' value='${mod_offset[2]}'/>
+<xacro:property name='mod_rpy_r' value='${module_cfg.get("rpy", [0.0, 0.0, 0.0])[0]}'/>
+<xacro:property name='mod_rpy_p' value='${module_cfg.get("rpy", [0.0, 0.0, 0.0])[1]}'/>
+<xacro:property name='mod_rpy_y' value='${module_cfg.get("rpy", [0.0, 0.0, 0.0])[2]}'/>
+<xacro:property name='mod_size_x' value='${module_cfg.get("size", [0.20, 0.16, 0.05])[0]}'/>
+<xacro:property name='mod_size_y' value='${module_cfg.get("size", [0.20, 0.16, 0.05])[1]}'/>
+<xacro:property name='mod_size_z' value='${module_cfg.get("size", [0.20, 0.16, 0.05])[2]}'/>
+
+<link name='rmodus_mount'>
+  <visual>
+    <origin xyz='0 0 0' rpy='0 0 0'/>
+    <geometry><box size='${mod_size_x} ${mod_size_y} ${mod_size_z}'/></geometry>
+    <material name='main_module_mat'/>
+  </visual>
+</link>
+
+<joint name='rmodus_mount_joint' type='fixed'>
+  <parent link='base_link'/>
+  <child link='rmodus_mount'/>
+  <origin xyz='${mod_offset_x} ${mod_offset_y} ${mod_offset_z}' rpy='${mod_rpy_r} ${mod_rpy_p} ${mod_rpy_y}'/>
+</joint>
+
+</robot>

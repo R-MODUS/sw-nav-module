@@ -1,5 +1,5 @@
 <?xml version='1.0'?>
-<!-- Shared IMU TF frame - no Gazebo plugins -->
+<!-- Shared IMU TF frame - no Gazebo plugins. Included only when imu.enabled. -->
 
 <robot xmlns:xacro='http://www.ros.org/wiki/xacro'>
 
@@ -33,7 +33,7 @@
 </link>
 
 <joint name='imu_mount_joint' type='fixed'>
-  <parent link='${imu_cfg.get("mount_parent_frame", "main_module_mount")}'/>
+  <parent link='${imu_cfg.get("mount_parent_frame", "rmodus_mount")}'/>
   <child link='imu_mount'/>
   <origin xyz='${imu_cfg.get("mount_offset", [0.0, 0.0, 0.0])[0]} ${imu_cfg.get("mount_offset", [0.0, 0.0, 0.0])[1]} ${imu_cfg.get("mount_offset", [0.0, 0.0, 0.0])[2]}'
           rpy='${imu_cfg.get("mount_rpy", [0.0, 0.0, 0.0])[0]} ${imu_cfg.get("mount_rpy", [0.0, 0.0, 0.0])[1]} ${imu_cfg.get("mount_rpy", [0.0, 0.0, 0.0])[2]}'/>

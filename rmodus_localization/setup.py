@@ -1,7 +1,7 @@
-from setuptools import setup, find_packages
 from glob import glob
+from setuptools import find_packages, setup
 
-package_name = "rmodus_bringup"
+package_name = "rmodus_localization"
 
 setup(
     name=package_name,
@@ -10,8 +10,6 @@ setup(
     data_files=[
         ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
         ("share/" + package_name + "/config", glob("config/*.yaml")),
-        ("share/" + package_name + "/config", glob("config/*.config")),
-        ("share/" + package_name + "/config", glob("config/*.rviz")),
         ("share/" + package_name + "/launch", glob("launch/*.py")),
         ("share/" + package_name, ["package.xml"]),
     ],
@@ -19,8 +17,11 @@ setup(
     zip_safe=True,
     maintainer="pi",
     maintainer_email="pi@todo.todo",
-    description="R-MODUS bringup",
+    description="R-MODUS localization (EKF + optional rf2o/slam)",
     license="TODO: License declaration",
-    extras_require={"test": ["pytest"]},
-    entry_points={"console_scripts": []},
+    entry_points={
+        "console_scripts": [
+            "obstacle_cloud = rmodus_localization.node_obstacle_cloud:main",
+        ],
+    },
 )

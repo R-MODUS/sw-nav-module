@@ -1,18 +1,33 @@
-# Parameter layout after modular HW split.
+# R-MODUS nav module
 
-Active sources:
+## Spuštění
 
-- `rmodus_description/config/default_robot_config.yaml` — shared TF / EKF model (lidar/IMU contract)
-- `rmodus_bringup/config/robot.yaml` — profile passed to bringup (modules + autonomy + web)
-- Per-module defaults: `rmodus_bumper`, `rmodus_cliff_sensor`, `rmodus_flow_sensor`, `rmodus_display`, `rmodus_uart_output`
-- `rmodus_hw/config/base_params.yaml` — fan / box services only
+```bash
+ros2 launch rmodus_bringup rmodus.launch.py
+# volitelně:
+ros2 launch rmodus_bringup rmodus.launch.py robot_yaml:=/cesta/k/profilu.yaml
+```
 
-Optional packages (each: `enabled`, topic, mount_parent_frame, mount_offset, mount_rpy):
+Co se spustí řídí **jen** top-level `bringup:` v profilu (`rmodus_bringup/config/robot.yaml`).  
+Druhá vrstva: `*.enabled` v blocích modulů (node + TF + EKF).
 
-- `rmodus_uart_output` — `/cmd_vel_safe` → UART (no kinematics, no `/vector`)
-- `rmodus_bumper`, `rmodus_cliff_sensor`, `rmodus_flow_sensor`, `rmodus_display`
+Chybí-li volitelný balíček na disku (např. `rmodus_bumper`, Nav2, rf2o), launch ho **přeskočí s logem** — nespadne celý bringup.
 
-Lidar/IMU drivers are **not** part of R-MODUS core.
+`rosdep` / `package.xml` **netáhne** těžké optional deps. Instalaci profilů řeší `sw_install` (později). Optional jsou zapsané v `<export><rmodus><optional_depend>…`.
 
-- Optional vendor package in this repo: `neato_lidar` (`ros2 launch neato_lidar neato_lidar.launch.py`)
-- Xsens / other IMUs: install upstream driver separately; profile only sets `topic` + TF
+## Balíčky (orientace)
+
+| Balíček | Role |
+|---|---|
+| `rmodus_bringup` | profil + `rmodus.launch.py` |
+| `rmodus_chassis` | host `base_link` |
+| `rmodus_description` | sada `rmodus_mount` + imu/lidar TF |
+| `rmodus_localization` | EKF + optional rf2o/slam + obstacle_cloud |
+| `rmodus_navigation` | Nav2 (optional debs) |
+| `rmodus_bumper` / `cliff` / `flow` / `display` / … | feature moduly (optional vůči bringup) |
+
+## TF model
+
+- **Host**: `base_footprint` → `base_link`
+- **Sada**: `base_link` → `rmodus_mount` → volitelné imu/lidar  
+  Při `bringup.chassis` + `description` → jeden URDF/RSP.

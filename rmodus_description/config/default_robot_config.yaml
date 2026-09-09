@@ -1,6 +1,6 @@
-# Shared robot / sensor model (description + EKF merge).
-# Optional HW modules (bumper/cliff/flow/display/uart) have their own package defaults;
-# bringup robot.yaml overrides the same keys under /**/ros__parameters.
+# Shared kit / sensor model (description + EKF merge).
+# Host base_link geometry lives in rmodus_chassis / bringup profile.
+# Optional HW modules have their own package defaults.
 
 /**:
   ros__parameters:
@@ -9,12 +9,13 @@
       mass: 5.0
       size: [0.5, 0.5, 0.1]
       offset_z: 0.0973
-      nav_offset_x: 0.032
-      nav_offset_z: 0.0
 
-    nav_module:
+    rmodus_module:
+      mass: 2.0
+      size: [0.25, 0.25, 0.05]
       offset_x: 0.032
-      offset_z: 0.0
+      offset_y: 0.0
+      offset_z: 0.02
 
     wheel_odom:
       enabled: true
@@ -26,13 +27,14 @@
       type: 'odom'
       topic: '/odom_lidar'
 
+    # Single imu/lidar for now; keep mount_* so lists can be added later.
     imu:
       enabled: true
       type: 'imu'
       name: 'imu'
       topic: '/imu/data'
       frame_id: 'imu_link'
-      mount_parent_frame: 'main_module_mount'
+      mount_parent_frame: 'rmodus_mount'
       mount_offset: [0.0, 0.0, 0.0]
       mount_rpy: [0.0, 0.0, 0.0]
       offset: [0.056, 0.020, 0.015]
@@ -43,7 +45,7 @@
       name: 'lidar'
       topic: '/scan'
       frame_id: 'lidar_beam'
-      mount_parent_frame: 'main_module_mount'
+      mount_parent_frame: 'rmodus_mount'
       mount_offset: [0.0, 0.0, 0.0]
       mount_rpy: [0.0, 0.0, 0.0]
       offset: [0.005, 0.0, 0.2]

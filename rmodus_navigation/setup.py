@@ -1,7 +1,7 @@
 from glob import glob
 from setuptools import find_packages, setup
 
-package_name = "rmodus_autonomy"
+package_name = "rmodus_navigation"
 
 setup(
     name=package_name,
@@ -17,12 +17,7 @@ setup(
     zip_safe=True,
     maintainer="pi",
     maintainer_email="pi@todo.todo",
-    description="Autonomy stack package for localization and navigation.",
+    description="R-MODUS navigation (optional Nav2)",
     license="TODO: License declaration",
-    extras_require={"test": ["pytest"]},
-    entry_points={
-        "console_scripts": [
-            "obstacle_cloud = rmodus_autonomy.node_obstacle_cloud:main",
-        ],
-    },
+    entry_points={"console_scripts": []},
 )

@@ -32,18 +32,13 @@ Tento dokument shrnuje **ROS 2 balíčky** a **Python/systémové závislosti** 
 | `rclpy` | Python uzly |
 | `geometry_msgs`, `nav_msgs`, `sensor_msgs`, `tf2_msgs` | hw, web, autonomy, sim |****
 | `tf2_ros` | lidar TF, obstacle cloud |
-| `rmodus_interface`, `rmodus_description`, `rmodus_hw`, `rmodus_gazebo`, `rmodus_web`, `rmodus_autonomy`, `rmodus_bringup` | interní závislosti mezi balíčky |
+| `rmodus_interface`, `rmodus_description`, `rmodus_hw`, `rmodus_gazebo`, `rmodus_web`, `rmodus_localization`, `rmodus_navigation`, `rmodus_bringup` | interní závislosti mezi balíčky |
 | `robot_state_publisher`, `xacro` | URDF / launch |
 | `joint_state_publisher_gui` | hw, bringup |
 | `rosbridge_server` | hw, bringup |
-| `robot_localization` | EKF, hw |
-| `slam_toolbox` | SLAM launch |
-| `nav2_common`, `nav2_controller`, `nav2_smoother`, `nav2_planner`, `nav2_behaviors`, `nav2_bt_navigator`, `nav2_waypoint_follower`, `nav2_velocity_smoother`, `nav2_lifecycle_manager` | Nav2 stack |
-| `rf2o_laser_odometry` | volitelná laserová odometrie |
-| `ros_gz_sim`, `ros_gz_bridge`, `ros_gz_interfaces` | simulace Gazebo ↔ ROS |
-| `sensor_msgs_py` | `node_obstacle_cloud` (`point_cloud2`) |
-| `launch`, `launch_ros`, `ament_index_python` | Python launch soubory |
-| `rviz2` | volitelně přes `rviz:=true` v bringup |
+| `robot_localization` | EKF (`rmodus_localization`) — hard depend localization balíčku |
+| `slam_toolbox`, `rf2o_laser_odometry`, Nav2 `nav2_*`, `ros_gz_*` | **optional** — ne v `exec_depend`; `<export><rmodus><optional_depend>`; launch skipne pokud chybí |
+| `rviz2` | optional přes `bringup.rviz` |
 
 ## Přehled systémových / Python klíčů (rosdep)
 
@@ -86,8 +81,9 @@ pip install --user pmw3901 adafruit-circuitpython-ssd1306
 | **rmodus_hw** | uzly motorů, LiDAR, bumper, cliff, display, flow, fan, WiFi, monitor; `launch/hw.launch.py` |
 | **rmodus_gazebo** | `sim_bumper_bridge`, Gazebo world, `launch/sim.launch.py`, URDF pro sim |
 | **rmodus_web** | FastAPI WebSocket bridge, `launch/web.launch.py` |
-| **rmodus_autonomy** | Nav2/SLAM/EKF launch, bumper safety, obstacle cloud |
-| **rmodus_bringup** | sjednocující `robot.launch.py`, RViz, PC/edge launch |
+| **rmodus_localization** | EKF, optional rf2o/slam, obstacle_cloud |
+| **rmodus_navigation** | Nav2 launch + params (Nav2 debs optional) |
+| **rmodus_bringup** | `rmodus.launch.py` + profil `robot.yaml` (`bringup:`) |
 
 ## Poznámky
 

@@ -1,3 +1,28 @@
+# Jediný profil R-MODUS (bringup + parametry modulů).
+# Spouštění řídí top-level bringup:; druhá vrstva je *.enabled v blocích níže.
+# Těžké / feature balíčky jsou optional — chybí-li na disku, launch je přeskočí s logem.
+
+bringup:
+  chassis: true          # false = cizí host už publikuje base_link
+  description: true      # sada: rmodus_mount + imu/lidar TF
+  hw: true
+  uart_output: true
+  estop: true
+  bumper: true           # optional package rmodus_bumper
+  cliff: true            # optional package rmodus_cliff_sensor
+  flow: true             # optional package rmodus_flow_sensor
+  display: true          # optional package rmodus_display
+  web: true
+  rviz: false
+  sim: false             # optional rmodus_gazebo + ros_gz_* (zatím nespouští stack)
+  localization: true     # rmodus_localization (EKF; rf2o/slam optional debs)
+  navigation: true       # rmodus_navigation (Nav2 optional debs)
+  slam: true             # slam_toolbox (optional deb)
+  rf2o: false            # rf2o_laser_odometry (optional deb)
+  obstacle_cloud: true
+
+# Volitelný blok web: — pokud chybí, rmodus_web použije package default.
+
 /**:
   ros__parameters:
 
@@ -6,7 +31,7 @@
       size: [0.5, 0.5, 0.1]
       offset_z: 0.0973
 
-    nav_module:
+    rmodus_module:
       mass: 2.0
       size: [0.25, 0.25, 0.05]
       offset_x: 0.032
@@ -23,13 +48,13 @@
       type: 'odom'
       topic: '/odom_lidar'
 
-    # Lidar/IMU: kontrakt (topic + TF). Driver spouští uživatel.
+    # Lidar/IMU: kontrakt (topic + TF). Driver spouští uživatel mimo bringup.
     imu:
       enabled: true
       type: 'imu'
       topic: '/imu/data'
       frame_id: 'imu_link'
-      mount_parent_frame: 'main_module_mount'
+      mount_parent_frame: 'rmodus_mount'
       mount_offset: [0.0, 0.0, 0.0]
       mount_rpy: [0.0, 0.0, 0.0]
       offset: [0.056, 0.020, 0.015]
@@ -39,7 +64,7 @@
       enabled: true
       topic: '/scan'
       frame_id: 'lidar_beam'
-      mount_parent_frame: 'main_module_mount'
+      mount_parent_frame: 'rmodus_mount'
       mount_offset: [0.0, 0.0, 0.0]
       mount_rpy: [0.0, 0.0, 0.0]
       offset: [0.005, 0.0, 0.2]
@@ -143,7 +168,7 @@
       orientation: 0
       brightness: 5
       frame_id: 'display_link'
-      mount_parent_frame: 'main_module_mount'
+      mount_parent_frame: 'rmodus_mount'
       mount_offset: [0.0, 0.0, 0.0]
       mount_rpy: [0.0, 0.0, 0.0]
 

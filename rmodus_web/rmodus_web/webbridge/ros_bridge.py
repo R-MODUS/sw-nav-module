@@ -19,10 +19,12 @@ from rmodus_interface.srv import (
     ActivateProfile,
     CreateProfile,
     DeleteProfile,
+    GetNetworkConfig,
     GetProfile,
     ListProfiles,
     RenameProfile,
     SaveProfile,
+    SetNetworkConfig,
 )
 
 from rmodus_web.webbridge.config import WebConfig
@@ -82,6 +84,9 @@ class WebBridgeNode(Node):
         self._cli_rename = self.create_client(RenameProfile, "/rmodus/config/rename")
         self._cli_activate = self.create_client(ActivateProfile, "/rmodus/config/activate")
         self._cli_restart = self.create_client(Trigger, "/rmodus/system/restart")
+        self._cli_net_get = self.create_client(GetNetworkConfig, "/rmodus/network/get")
+        self._cli_net_set = self.create_client(SetNetworkConfig, "/rmodus/network/set")
+        self._cli_net_apply = self.create_client(Trigger, "/rmodus/network/apply")
 
         self.get_logger().info(
             f"Cmd output: {'TwistStamped' if self.cmd_use_twist_stamped else 'Twist'}"
@@ -94,7 +99,7 @@ class WebBridgeNode(Node):
         )
         self.get_logger().info(f"Web config: {self.cfg.source}")
         self.get_logger().info(
-            "Profile services: /rmodus/config/{list,get,save,create,delete,rename,activate}"
+            "Profile/network services: /rmodus/config/* /rmodus/network/{get,set,apply}"
         )
 
         self._create_static_sensor_subscriptions()
@@ -588,3 +593,15 @@ class WebBridgeNode(Node):
 
     def system_restart_rmodus(self):
         return self._call_profile_service(self._cli_restart, Trigger.Request())
+
+    def network_get(self):
+        return self._call_profile_service(self._cli_net_get, GetNetworkConfig.Request())
+
+    def network_set(self, config_json: str, apply: bool = False):
+        req = SetNetworkConfig.Request()
+        req.config_json = config_json
+        req.apply = bool(apply)
+        return self._call_profile_service(self._cli_net_set, req)
+
+    def network_apply(self):
+        return self._call_profile_service(self._cli_net_apply, Trigger.Request())

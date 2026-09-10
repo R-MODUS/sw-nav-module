@@ -1,0 +1,7 @@
+string config_json
+bool apply
+---
+string path
+bool applied
+bool success
+string message

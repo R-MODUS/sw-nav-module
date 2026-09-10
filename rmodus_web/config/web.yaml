@@ -64,4 +64,5 @@ web:
       sensors: true
       docs: true
       config: true
+      settings: true
       users: true

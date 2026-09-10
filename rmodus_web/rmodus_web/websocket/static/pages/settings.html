@@ -1,0 +1,101 @@
+<div class="page-shell">
+    <div class="page-head">
+        <div>
+            <h1 class="page-title">Nastavení</h1>
+            <p class="page-subtitle">Síť robota (<code id="network-path-label">network.yaml</code>). Hesla se do prohlížeče neposílají.</p>
+        </div>
+        <div class="btn-row">
+            <button type="button" class="btn btn-secondary" id="network-reload-btn">Obnovit</button>
+            <button type="button" class="btn btn-secondary" id="network-apply-btn">Použít síť</button>
+            <button type="button" class="btn btn-primary" id="network-save-btn">Uložit</button>
+        </div>
+    </div>
+
+    <form id="network-form" class="stack network-form" autocomplete="off">
+        <section class="panel panel-pad stack">
+            <h3>Obecné</h3>
+            <label class="network-field">
+                <span>boot.network</span>
+                <select id="net-boot-network">
+                    <option value="true">true — apply při startu</option>
+                    <option value="false">false — přeskočit</option>
+                </select>
+            </label>
+            <label class="network-field">
+                <span>Režim</span>
+                <select id="net-mode">
+                    <option value="client">client — připojit k Wi‑Fi</option>
+                    <option value="ap">ap — hotspot</option>
+                    <option value="ethernet">ethernet — bez Wi‑Fi</option>
+                </select>
+            </label>
+            <div class="grid-2">
+                <label class="network-field">
+                    <span>Země (country)</span>
+                    <input type="text" id="net-country" maxlength="2" placeholder="CZ">
+                </label>
+                <label class="network-field">
+                    <span>ROS_DOMAIN_ID</span>
+                    <input type="number" id="net-ros-domain" min="0" max="232" step="1">
+                </label>
+            </div>
+        </section>
+
+        <section class="panel panel-pad stack" id="net-client-section">
+            <div class="profiles-editor-head">
+                <h3>Client sítě</h3>
+                <button type="button" class="btn btn-secondary" id="net-add-client-btn">Přidat síť</button>
+            </div>
+            <p class="profiles-hint">Pořadí = priorita. Heslo nech prázdné = ponechat stávající.</p>
+            <div id="net-client-list" class="stack"></div>
+        </section>
+
+        <section class="panel panel-pad stack" id="net-ap-section">
+            <h3>Access Point</h3>
+            <div class="grid-2">
+                <label class="network-field">
+                    <span>SSID</span>
+                    <input type="text" id="net-ap-ssid">
+                </label>
+                <label class="network-field">
+                    <span>Heslo <small id="net-ap-pw-hint"></small></span>
+                    <input type="password" id="net-ap-password" placeholder="beze změny" autocomplete="new-password">
+                </label>
+                <label class="network-field">
+                    <span>Adresa</span>
+                    <input type="text" id="net-ap-address" placeholder="192.168.50.1/24">
+                </label>
+                <label class="network-field network-check">
+                    <input type="checkbox" id="net-ap-hidden">
+                    <span>Skryté SSID</span>
+                </label>
+            </div>
+        </section>
+
+        <section class="panel panel-pad stack">
+            <h3>Fallback AP</h3>
+            <label class="network-field network-check">
+                <input type="checkbox" id="net-fb-enabled">
+                <span>Povolit fallback hotspot</span>
+            </label>
+            <div class="grid-2">
+                <label class="network-field">
+                    <span>Timeout (s)</span>
+                    <input type="number" id="net-fb-timeout" min="5" step="1">
+                </label>
+                <label class="network-field">
+                    <span>SSID</span>
+                    <input type="text" id="net-fb-ssid">
+                </label>
+                <label class="network-field">
+                    <span>Heslo <small id="net-fb-pw-hint"></small></span>
+                    <input type="password" id="net-fb-password" placeholder="beze změny" autocomplete="new-password">
+                </label>
+                <label class="network-field network-check">
+                    <input type="checkbox" id="net-fb-hidden">
+                    <span>Skryté SSID</span>
+                </label>
+            </div>
+        </section>
+    </form>
+</div>

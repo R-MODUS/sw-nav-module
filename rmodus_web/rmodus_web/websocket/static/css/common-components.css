@@ -202,6 +202,44 @@ button { background: var(--accent); color: black; border: none; padding: 15px 30
     cursor: wait;
 }
 
+.network-form .network-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    color: var(--ui-text, #e2e8f0);
+    font-size: 0.92rem;
+}
+
+.network-form .network-field input[type="text"],
+.network-form .network-field input[type="password"],
+.network-form .network-field input[type="number"],
+.network-form .network-field select {
+    width: 100%;
+    box-sizing: border-box;
+    background: #0b1220;
+    border: 1px solid var(--ui-border, var(--border));
+    color: #d7e3f4;
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+
+.network-form .network-check {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.network-form .network-check input {
+    width: auto;
+    flex-grow: 0;
+}
+
+.network-form small {
+    color: #8fa3bf;
+    font-weight: 400;
+}
+
 .nav-links-bottom {
     list-style: none;
     padding: 0;

@@ -15,7 +15,7 @@ const JOYSTICK_SCRIPT_LOAD_TIMEOUT_MS = 4000;
 let joystickScriptPromise = null;
 let gamepadListenersInitialized = false;
 
-const NAV_TAB_ORDER = ['status', 'controls', 'map', 'sensors', 'docs', 'config', 'users'];
+const NAV_TAB_ORDER = ['status', 'controls', 'map', 'sensors', 'docs', 'config', 'settings', 'users'];
 const SIDEBAR_COLLAPSED_KEY = 'rmodus_sidebar_collapsed';
 
 function getUiNavTabs() {
@@ -169,6 +169,12 @@ window.loadPage = async function(pageName) {
                         window.initProfilesPage();
                     } else {
                         console.error('initProfilesPage function not found. Was profiles.js loaded correctly?');
+                    }
+                } else if (pageName === 'settings') {
+                    if (typeof window.initSettingsPage === 'function') {
+                        window.initSettingsPage();
+                    } else {
+                        console.error('initSettingsPage function not found. Was settings.js loaded correctly?');
                     }
                 }
             }, 50); // Krátké zpoždění pro jistotu

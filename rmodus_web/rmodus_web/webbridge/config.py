@@ -18,6 +18,7 @@ DEFAULT_NAV_TABS = {
     "sensors": True,
     "docs": True,
     "config": True,
+    "settings": True,
     "users": True,
 }
 

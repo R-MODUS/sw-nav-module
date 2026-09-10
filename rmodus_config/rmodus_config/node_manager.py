@@ -1,6 +1,7 @@
-"""ROS node: profile CRUD + activate + latched active status + system restart."""
+"""ROS node: profile CRUD + network config + system restart."""
 from __future__ import annotations
 
+import json
 import subprocess
 from pathlib import Path
 
@@ -15,12 +16,20 @@ from rmodus_interface.srv import (
     ActivateProfile,
     CreateProfile,
     DeleteProfile,
+    GetNetworkConfig,
     GetProfile,
     ListProfiles,
     RenameProfile,
     SaveProfile,
+    SetNetworkConfig,
 )
 
+from rmodus_config.network_store import (
+    network_public_view,
+    read_network_doc,
+    schedule_network_apply,
+    write_network_doc,
+)
 from rmodus_config.store import (
     ConfigPaths,
     create_profile,
@@ -91,10 +100,14 @@ class ConfigManagerNode(Node):
         self.create_service(ActivateProfile, "/rmodus/config/activate", self._on_activate)
         self.create_service(Trigger, "/rmodus/config/reload", self._on_reload)
         self.create_service(Trigger, "/rmodus/system/restart", self._on_restart)
+        self.create_service(GetNetworkConfig, "/rmodus/network/get", self._on_network_get)
+        self.create_service(SetNetworkConfig, "/rmodus/network/set", self._on_network_set)
+        self.create_service(Trigger, "/rmodus/network/apply", self._on_network_apply)
 
         self._publish()
         self.get_logger().info(
-            f"configs_root={self._paths.root} profiles={self._paths.profiles_dir}"
+            f"configs_root={self._paths.root} profiles={self._paths.profiles_dir} "
+            f"network={self._paths.network_yaml}"
         )
 
     def _publish(self) -> None:
@@ -265,6 +278,58 @@ class ConfigManagerNode(Node):
         except Exception as exc:  # noqa: BLE001
             res.active = ""
             res.path = ""
+            res.success = False
+            res.message = str(exc)
+        return res
+
+    def _on_network_get(self, _req, res):
+        try:
+            doc = read_network_doc(self._paths)
+            res.config_json = json.dumps(network_public_view(doc), ensure_ascii=False)
+            res.path = str(self._paths.network_yaml)
+            res.success = True
+            res.message = ""
+        except Exception as exc:  # noqa: BLE001
+            res.config_json = "{}"
+            res.path = str(self._paths.network_yaml)
+            res.success = False
+            res.message = str(exc)
+        return res
+
+    def _on_network_set(self, req, res):
+        try:
+            payload = json.loads(req.config_json or "{}")
+            if not isinstance(payload, dict):
+                raise ValueError("config_json musí být JSON objekt")
+            path = write_network_doc(self._paths, payload, merge_secrets=True)
+            res.path = str(path)
+            res.applied = False
+            if req.apply:
+                schedule_network_apply(path)
+                res.applied = True
+                res.message = "Uloženo; apply naplánován (~1 s)."
+            else:
+                res.message = "Uloženo do network.yaml."
+            res.success = True
+        except Exception as exc:  # noqa: BLE001
+            res.path = str(self._paths.network_yaml)
+            res.applied = False
+            res.success = False
+            res.message = str(exc)
+        return res
+
+    def _on_network_apply(self, _req, res):
+        try:
+            bin_path = Path("/usr/local/sbin/rmodus-network")
+            if not bin_path.is_file():
+                res.success = False
+                res.message = f"chybí {bin_path}"
+                return res
+            schedule_network_apply(self._paths.network_yaml)
+            res.success = True
+            res.message = "Apply network.yaml naplánován (~1 s)."
+            self.get_logger().warn(res.message)
+        except Exception as exc:  # noqa: BLE001
             res.success = False
             res.message = str(exc)
         return res

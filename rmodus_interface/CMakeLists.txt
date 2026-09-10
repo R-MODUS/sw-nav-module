@@ -17,6 +17,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/DeleteProfile.srv"
   "srv/RenameProfile.srv"
   "srv/ActivateProfile.srv"
+  "srv/GetNetworkConfig.srv"
+  "srv/SetNetworkConfig.srv"
   DEPENDENCIES std_msgs
 )
 

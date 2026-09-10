@@ -243,6 +243,29 @@
         }
     }
 
+    async function rebootHost() {
+        if (!confirm(
+            'Opravdu restartovat celé zařízení (Raspberry Pi)?\n'
+            + 'Web i SSH se odpojí; robot bude několik desítek sekund offline.'
+        )) {
+            return;
+        }
+        const typed = window.prompt('Pro potvrzení napiš REBOOT:');
+        if ((typed || '').trim() !== 'REBOOT') {
+            alert('Zrušeno — musíš napsat přesně REBOOT.');
+            return;
+        }
+        const btn = document.getElementById('system-reboot-btn');
+        if (btn) btn.disabled = true;
+        try {
+            const res = await api('/api/system/reboot', { method: 'POST', body: '{}' });
+            alert(res.message || 'Reboot naplánován. Spojení se přeruší.');
+        } catch (err) {
+            reportError(err);
+            if (btn) btn.disabled = false;
+        }
+    }
+
     window.initSettingsPage = async function initSettingsPage() {
         document.getElementById('network-reload-btn')?.addEventListener('click', reload);
         document.getElementById('network-save-btn')?.addEventListener('click', (e) => {
@@ -252,6 +275,10 @@
         document.getElementById('network-apply-btn')?.addEventListener('click', (e) => {
             e.preventDefault();
             applyOnly();
+        });
+        document.getElementById('system-reboot-btn')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            rebootHost();
         });
         document.getElementById('net-mode')?.addEventListener('change', updateModeVisibility);
         document.getElementById('net-add-client-btn')?.addEventListener('click', () => {

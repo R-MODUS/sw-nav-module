@@ -22,6 +22,7 @@ Services (node `config_manager`, `bringup.config: true`):
 ros2 service call /rmodus/config/list rmodus_interface/srv/ListProfiles {}
 ros2 service call /rmodus/config/activate rmodus_interface/srv/ActivateProfile "{name: demo}"
 ros2 service call /rmodus/system/restart std_srvs/srv/Trigger {}
+ros2 service call /rmodus/system/reboot std_srvs/srv/Trigger {}
 ros2 service call /rmodus/network/get rmodus_interface/srv/GetNetworkConfig {}
 ```
 

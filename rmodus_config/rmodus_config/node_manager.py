@@ -1,4 +1,4 @@
-"""ROS node: profile CRUD + network config + system restart."""
+"""ROS node: profile CRUD + network config + system restart/reboot."""
 from __future__ import annotations
 
 import json
@@ -62,19 +62,40 @@ def _load_paths(node: Node) -> ConfigPaths:
     return paths
 
 
-def _schedule_rmodus_restart(delay_sec: float = 1.5) -> None:
-    """Detach so restart survives this process dying with the service."""
+def _sudoers_hint(detail: str) -> str:
+    lower = (detail or "").lower()
+    if "password" in lower:
+        return (
+            "chybí passwordless sudo "
+            "(install → /etc/sudoers.d/rmodus-restart)"
+        )
+    return detail
+
+
+def _schedule_detached(cmd_after_sleep: str, delay_sec: float = 1.5) -> None:
+    """Detach so the action survives this process dying with the service."""
     delay = max(0.5, float(delay_sec))
-    cmd = (
-        f"sleep {delay:.1f}; "
-        "sudo -n /usr/bin/systemctl restart rmodus.service"
-    )
+    cmd = f"sleep {delay:.1f}; {cmd_after_sleep}"
     subprocess.Popen(
         ["bash", "-c", cmd],
         start_new_session=True,
         stdin=subprocess.DEVNULL,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
+    )
+
+
+def _schedule_rmodus_restart(delay_sec: float = 1.5) -> None:
+    _schedule_detached(
+        "sudo -n /usr/bin/systemctl restart rmodus.service",
+        delay_sec=delay_sec,
+    )
+
+
+def _schedule_host_reboot(delay_sec: float = 2.0) -> None:
+    _schedule_detached(
+        "sudo -n /usr/bin/systemctl reboot",
+        delay_sec=delay_sec,
     )
 
 
@@ -100,6 +121,7 @@ class ConfigManagerNode(Node):
         self.create_service(ActivateProfile, "/rmodus/config/activate", self._on_activate)
         self.create_service(Trigger, "/rmodus/config/reload", self._on_reload)
         self.create_service(Trigger, "/rmodus/system/restart", self._on_restart)
+        self.create_service(Trigger, "/rmodus/system/reboot", self._on_reboot)
         self.create_service(GetNetworkConfig, "/rmodus/network/get", self._on_network_get)
         self.create_service(SetNetworkConfig, "/rmodus/network/set", self._on_network_set)
         self.create_service(Trigger, "/rmodus/network/apply", self._on_network_apply)
@@ -142,19 +164,35 @@ class ConfigManagerNode(Node):
             )
             if probe.returncode != 0:
                 detail = (probe.stderr or probe.stdout or "").strip() or f"rc={probe.returncode}"
-                lower = detail.lower()
-                if "password" in lower:
-                    detail = (
-                        "chybí passwordless sudo pro systemctl "
-                        "(install → /etc/sudoers.d/rmodus-restart)"
-                    )
                 res.success = False
-                res.message = detail
+                res.message = _sudoers_hint(detail)
                 return res
             _schedule_rmodus_restart()
             res.success = True
             res.message = "Restart rmodus.service naplánován (~1.5 s)."
             self.get_logger().warn(res.message)
+        except Exception as exc:  # noqa: BLE001
+            res.success = False
+            res.message = str(exc)
+        return res
+
+    def _on_reboot(self, _req, res):
+        try:
+            probe = subprocess.run(
+                ["sudo", "-n", "/usr/bin/systemctl", "reboot", "--dry-run"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if probe.returncode != 0:
+                detail = (probe.stderr or probe.stdout or "").strip() or f"rc={probe.returncode}"
+                res.success = False
+                res.message = _sudoers_hint(detail)
+                return res
+            _schedule_host_reboot()
+            res.success = True
+            res.message = "Reboot zařízení naplánován (~2 s)."
+            self.get_logger().error(res.message)
         except Exception as exc:  # noqa: BLE001
             res.success = False
             res.message = str(exc)

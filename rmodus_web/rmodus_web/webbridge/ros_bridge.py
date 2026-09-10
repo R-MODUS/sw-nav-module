@@ -84,6 +84,7 @@ class WebBridgeNode(Node):
         self._cli_rename = self.create_client(RenameProfile, "/rmodus/config/rename")
         self._cli_activate = self.create_client(ActivateProfile, "/rmodus/config/activate")
         self._cli_restart = self.create_client(Trigger, "/rmodus/system/restart")
+        self._cli_reboot = self.create_client(Trigger, "/rmodus/system/reboot")
         self._cli_net_get = self.create_client(GetNetworkConfig, "/rmodus/network/get")
         self._cli_net_set = self.create_client(SetNetworkConfig, "/rmodus/network/set")
         self._cli_net_apply = self.create_client(Trigger, "/rmodus/network/apply")
@@ -593,6 +594,9 @@ class WebBridgeNode(Node):
 
     def system_restart_rmodus(self):
         return self._call_profile_service(self._cli_restart, Trigger.Request())
+
+    def system_reboot_host(self):
+        return self._call_profile_service(self._cli_reboot, Trigger.Request())
 
     def network_get(self):
         return self._call_profile_service(self._cli_net_get, GetNetworkConfig.Request())

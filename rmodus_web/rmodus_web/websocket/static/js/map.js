@@ -604,25 +604,25 @@ function drawRobot(ctx, viewport) {
     const pose = getDrawRobotPose();
     if (!pose) return;
     drawDirectionalMarker(ctx, viewport, pose, {
-        front: 0.34,
-        rear: 0.25,
+        front: 0.38,
+        rear: 0.24,
         halfWidth: 0.2,
+        shoulder: -0.02,
         fillStyle: '#2f5eff',
         strokeStyle: '#dbe8ff',
-        headingStyle: '#8df08d',
-        headingLength: 0.52,
+        showHeading: false,
     });
 }
 
 function drawGoalMarker(ctx, viewport, goal, active = false) {
     drawDirectionalMarker(ctx, viewport, goal, {
-        front: 0.3,
-        rear: 0.22,
-        halfWidth: 0.17,
+        front: 0.38,
+        rear: 0.24,
+        halfWidth: 0.2,
+        shoulder: -0.02,
         fillStyle: active ? 'rgba(24, 196, 132, 0.7)' : 'rgba(24, 196, 132, 0.45)',
         strokeStyle: active ? 'rgba(166, 255, 223, 0.95)' : 'rgba(166, 255, 223, 0.75)',
-        headingStyle: active ? 'rgba(24, 240, 160, 0.95)' : 'rgba(24, 240, 160, 0.75)',
-        headingLength: 0.48,
+        showHeading: false,
     });
 }
 
@@ -635,18 +635,20 @@ function drawGoals(ctx, viewport) {
     }
 }
 
-function buildMarkerHull(pose, front, rear, halfWidth) {
+function buildMarkerHull(pose, front, rear, halfWidth, shoulder = null) {
     const yaw = Number.isFinite(pose.yaw) ? pose.yaw : 0;
     const fx = Math.cos(yaw);
     const fy = Math.sin(yaw);
     const sx = Math.cos(yaw + Math.PI / 2);
     const sy = Math.sin(yaw + Math.PI / 2);
+    /* Default shoulder near the nose (blunt). Negative = further aft = sharper tip. */
+    const shoulderAlong = shoulder == null ? front * 0.2 : shoulder;
 
     return [
         { x: pose.x + fx * front, y: pose.y + fy * front }, /* nose */
         {
-            x: pose.x + fx * (front * 0.2) + sx * halfWidth,
-            y: pose.y + fy * (front * 0.2) + sy * halfWidth,
+            x: pose.x + fx * shoulderAlong + sx * halfWidth,
+            y: pose.y + fy * shoulderAlong + sy * halfWidth,
         },
         {
             x: pose.x - fx * (rear * 0.7) + sx * (halfWidth * 0.8),
@@ -658,8 +660,8 @@ function buildMarkerHull(pose, front, rear, halfWidth) {
             y: pose.y - fy * (rear * 0.7) - sy * (halfWidth * 0.8),
         },
         {
-            x: pose.x + fx * (front * 0.2) - sx * halfWidth,
-            y: pose.y + fy * (front * 0.2) - sy * halfWidth,
+            x: pose.x + fx * shoulderAlong - sx * halfWidth,
+            y: pose.y + fy * shoulderAlong - sy * halfWidth,
         },
     ];
 }
@@ -684,15 +686,14 @@ function drawRoundedHullPath(ctx, screenPoints) {
 function drawDirectionalMarker(ctx, viewport, pose, style) {
     if (!pose || !Number.isFinite(pose.x) || !Number.isFinite(pose.y)) return;
 
-    const hull = buildMarkerHull(pose, style.front, style.rear, style.halfWidth);
-    const hullScreen = hull.map((point) => worldToScreen(point.x, point.y, viewport));
-    const centerScreen = worldToScreen(pose.x, pose.y, viewport);
-    const yaw = Number.isFinite(pose.yaw) ? pose.yaw : 0;
-    const headingEnd = worldToScreen(
-        pose.x + Math.cos(yaw) * style.headingLength,
-        pose.y + Math.sin(yaw) * style.headingLength,
-        viewport
+    const hull = buildMarkerHull(
+        pose,
+        style.front,
+        style.rear,
+        style.halfWidth,
+        style.shoulder
     );
+    const hullScreen = hull.map((point) => worldToScreen(point.x, point.y, viewport));
 
     ctx.fillStyle = style.fillStyle;
     drawRoundedHullPath(ctx, hullScreen);
@@ -702,7 +703,19 @@ function drawDirectionalMarker(ctx, viewport, pose, style) {
     ctx.lineWidth = 1.4;
     ctx.stroke();
 
-    ctx.strokeStyle = style.headingStyle;
+    if (style.showHeading === false) return;
+    const headingLength = Number(style.headingLength);
+    if (!Number.isFinite(headingLength) || headingLength <= 0) return;
+
+    const yaw = Number.isFinite(pose.yaw) ? pose.yaw : 0;
+    const centerScreen = worldToScreen(pose.x, pose.y, viewport);
+    const headingEnd = worldToScreen(
+        pose.x + Math.cos(yaw) * headingLength,
+        pose.y + Math.sin(yaw) * headingLength,
+        viewport
+    );
+
+    ctx.strokeStyle = style.headingStyle || '#8df08d';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(centerScreen.x, centerScreen.y);

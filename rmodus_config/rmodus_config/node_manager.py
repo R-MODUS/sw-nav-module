@@ -1,6 +1,7 @@
-"""ROS node: profile CRUD + activate + latched active status."""
+"""ROS node: profile CRUD + activate + latched active status + system restart."""
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 import rclpy
@@ -49,6 +50,22 @@ def _load_paths(node: Node) -> ConfigPaths:
     return paths
 
 
+def _schedule_rmodus_restart(delay_sec: float = 1.5) -> None:
+    """Detach so restart survives this process dying with the service."""
+    delay = max(0.5, float(delay_sec))
+    cmd = (
+        f"sleep {delay:.1f}; "
+        "sudo -n /usr/bin/systemctl restart rmodus.service"
+    )
+    subprocess.Popen(
+        ["bash", "-c", cmd],
+        start_new_session=True,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+
 class ConfigManagerNode(Node):
     def __init__(self) -> None:
         super().__init__("rmodus_config_manager")
@@ -69,6 +86,7 @@ class ConfigManagerNode(Node):
         self.create_service(DeleteProfile, "/rmodus/config/delete", self._on_delete)
         self.create_service(ActivateProfile, "/rmodus/config/activate", self._on_activate)
         self.create_service(Trigger, "/rmodus/config/reload", self._on_reload)
+        self.create_service(Trigger, "/rmodus/system/restart", self._on_restart)
 
         self._publish()
         self.get_logger().info(
@@ -92,6 +110,34 @@ class ConfigManagerNode(Node):
             self._publish()
             res.success = True
             res.message = read_active_name(self._paths) or ""
+        except Exception as exc:  # noqa: BLE001
+            res.success = False
+            res.message = str(exc)
+        return res
+
+    def _on_restart(self, _req, res):
+        try:
+            probe = subprocess.run(
+                ["sudo", "-n", "/usr/bin/systemctl", "cat", "rmodus.service"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if probe.returncode != 0:
+                detail = (probe.stderr or probe.stdout or "").strip() or f"rc={probe.returncode}"
+                lower = detail.lower()
+                if "password" in lower:
+                    detail = (
+                        "chybí passwordless sudo pro systemctl "
+                        "(install → /etc/sudoers.d/rmodus-restart)"
+                    )
+                res.success = False
+                res.message = detail
+                return res
+            _schedule_rmodus_restart()
+            res.success = True
+            res.message = "Restart rmodus.service naplánován (~1.5 s)."
+            self.get_logger().warn(res.message)
         except Exception as exc:  # noqa: BLE001
             res.success = False
             res.message = str(exc)

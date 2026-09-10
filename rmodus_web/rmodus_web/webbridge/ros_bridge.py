@@ -11,6 +11,7 @@ from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, QoSProfile, qos_profile_sensor_data
 from sensor_msgs.msg import Imu, LaserScan, Range
 from std_msgs.msg import Bool
+from std_srvs.srv import Trigger
 from tf2_msgs.msg import TFMessage
 
 from rmodus_interface.msg import Bumper, PiStatus
@@ -78,6 +79,7 @@ class WebBridgeNode(Node):
         self._cli_create = self.create_client(CreateProfile, "/rmodus/config/create")
         self._cli_delete = self.create_client(DeleteProfile, "/rmodus/config/delete")
         self._cli_activate = self.create_client(ActivateProfile, "/rmodus/config/activate")
+        self._cli_restart = self.create_client(Trigger, "/rmodus/system/restart")
 
         self.get_logger().info(
             f"Cmd output: {'TwistStamped' if self.cmd_use_twist_stamped else 'Twist'}"
@@ -573,3 +575,6 @@ class WebBridgeNode(Node):
         req = ActivateProfile.Request()
         req.name = name
         return self._call_profile_service(self._cli_activate, req)
+
+    def system_restart_rmodus(self):
+        return self._call_profile_service(self._cli_restart, Trigger.Request())

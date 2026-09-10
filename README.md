@@ -21,6 +21,7 @@ Services (node `config_manager`, `bringup.config: true`):
 ```bash
 ros2 service call /rmodus/config/list rmodus_interface/srv/ListProfiles {}
 ros2 service call /rmodus/config/activate rmodus_interface/srv/ActivateProfile "{name: demo}"
+ros2 service call /rmodus/system/restart std_srvs/srv/Trigger {}
 ```
 
 Co se spustí řídí **jen** top-level `bringup:` v profilu (`rmodus_bringup/config/rmodus.yaml`).  

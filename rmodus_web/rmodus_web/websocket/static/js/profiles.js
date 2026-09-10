@@ -363,7 +363,18 @@
                 body: '{}',
             });
             await refreshList();
-            await openProfile(selectedName);
+            // force reload even if same name was already selected
+            const name = selectedName;
+            selectedName = null;
+            await openProfile(name);
+            if (confirm(
+                'Profil je aktivní na disku.\n\n'
+                + 'Restartovat teď R-MODUS, aby se načetl?'
+            )) {
+                if (typeof restartRmodusService === 'function') {
+                    await restartRmodusService({ skipConfirm: true });
+                }
+            }
         } catch (err) {
             reportError(err);
         }

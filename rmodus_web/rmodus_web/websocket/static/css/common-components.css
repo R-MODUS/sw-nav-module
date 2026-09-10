@@ -178,6 +178,30 @@ button { background: var(--accent); color: black; border: none; padding: 15px 30
     border-top: 1px solid var(--border);
 }
 
+.btn-sidebar-restart {
+    width: 100%;
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    background: rgba(245, 158, 11, 0.12);
+    color: #ffdca2;
+    font-weight: 600;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.btn-sidebar-restart:hover:not(:disabled) {
+    background: rgba(245, 158, 11, 0.2);
+    border-color: rgba(245, 158, 11, 0.55);
+}
+
+.btn-sidebar-restart:disabled {
+    opacity: 0.55;
+    cursor: wait;
+}
+
 .nav-links-bottom {
     list-style: none;
     padding: 0;

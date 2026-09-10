@@ -66,6 +66,50 @@ function initSidebarRail() {
     expandBtn?.addEventListener('click', () => applySidebarCollapsed(false));
 }
 
+async function restartRmodusService(options) {
+    const opts = options || {};
+    const btn = document.getElementById('sidebar-restart-btn');
+    if (!opts.skipConfirm) {
+        if (!confirm(
+            'Restartovat R-MODUS?\n\n'
+            + 'Načte aktivní profil a krátce odpojí web. Pokračovat?'
+        )) {
+            return;
+        }
+    }
+    if (btn) btn.disabled = true;
+    const headers = { 'Content-Type': 'application/json' };
+    try {
+        const pin = localStorage.getItem(ADMIN_TOKEN_KEY);
+        if (pin) headers['X-Admin-Pin'] = pin;
+    } catch (_e) {
+        /* ignore */
+    }
+    try {
+        const res = await fetch('/api/system/restart', { method: 'POST', headers, body: '{}' });
+        let body = null;
+        try {
+            body = await res.json();
+        } catch (_e) {
+            body = null;
+        }
+        if (!res.ok) {
+            const detail = body && (body.detail || body.message);
+            throw new Error(typeof detail === 'string' ? detail : `HTTP ${res.status}`);
+        }
+        if (!opts.quiet) {
+            alert((body && body.message) || 'Restart naplánován — web se krátce odpojí.');
+        }
+    } catch (err) {
+        alert(err.message || String(err));
+        if (btn) btn.disabled = false;
+    }
+}
+
+function initSidebarRestart() {
+    document.getElementById('sidebar-restart-btn')?.addEventListener('click', restartRmodusService);
+}
+
 /* === HLAVNÍ LOGIKA APLIKACE === */
 
 // Načítání stránek (SPA - Single Page Application)
@@ -140,6 +184,7 @@ window.loadPage = async function(pageName) {
 function bootstrapApp() {
     applyNavTabsVisibility();
     initSidebarRail();
+    initSidebarRestart();
     initWebSocket();
     updateUI();
     window.loadPage(getInitialPageName());

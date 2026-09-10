@@ -18,6 +18,7 @@ from rmodus_web.webbridge.message_dispatcher import MessageDispatcher
 from rmodus_web.webbridge.profiles_api import create_profiles_router
 from rmodus_web.webbridge.role_state import RoleState
 from rmodus_web.webbridge.ros_bridge import WebBridgeNode
+from rmodus_web.webbridge.system_api import create_system_router
 
 
 def create_app(cfg: Optional[WebConfig] = None) -> FastAPI:
@@ -62,6 +63,7 @@ def create_app(cfg: Optional[WebConfig] = None) -> FastAPI:
     app = FastAPI(lifespan=lifespan)
     app.state.web_cfg = cfg
     app.include_router(create_profiles_router())
+    app.include_router(create_system_router())
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
     @app.get("/")

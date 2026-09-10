@@ -1,16 +1,37 @@
 <div class="page-shell">
     <div class="page-head">
         <div>
-            <h1 class="page-title">Konfigurace</h1>
-            <p class="page-subtitle">Úprava konfiguračních hodnot robota.</p>
+            <h1 class="page-title">Profily</h1>
+            <p class="page-subtitle">Správa robot profilů v <code id="profiles-root-label">~/rmodus/configs</code>.</p>
+        </div>
+        <div class="btn-row">
+            <button type="button" class="btn btn-secondary" id="profiles-refresh-btn">Obnovit</button>
+            <button type="button" class="btn btn-primary" id="profiles-create-btn">Nový profil</button>
         </div>
     </div>
-    <div class="config-view panel panel-pad stack">
-        <textarea id="config-editor"># Robot Config YAML
-speed_limit: 0.8
-rotation_limit: 1.5</textarea>
-        <div class="btn-row">
-            <button class="btn btn-primary save-btn">Uložit do robota</button>
-        </div>
+
+    <p class="profiles-hint" id="profiles-status">Načítám…</p>
+
+    <div class="profiles-layout">
+        <aside class="panel panel-pad profiles-sidebar stack">
+            <h3>Seznam</h3>
+            <div id="profiles-list" class="surface-list"></div>
+        </aside>
+
+        <section class="panel panel-pad config-view stack">
+            <div class="profiles-editor-head">
+                <div>
+                    <h2 id="profiles-editor-title">Vyber profil</h2>
+                    <p class="page-subtitle" id="profiles-editor-path"></p>
+                </div>
+                <div class="btn-row">
+                    <button type="button" class="btn btn-secondary" id="profiles-activate-btn" disabled>Aktivovat</button>
+                    <button type="button" class="btn btn-primary" id="profiles-save-btn" disabled>Uložit</button>
+                    <button type="button" class="btn btn-danger" id="profiles-delete-btn" disabled>Smazat</button>
+                </div>
+            </div>
+            <textarea id="config-editor" spellcheck="false" placeholder="Vyber profil ze seznamu…" disabled></textarea>
+            <p class="profiles-hint">Aktivace zapíše ukazatel <code>active</code>. Bringup se načte až po restartu <code>rmodus.service</code>.</p>
+        </section>
     </div>
 </div>

@@ -10,6 +10,7 @@ setup(
     data_files=[
         ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
         ("share/" + package_name + "/config", glob("config/*.yaml")),
+        ("share/" + package_name + "/launch", glob("launch/*.py")),
         ("share/" + package_name, ["package.xml"]),
     ],
     install_requires=["setuptools"],
@@ -21,6 +22,7 @@ setup(
     entry_points={
         "console_scripts": [
             "rmodus_config = rmodus_config.cli:main",
+            "config_manager = rmodus_config.node_manager:main",
             "config_status = rmodus_config.node_status:main",
         ],
     },

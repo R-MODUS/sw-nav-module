@@ -28,6 +28,7 @@
   <export>
     <build_type>ament_python</build_type>
     <rmodus>
+      <optional_depend>rmodus_config</optional_depend>
       <optional_depend>rmodus_chassis</optional_depend>
       <optional_depend>rmodus_description</optional_depend>
       <optional_depend>rmodus_hw</optional_depend>

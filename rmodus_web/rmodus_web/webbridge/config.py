@@ -52,6 +52,8 @@ class WebConfig:
     e_stop_request_topic: str = "/rmodus/e_stop/request"
     e_stop_reset_topic: str = "/rmodus/e_stop/reset"
     web_ui_nav_tabs: dict = field(default_factory=lambda: dict(DEFAULT_NAV_TABS))
+    # Empty → derive from --config (…/profiles/*.yaml) or ~/rmodus/configs / $RMODUS_CONFIGS
+    configs_root: str = ""
     source: str = "defaults"
 
 
@@ -173,8 +175,28 @@ def _web_config_from_block(defaults: WebConfig, block: Mapping[str, Any], source
         ),
         e_stop_reset_topic=_as_str(topics.get("e_stop_reset"), defaults.e_stop_reset_topic),
         web_ui_nav_tabs=nav_tabs,
+        configs_root=_as_str(block.get("configs_root"), defaults.configs_root),
         source=source,
     )
+
+
+def resolve_configs_root(cfg: WebConfig, profile_path: Optional[Path] = None) -> str:
+    """Hint for UI; authoritative root comes from /rmodus/config/list."""
+    import os
+
+    explicit = (cfg.configs_root or "").strip()
+    if explicit:
+        return str(Path(explicit).expanduser().resolve())
+
+    if profile_path is not None:
+        p = Path(profile_path).expanduser().resolve()
+        if p.parent.name == "profiles":
+            return str(p.parent.parent)
+
+    env = (os.environ.get("RMODUS_CONFIGS") or "").strip()
+    if env:
+        return str(Path(env).expanduser().resolve())
+    return str((Path.home() / "rmodus" / "configs").resolve())
 
 
 def load_web_config(cli_path: Optional[str] = None) -> WebConfig:
@@ -183,27 +205,36 @@ def load_web_config(cli_path: Optional[str] = None) -> WebConfig:
     path = resolve_config_path(cli_path)
     if path is None:
         print("rmodus_web: neni --config, pouzivam vestavene defaulty")
-        return defaults
+        root = resolve_configs_root(defaults, None)
+        print(f"rmodus_web: configs_root={root}")
+        return WebConfig(configs_root=root, source=defaults.source)
 
     try:
         import yaml
     except ImportError:
         print("rmodus_web: chybi PyYAML, pouzivam vestavene defaulty")
-        return defaults
+        root = resolve_configs_root(defaults, path)
+        return WebConfig(configs_root=root, source=defaults.source)
 
     try:
         loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
     except OSError as exc:
         print(f"rmodus_web: nelze cist {path}: {exc}")
-        return defaults
+        root = resolve_configs_root(defaults, path)
+        return WebConfig(configs_root=root, source=defaults.source)
     except Exception as exc:
         print(f"rmodus_web: YAML parser selhal pro {path}: {exc}")
-        return defaults
+        root = resolve_configs_root(defaults, path)
+        return WebConfig(configs_root=root, source=defaults.source)
 
     if not isinstance(loaded, dict) or not isinstance(loaded.get("web"), dict):
         print(f"rmodus_web: v {path} chybi blok web:, pouzivam vestavene defaulty")
-        return defaults
+        root = resolve_configs_root(defaults, path)
+        return WebConfig(configs_root=root, source=str(path))
 
     cfg = _web_config_from_block(defaults, loaded["web"], str(path))
+    root = resolve_configs_root(cfg, path)
+    cfg = WebConfig(**{**cfg.__dict__, "configs_root": root})
     print(f"rmodus_web: nacten blok web: z {path}")
+    print(f"rmodus_web: configs_root={root}")
     return cfg

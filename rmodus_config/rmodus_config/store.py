@@ -1,6 +1,7 @@
 """Filesystem store for R-MODUS profiles, active pointer, and network.yaml.
 
-Used by /usr/local/sbin/rmodus-config and (same logic) rmodus_config ROS package.
+Used by rmodus_config node_manager (ROS services) and CLI.
+Boot resolve je v rmodus_entrypoint.sh (configs/active → profiles/<name>.yaml).
 Default layout under ~/rmodus/configs/ (override via paths.yaml / env RMODUS_CONFIGS).
 """
 from __future__ import annotations
@@ -172,3 +173,109 @@ def set_active(paths: ConfigPaths, name: str) -> Path:
 def ensure_layout(paths: ConfigPaths) -> None:
     paths.root.mkdir(parents=True, exist_ok=True)
     paths.profiles_dir.mkdir(parents=True, exist_ok=True)
+
+
+def read_profile_text(paths: ConfigPaths, name: str) -> str:
+    path = profile_path(paths, name)
+    if not path.is_file():
+        raise FileNotFoundError(f"profil neexistuje: {path}")
+    return path.read_text(encoding="utf-8")
+
+
+def write_profile_text(paths: ConfigPaths, name: str, text: str) -> Path:
+    """Overwrite an existing profile, or create ``<name>.yaml`` if missing."""
+    n = validate_profile_name(name)
+    ensure_layout(paths)
+    _validate_yaml_text(text)
+    path = profile_path(paths, n)
+    if not path.is_file():
+        path = paths.profiles_dir / f"{n}.yaml"
+    path.write_text(text if text.endswith("\n") else text + "\n", encoding="utf-8")
+    return path
+
+
+def create_profile(
+    paths: ConfigPaths,
+    name: str,
+    *,
+    source: Optional[str] = None,
+    content: Optional[str] = None,
+) -> Path:
+    """Create a new profile from ``content``, copy of ``source``, or active/minimal stub.
+
+    Copies preserve source YAML text (comments) — no round-trip dump.
+    """
+    n = validate_profile_name(name)
+    ensure_layout(paths)
+    dest = paths.profiles_dir / f"{n}.yaml"
+    existing_yml = paths.profiles_dir / f"{n}.yml"
+    if dest.is_file() or existing_yml.is_file():
+        raise FileExistsError(f"profil už existuje: {n}")
+
+    if content is not None:
+        text = content
+    elif source:
+        text = read_profile_text(paths, source)
+    else:
+        active = read_active_name(paths)
+        if active:
+            text = read_profile_text(paths, active)
+        else:
+            text = _minimal_profile_text(n)
+
+    _validate_yaml_text(text)
+    dest.write_text(text if text.endswith("\n") else text + "\n", encoding="utf-8")
+    return dest
+
+
+def delete_profile(paths: ConfigPaths, name: str, *, allow_active: bool = False) -> None:
+    n = validate_profile_name(name)
+    if not allow_active and read_active_name(paths) == n:
+        raise ValueError("nelze smazat aktivní profil — nejdřív aktivuj jiný")
+    path = profile_path(paths, n)
+    if not path.is_file():
+        raise FileNotFoundError(f"profil neexistuje: {path}")
+    path.unlink()
+
+
+def configs_root_from_profile_file(profile: Path) -> Optional[Path]:
+    """If ``…/configs/profiles/foo.yaml``, return ``…/configs``; else None."""
+    p = Path(profile).expanduser().resolve()
+    if p.parent.name == "profiles":
+        return p.parent.parent
+    return None
+
+
+def _validate_yaml_text(text: str) -> None:
+    try:
+        import yaml  # type: ignore
+
+        yaml.safe_load(text)
+    except ImportError:
+        return
+    except Exception as exc:
+        raise ValueError(f"neplatný YAML: {exc}") from exc
+
+
+def _minimal_profile_text(name: str) -> str:
+    return (
+        f"meta:\n"
+        f"  source: {name}\n"
+        f"  title: {name}\n"
+        f"  last_used: \"\"\n"
+        f"  copied_at: \"\"\n"
+        f"\n"
+        f"boot:\n"
+        f"  rmodus: true\n"
+        f"\n"
+        f"web:\n"
+        f"  testing: true\n"
+        f"  host: \"0.0.0.0\"\n"
+        f"  port: 8080\n"
+        f"\n"
+        f"bringup:\n"
+        f"  web: true\n"
+        f"\n"
+        f"/**:\n"
+        f"  ros__parameters: {{}}\n"
+    )

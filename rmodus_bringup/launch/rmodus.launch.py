@@ -14,6 +14,7 @@ from rmodus_bringup.package_gates import missing_packages, package_available, sk
 
 
 _DEFAULT_BRINGUP = {
+    "config": True,
     "chassis": True,
     "description": True,
     "hw": True,
@@ -35,6 +36,7 @@ _DEFAULT_BRINGUP = {
 
 # bringup flag → ROS package that must exist to include
 _OPTIONAL_RM_PKGS = {
+    "config": "rmodus_config",
     "chassis": "rmodus_chassis",
     "description": "rmodus_description",
     "hw": "rmodus_hw",
@@ -163,6 +165,8 @@ def _build(context):
         "flow", "rmodus_flow_sensor", "flow_sensor.launch.py", config_file=robot_yaml
     )
     _try_feature("display", "rmodus_display", "display.launch.py", config_file=robot_yaml)
+    # Profile manager before web so /rmodus/config/* services exist for UI.
+    _try_feature("config", "rmodus_config", "config.launch.py")
     _try_feature("web", "rmodus_web", "web.launch.py", robot_yaml=robot_yaml)
 
     if b["localization"] or b["slam"] or b["rf2o"] or b["obstacle_cloud"]:

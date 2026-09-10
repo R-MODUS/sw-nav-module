@@ -15,6 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from rmodus_web.webbridge.config import INDEX_HTML, STATIC_DIR, WebConfig
 from rmodus_web.webbridge.connection_manager import ConnectionManager
 from rmodus_web.webbridge.message_dispatcher import MessageDispatcher
+from rmodus_web.webbridge.profiles_api import create_profiles_router
 from rmodus_web.webbridge.role_state import RoleState
 from rmodus_web.webbridge.ros_bridge import WebBridgeNode
 
@@ -39,6 +40,7 @@ def create_app(cfg: Optional[WebConfig] = None) -> FastAPI:
         app.state.manager = manager
         app.state.role_state = role_state
         app.state.ros_node = ros_node
+        app.state.web_cfg = cfg
         app.state.dispatcher = MessageDispatcher(
             manager=manager,
             role_state=role_state,
@@ -58,12 +60,20 @@ def create_app(cfg: Optional[WebConfig] = None) -> FastAPI:
             print("Server shutdown: ROS resources released. ✅")
 
     app = FastAPI(lifespan=lifespan)
+    app.state.web_cfg = cfg
+    app.include_router(create_profiles_router())
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
     @app.get("/")
     async def get_index():
         html = INDEX_HTML.read_text(encoding="utf-8")
-        ui_config = json.dumps({"nav_tabs": cfg.web_ui_nav_tabs})
+        ui_config = json.dumps(
+            {
+                "nav_tabs": cfg.web_ui_nav_tabs,
+                "configs_root": cfg.configs_root,
+                "testing": cfg.testing,
+            }
+        )
         inject = f'<script>window.__RMODUS_UI_CONFIG__ = {ui_config};</script>\n    '
         marker = '<script src="static/js/app.js"></script>'
         if marker not in html:

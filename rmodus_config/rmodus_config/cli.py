@@ -9,9 +9,12 @@ from ament_index_python.packages import get_package_share_directory
 
 from rmodus_config.store import (
     ConfigPaths,
+    create_profile,
+    delete_profile,
     list_profiles,
     load_paths_file,
     read_active_name,
+    read_profile_text,
     resolve_active_profile,
     set_active,
 )
@@ -50,6 +53,16 @@ def main(argv=None) -> int:
     act = sub.add_parser("activate")
     act.add_argument("name")
 
+    create_p = sub.add_parser("create", help="vytvořit profil (kopie source/active)")
+    create_p.add_argument("name")
+    create_p.add_argument("--from", dest="source", default="", help="zdrojový profil")
+
+    del_p = sub.add_parser("delete", help="smazat profil (ne aktivní)")
+    del_p.add_argument("name")
+
+    show_p = sub.add_parser("show", help="vypsat obsah profilu")
+    show_p.add_argument("name")
+
     args = parser.parse_args(argv)
     paths = _paths(args.configs_root, args.paths_yaml)
 
@@ -80,7 +93,20 @@ def main(argv=None) -> int:
             path = set_active(paths, args.name)
             print(f"active -> {args.name} ({path})")
             return 0
-    except (OSError, ValueError, FileNotFoundError) as exc:
+        if args.cmd == "create":
+            path = create_profile(
+                paths, args.name, source=args.source or None
+            )
+            print(f"created {args.name} ({path})")
+            return 0
+        if args.cmd == "delete":
+            delete_profile(paths, args.name)
+            print(f"deleted {args.name}")
+            return 0
+        if args.cmd == "show":
+            sys.stdout.write(read_profile_text(paths, args.name))
+            return 0
+    except (OSError, ValueError, FileNotFoundError, FileExistsError) as exc:
         print(f"rmodus_config: {exc}", file=sys.stderr)
         return 1
     return 1

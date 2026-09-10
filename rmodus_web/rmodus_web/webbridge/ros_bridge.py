@@ -14,6 +14,14 @@ from std_msgs.msg import Bool
 from tf2_msgs.msg import TFMessage
 
 from rmodus_interface.msg import Bumper, PiStatus
+from rmodus_interface.srv import (
+    ActivateProfile,
+    CreateProfile,
+    DeleteProfile,
+    GetProfile,
+    ListProfiles,
+    SaveProfile,
+)
 
 from rmodus_web.webbridge.config import WebConfig
 from rmodus_web.webbridge.connection_manager import ConnectionManager
@@ -47,6 +55,7 @@ class WebBridgeNode(Node):
         self.tf_last_resubscribe_time = 0.0
         self.tf_is_stale = True
         self._last_sensor_catalog_signature = None
+        self._profile_service_timeout_sec = 8.0
 
         self.cmd_use_twist_stamped = bool(self.cfg.cmd_use_twist_stamped)
         self.cmd_frame_id = self.cfg.cmd_frame_id or "base_link"
@@ -62,6 +71,14 @@ class WebBridgeNode(Node):
         self.sub_e_stop = self.create_subscription(
             Bool, self.cfg.e_stop_state_topic, self.e_stop_callback, 10
         )
+
+        self._cli_list = self.create_client(ListProfiles, "/rmodus/config/list")
+        self._cli_get = self.create_client(GetProfile, "/rmodus/config/get")
+        self._cli_save = self.create_client(SaveProfile, "/rmodus/config/save")
+        self._cli_create = self.create_client(CreateProfile, "/rmodus/config/create")
+        self._cli_delete = self.create_client(DeleteProfile, "/rmodus/config/delete")
+        self._cli_activate = self.create_client(ActivateProfile, "/rmodus/config/activate")
+
         self.get_logger().info(
             f"Cmd output: {'TwistStamped' if self.cmd_use_twist_stamped else 'Twist'}"
             f" on {self.cfg.cmd_vel_topic}"
@@ -72,6 +89,7 @@ class WebBridgeNode(Node):
             f"request={self.cfg.e_stop_request_topic} reset={self.cfg.e_stop_reset_topic}"
         )
         self.get_logger().info(f"Web config: {self.cfg.source}")
+        self.get_logger().info("Profile services: /rmodus/config/{list,get,save,create,delete,activate}")
 
         self._create_static_sensor_subscriptions()
         self._discover_dynamic_topics()
@@ -507,3 +525,51 @@ class WebBridgeNode(Node):
         payload = self._goal_pose_payload(goal_msg.header.frame_id, x, y, yaw)
         self.latest_goal = payload
         self._broadcast_threadsafe(payload)
+
+    def _call_profile_service(self, client, request):
+        """Call a /rmodus/config/* service while another thread spins this node."""
+        if not client.wait_for_service(timeout_sec=self._profile_service_timeout_sec):
+            raise TimeoutError(
+                "rmodus_config services nedostupné — běží bringup.config / config_manager?"
+            )
+        future = client.call_async(request)
+        deadline = time.time() + self._profile_service_timeout_sec
+        while not future.done():
+            if time.time() >= deadline:
+                raise TimeoutError("timeout při volání rmodus_config service")
+            time.sleep(0.02)
+        result = future.result()
+        if result is None:
+            raise RuntimeError("prázdná odpověď z rmodus_config service")
+        return result
+
+    def profiles_list(self):
+        return self._call_profile_service(self._cli_list, ListProfiles.Request())
+
+    def profiles_get(self, name: str):
+        req = GetProfile.Request()
+        req.name = name
+        return self._call_profile_service(self._cli_get, req)
+
+    def profiles_save(self, name: str, content: str):
+        req = SaveProfile.Request()
+        req.name = name
+        req.content = content
+        return self._call_profile_service(self._cli_save, req)
+
+    def profiles_create(self, name: str, source: str = "", content: str = ""):
+        req = CreateProfile.Request()
+        req.name = name
+        req.source = source or ""
+        req.content = content or ""
+        return self._call_profile_service(self._cli_create, req)
+
+    def profiles_delete(self, name: str):
+        req = DeleteProfile.Request()
+        req.name = name
+        return self._call_profile_service(self._cli_delete, req)
+
+    def profiles_activate(self, name: str):
+        req = ActivateProfile.Request()
+        req.name = name
+        return self._call_profile_service(self._cli_activate, req)

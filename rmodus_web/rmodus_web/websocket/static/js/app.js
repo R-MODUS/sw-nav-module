@@ -120,6 +120,12 @@ window.loadPage = async function(pageName) {
                     } else {
                         console.error('initSensorsPage function not found. Was sensors.js loaded correctly?');
                     }
+                } else if (pageName === 'config') {
+                    if (typeof window.initProfilesPage === 'function') {
+                        window.initProfilesPage();
+                    } else {
+                        console.error('initProfilesPage function not found. Was profiles.js loaded correctly?');
+                    }
                 }
             }, 50); // Krátké zpoždění pro jistotu
         });

@@ -9,6 +9,10 @@ web:
   # false = ostrý provoz, přihlášení PINem je povinné
   testing: true
 
+  # Kořen configs (install: ~/rmodus/configs). Prázdné = odvoď z --config
+  # nebo $RMODUS_CONFIGS / ~/rmodus/configs.
+  configs_root: ""
+
   # Adresa a port HTTP/WebSocket serveru (uvicorn).
   # 0.0.0.0 = poslouchá na všech rozhraních (Wi-Fi i Ethernet).
   host: "0.0.0.0"

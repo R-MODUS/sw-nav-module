@@ -9,6 +9,7 @@
 # Těžké / feature balíčky jsou optional — chybí-li na disku, launch je přeskočí s logem.
 
 bringup:
+  config: true           # rmodus_config: profile CRUD services
   chassis: true          # false = cizí host už publikuje base_link
   description: true      # sada: rmodus_mount + imu/lidar TF
   hw: true

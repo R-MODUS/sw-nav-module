@@ -26,10 +26,11 @@ ros2 service call /rmodus/system/reboot std_srvs/srv/Trigger {}
 ros2 service call /rmodus/network/get rmodus_interface/srv/GetNetworkConfig {}
 ```
 
-Co se spustí řídí **jen** top-level `bringup:` v profilu (`rmodus_bringup/config/rmodus.yaml`).  
-Druhá vrstva: `*.enabled` v blocích modulů (node + TF + EKF).
+Co se spustí řídí top-level `bringup:` v profilu (`rmodus_bringup/config/rmodus.yaml`).  
+Druhá vrstva: `*.enabled` v blocích modulů (node + TF + EKF).  
+`bringup.extras:` — libovolné `package`+`launch` (nebo `path`) mimo jádro; `$robot_yaml` v `args` → aktivní profil.
 
-Chybí-li volitelný balíček na disku (např. `rmodus_bumper`, Nav2, rf2o), launch ho **přeskočí s logem** — nespadne celý bringup.
+Chybí-li volitelný balíček na disku (např. `rmodus_bumper`, Nav2, rf2o, `neato_lidar`), launch ho **přeskočí s logem** — nespadne celý bringup.
 
 `rosdep` / `package.xml` **netáhne** těžké optional deps. Optional jsou zapsané v `<export><rmodus><optional_depend>…`.
 

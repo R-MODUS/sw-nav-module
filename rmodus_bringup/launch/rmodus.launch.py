@@ -1,4 +1,4 @@
-"""Jediný entrypoint R-MODUS — spouští rmodus_* balíčky podle profilu bringup:."""
+"""Jediný entrypoint R-MODUS — spouští rmodus_* + bringup.extras podle profilu."""
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, LogInfo, OpaqueFunction
@@ -82,6 +82,37 @@ def _load_bringup(path: str) -> dict:
     return cfg
 
 
+def _load_extras(path: str) -> list:
+    """bringup.extras: list of {package, launch, args?} or {path, args?}."""
+    if not path or not os.path.isfile(path):
+        return []
+    with open(path, "r", encoding="utf-8") as f:
+        root = yaml.safe_load(f) or {}
+    if not isinstance(root, dict):
+        return []
+    block = root.get("bringup", {})
+    if not isinstance(block, dict):
+        return []
+    extras = block.get("extras", [])
+    if not isinstance(extras, list):
+        return []
+    return [e for e in extras if isinstance(e, dict)]
+
+
+def _stringify_launch_args(raw_args, robot_yaml: str) -> dict:
+    if not isinstance(raw_args, dict):
+        return {}
+    out = {}
+    for key, value in raw_args.items():
+        if value is None:
+            continue
+        text = str(value).strip()
+        if text == "$robot_yaml":
+            text = robot_yaml
+        out[str(key)] = text
+    return out
+
+
 def _flag(v: bool) -> str:
     return "true" if v else "false"
 
@@ -94,9 +125,11 @@ def _build(context):
         )
 
     b = _load_bringup(robot_yaml)
+    extras = _load_extras(robot_yaml)
     actions = [
         LogInfo(msg=f"[rmodus_bringup] profile={robot_yaml}"),
         LogInfo(msg=f"[rmodus_bringup] flags={b}"),
+        LogInfo(msg=f"[rmodus_bringup] extras={len(extras)}"),
     ]
 
     def _include(pkg: str, launch_file: str, **launch_arguments):
@@ -114,6 +147,60 @@ def _build(context):
             actions.append(skip_log(flag, pkg))
             return
         actions.append(_include(pkg, launch_file, **launch_arguments))
+
+    def _try_extra(entry: dict, index: int) -> None:
+        label = f"extras[{index}]"
+        launch_args = _stringify_launch_args(entry.get("args"), robot_yaml)
+        abs_path = _resolve(str(entry.get("path") or ""))
+        if abs_path:
+            if not os.path.isfile(abs_path):
+                actions.append(
+                    LogInfo(
+                        msg=(
+                            f"[rmodus] skip '{label}': launch file not found: {abs_path}"
+                        )
+                    )
+                )
+                return
+            actions.append(
+                IncludeLaunchDescription(
+                    PythonLaunchDescriptionSource(abs_path),
+                    launch_arguments=launch_args.items(),
+                )
+            )
+            actions.append(LogInfo(msg=f"[rmodus_bringup] extras include path={abs_path}"))
+            return
+
+        pkg = str(entry.get("package") or "").strip()
+        launch_file = str(entry.get("launch") or "").strip()
+        if not pkg or not launch_file:
+            actions.append(
+                LogInfo(
+                    msg=(
+                        f"[rmodus] skip '{label}': need package+launch or path "
+                        f"(got package={pkg!r} launch={launch_file!r})"
+                    )
+                )
+            )
+            return
+        if not package_available(pkg):
+            actions.append(skip_log(f"{label}/{pkg}", pkg))
+            return
+        share = get_package_share_directory(pkg)
+        full = os.path.join(share, "launch", launch_file)
+        if not os.path.isfile(full):
+            actions.append(
+                LogInfo(
+                    msg=(
+                        f"[rmodus] skip '{label}': {pkg}/launch/{launch_file} not found"
+                    )
+                )
+            )
+            return
+        actions.append(_include(pkg, launch_file, **launch_args))
+        actions.append(
+            LogInfo(msg=f"[rmodus_bringup] extras include {pkg}/launch/{launch_file}")
+        )
 
     # TF: one RSP — description composes chassis when both enabled and present.
     want_desc = b["description"]
@@ -224,6 +311,10 @@ def _build(context):
         else:
             actions.append(skip_log("rviz", "rviz2"))
 
+    # User / third-party launches (lidar drivers, …) — after core stack.
+    for i, entry in enumerate(extras):
+        _try_extra(entry, i)
+
     return actions
 
 
@@ -234,7 +325,7 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 "robot_yaml",
                 default_value=PathJoinSubstitution([pkg_share, "config", "rmodus.yaml"]),
-                description="Profil s bringup: + /**/ros__parameters (viz také sw-install/examples)",
+                description="Profil s bringup: + extras + /**/ros__parameters",
             ),
             OpaqueFunction(function=_build),
         ]

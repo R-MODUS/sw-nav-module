@@ -84,8 +84,83 @@ button { background: var(--accent); color: black; border: none; padding: 15px 30
     font-size: 0.92rem;
 }
 
-.profiles-status-error {
-    color: #ff8f8f;
+.profiles-editor-wrap {
+    border: 1px solid var(--ui-border, var(--border));
+    border-radius: 10px;
+    overflow: hidden;
+    background: #0b1220;
+}
+
+.profiles-editor-wrap.is-editing {
+    border-color: rgba(0, 212, 255, 0.45);
+    box-shadow: 0 0 0 1px rgba(0, 212, 255, 0.15);
+}
+
+.profiles-editor-wrap .CodeMirror {
+    height: 52vh;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.92rem;
+    background: #0b1220;
+}
+
+.profiles-editor-wrap .CodeMirror-scroll {
+    min-height: 52vh;
+}
+
+.profiles-more {
+    position: relative;
+}
+
+.profiles-more-toggle {
+    min-width: 42px;
+    padding-left: 12px;
+    padding-right: 12px;
+    letter-spacing: 0.08em;
+}
+
+.profiles-more-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    min-width: 160px;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px;
+    border-radius: 10px;
+    border: 1px solid var(--ui-border, var(--border));
+    background: #111827;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+}
+
+.profiles-more-menu[hidden] {
+    display: none !important;
+}
+
+.profiles-more-item {
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    color: #d7e3f4;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.profiles-more-item:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.profiles-more-item:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.profiles-more-danger {
+    color: #ffb4b4;
 }
 
 @media (max-width: 900px) {

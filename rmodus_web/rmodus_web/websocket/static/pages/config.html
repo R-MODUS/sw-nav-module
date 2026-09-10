@@ -10,8 +10,6 @@
         </div>
     </div>
 
-    <p class="profiles-hint" id="profiles-status">Načítám…</p>
-
     <div class="profiles-layout">
         <aside class="panel panel-pad profiles-sidebar stack">
             <h3>Seznam</h3>
@@ -24,14 +22,23 @@
                     <h2 id="profiles-editor-title">Vyber profil</h2>
                     <p class="page-subtitle" id="profiles-editor-path"></p>
                 </div>
-                <div class="btn-row">
+                <div class="btn-row profiles-actions" id="profiles-actions">
+                    <button type="button" class="btn btn-secondary" id="profiles-edit-btn" disabled>Upravit</button>
+                    <button type="button" class="btn btn-primary" id="profiles-save-btn" hidden disabled>Uložit</button>
+                    <button type="button" class="btn btn-secondary" id="profiles-cancel-btn" hidden disabled>Zrušit</button>
                     <button type="button" class="btn btn-secondary" id="profiles-activate-btn" disabled>Aktivovat</button>
-                    <button type="button" class="btn btn-primary" id="profiles-save-btn" disabled>Uložit</button>
-                    <button type="button" class="btn btn-danger" id="profiles-delete-btn" disabled>Smazat</button>
+                    <div class="profiles-more" id="profiles-more">
+                        <button type="button" class="btn btn-secondary profiles-more-toggle" id="profiles-more-btn" disabled aria-haspopup="true" aria-expanded="false" title="Další akce">⋯</button>
+                        <div class="profiles-more-menu" id="profiles-more-menu" hidden role="menu">
+                            <button type="button" class="profiles-more-item" id="profiles-download-btn" role="menuitem">Stáhnout</button>
+                            <button type="button" class="profiles-more-item profiles-more-danger" id="profiles-delete-btn" role="menuitem">Smazat</button>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <textarea id="config-editor" spellcheck="false" placeholder="Vyber profil ze seznamu…" disabled></textarea>
-            <p class="profiles-hint">Aktivace zapíše ukazatel <code>active</code>. Bringup se načte až po restartu <code>rmodus.service</code>.</p>
+            <div class="profiles-editor-wrap" id="profiles-editor-wrap">
+                <textarea id="config-editor" spellcheck="false" placeholder="Vyber profil ze seznamu…" disabled></textarea>
+            </div>
         </section>
     </div>
 </div>

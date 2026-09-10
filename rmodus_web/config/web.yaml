@@ -1,6 +1,6 @@
 # Výchozí konfig rmodus_web (blok web:).
-# Launch ho předá jako robot_yaml; bringup ho později může přepsat
-# celým profilem robota (current.yaml).
+# Launch ho předá jako robot_yaml; bringup ho přepíše
+# aktivním robot profilem (configs/profiles/<active>.yaml).
 #
 # Stejné klíče jako ve vzoru: setup/examples/rmodus-example.yaml
 

@@ -1,4 +1,10 @@
-# Jediný profil R-MODUS (bringup + parametry modulů).
+# ROS default profil R-MODUS (bringup + parametry modulů).
+# Kanonický tvar bringup: + /** musí sedět s:
+#   sw-install/examples/rmodus-example.yaml
+# Example = meta + boot.rmodus + web + stejný obsah jako tento soubor.
+# Runtime: ~/rmodus/configs/profiles/<active>.yaml (ukazatel configs/active)
+# Síť:     ~/rmodus/configs/network.yaml
+#
 # Spouštění řídí top-level bringup:; druhá vrstva je *.enabled v blocích níže.
 # Těžké / feature balíčky jsou optional — chybí-li na disku, launch je přeskočí s logem.
 
@@ -22,6 +28,7 @@ bringup:
   obstacle_cloud: true
 
 # Volitelný blok web: — pokud chybí, rmodus_web použije package default.
+# Plný web: je v profiles/*.yaml (example).
 
 /**:
   ros__parameters:

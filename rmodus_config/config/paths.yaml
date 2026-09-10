@@ -1,0 +1,9 @@
+/**:
+  ros__parameters:
+    rmodus_config:
+      # Override as needed; empty / omit → ~/rmodus/configs (or $RMODUS_CONFIGS)
+      configs_root: ""
+      # Optional absolute overrides (empty = <configs_root>/…):
+      profiles_dir: ""
+      active_file: ""
+      network_yaml: ""

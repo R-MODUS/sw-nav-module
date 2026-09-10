@@ -88,7 +88,7 @@ def _build(context):
     robot_yaml = _resolve(LaunchConfiguration("robot_yaml").perform(context))
     if not robot_yaml:
         robot_yaml = os.path.join(
-            get_package_share_directory("rmodus_bringup"), "config", "robot.yaml"
+            get_package_share_directory("rmodus_bringup"), "config", "rmodus.yaml"
         )
 
     b = _load_bringup(robot_yaml)
@@ -229,8 +229,8 @@ def generate_launch_description():
         [
             DeclareLaunchArgument(
                 "robot_yaml",
-                default_value=PathJoinSubstitution([pkg_share, "config", "robot.yaml"]),
-                description="Profil s bringup: + /**/ros__parameters",
+                default_value=PathJoinSubstitution([pkg_share, "config", "rmodus.yaml"]),
+                description="Profil s bringup: + /**/ros__parameters (viz také sw-install/examples)",
             ),
             OpaqueFunction(function=_build),
         ]

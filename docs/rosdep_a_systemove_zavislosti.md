@@ -83,7 +83,8 @@ pip install --user pmw3901 adafruit-circuitpython-ssd1306
 | **rmodus_web** | FastAPI WebSocket bridge, `launch/web.launch.py` |
 | **rmodus_localization** | EKF, optional rf2o/slam, obstacle_cloud |
 | **rmodus_navigation** | Nav2 launch + params (Nav2 debs optional) |
-| **rmodus_bringup** | `rmodus.launch.py` + profil `robot.yaml` (`bringup:`) |
+| **rmodus_bringup** | `rmodus.launch.py` + profil `rmodus.yaml` (`bringup:`) |
+| **rmodus_config** | `profiles/` + `active` + `network.yaml` cesty; CLI |
 
 ## Poznámky
 

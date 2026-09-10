@@ -161,6 +161,7 @@
         const actBtn = document.getElementById('profiles-activate-btn');
         const moreBtn = document.getElementById('profiles-more-btn');
         const delBtn = document.getElementById('profiles-delete-btn');
+        const renBtn = document.getElementById('profiles-rename-btn');
         const dlBtn = document.getElementById('profiles-download-btn');
         const wrap = document.getElementById('profiles-editor-wrap');
 
@@ -182,6 +183,10 @@
         }
         if (moreBtn) moreBtn.disabled = !has;
         if (dlBtn) dlBtn.disabled = !has;
+        if (renBtn) {
+            renBtn.disabled = !has || editing;
+            renBtn.title = editing ? 'Nejdřív ukonči úpravy' : '';
+        }
         if (delBtn) {
             delBtn.disabled = !has || selectedActive || editing;
             delBtn.title = selectedActive
@@ -397,6 +402,40 @@
         URL.revokeObjectURL(url);
     }
 
+    async function renameSelected() {
+        if (!selectedName || editing) return;
+        if (!confirmLeaveEdit()) return;
+        const next = prompt('Nové jméno profilu (bez .yaml):', selectedName);
+        if (!next || !next.trim()) return;
+        const newName = next.trim();
+        if (newName === selectedName) return;
+        closeMoreMenu();
+        const wasActive = selectedActive;
+        try {
+            const res = await api(`/api/profiles/${encodeURIComponent(selectedName)}/rename`, {
+                method: 'POST',
+                body: JSON.stringify({ new_name: newName }),
+            });
+            dirty = false;
+            editing = false;
+            selectedName = null;
+            await refreshList();
+            await openProfile(res.name);
+            if (wasActive || res.active) {
+                if (confirm(
+                    'Aktivní profil byl přejmenován (ukazatel active je aktualizovaný).\n\n'
+                    + 'Restartovat teď R-MODUS, aby se načetl nový soubor?'
+                )) {
+                    if (typeof restartRmodusService === 'function') {
+                        await restartRmodusService({ skipConfirm: true });
+                    }
+                }
+            }
+        } catch (err) {
+            reportError(err);
+        }
+    }
+
     async function deleteSelected() {
         if (!selectedName || selectedActive || editing) return;
         if (!confirm(`Smazat profil „${selectedName}“? Tuto akci nelze vrátit.`)) {
@@ -468,6 +507,7 @@
         document.getElementById('profiles-cancel-btn')?.addEventListener('click', cancelEdit);
         document.getElementById('profiles-activate-btn')?.addEventListener('click', activateSelected);
         document.getElementById('profiles-download-btn')?.addEventListener('click', downloadSelected);
+        document.getElementById('profiles-rename-btn')?.addEventListener('click', renameSelected);
         document.getElementById('profiles-delete-btn')?.addEventListener('click', deleteSelected);
         document.getElementById('profiles-more-btn')?.addEventListener('click', (e) => {
             e.stopPropagation();

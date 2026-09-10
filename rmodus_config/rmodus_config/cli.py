@@ -15,6 +15,7 @@ from rmodus_config.store import (
     load_paths_file,
     read_active_name,
     read_profile_text,
+    rename_profile,
     resolve_active_profile,
     set_active,
 )
@@ -60,6 +61,10 @@ def main(argv=None) -> int:
     del_p = sub.add_parser("delete", help="smazat profil (ne aktivní)")
     del_p.add_argument("name")
 
+    ren_p = sub.add_parser("rename", help="přejmenovat profil (soubor + active)")
+    ren_p.add_argument("old_name")
+    ren_p.add_argument("new_name")
+
     show_p = sub.add_parser("show", help="vypsat obsah profilu")
     show_p.add_argument("name")
 
@@ -102,6 +107,10 @@ def main(argv=None) -> int:
         if args.cmd == "delete":
             delete_profile(paths, args.name)
             print(f"deleted {args.name}")
+            return 0
+        if args.cmd == "rename":
+            path = rename_profile(paths, args.old_name, args.new_name)
+            print(f"renamed {args.old_name} -> {args.new_name} ({path})")
             return 0
         if args.cmd == "show":
             sys.stdout.write(read_profile_text(paths, args.name))

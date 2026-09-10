@@ -9,6 +9,7 @@ from rmodus_config.store import (  # noqa: F401
     list_profiles,
     read_active_name,
     read_profile_text,
+    rename_profile,
     resolve_active_profile,
     set_active,
     write_profile_text,

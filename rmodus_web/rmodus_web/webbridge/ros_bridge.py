@@ -21,6 +21,7 @@ from rmodus_interface.srv import (
     DeleteProfile,
     GetProfile,
     ListProfiles,
+    RenameProfile,
     SaveProfile,
 )
 
@@ -78,6 +79,7 @@ class WebBridgeNode(Node):
         self._cli_save = self.create_client(SaveProfile, "/rmodus/config/save")
         self._cli_create = self.create_client(CreateProfile, "/rmodus/config/create")
         self._cli_delete = self.create_client(DeleteProfile, "/rmodus/config/delete")
+        self._cli_rename = self.create_client(RenameProfile, "/rmodus/config/rename")
         self._cli_activate = self.create_client(ActivateProfile, "/rmodus/config/activate")
         self._cli_restart = self.create_client(Trigger, "/rmodus/system/restart")
 
@@ -91,7 +93,9 @@ class WebBridgeNode(Node):
             f"request={self.cfg.e_stop_request_topic} reset={self.cfg.e_stop_reset_topic}"
         )
         self.get_logger().info(f"Web config: {self.cfg.source}")
-        self.get_logger().info("Profile services: /rmodus/config/{list,get,save,create,delete,activate}")
+        self.get_logger().info(
+            "Profile services: /rmodus/config/{list,get,save,create,delete,rename,activate}"
+        )
 
         self._create_static_sensor_subscriptions()
         self._discover_dynamic_topics()
@@ -570,6 +574,12 @@ class WebBridgeNode(Node):
         req = DeleteProfile.Request()
         req.name = name
         return self._call_profile_service(self._cli_delete, req)
+
+    def profiles_rename(self, old_name: str, new_name: str):
+        req = RenameProfile.Request()
+        req.old_name = old_name
+        req.new_name = new_name
+        return self._call_profile_service(self._cli_rename, req)
 
     def profiles_activate(self, name: str):
         req = ActivateProfile.Request()

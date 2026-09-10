@@ -21,6 +21,10 @@ class ProfileSaveBody(BaseModel):
     content: str
 
 
+class ProfileRenameBody(BaseModel):
+    new_name: str = Field(..., min_length=1)
+
+
 def _require_write_access(request: Request, x_admin_pin: Optional[str]) -> None:
     cfg: WebConfig = request.app.state.web_cfg
     if cfg.testing:
@@ -139,6 +143,24 @@ def create_profiles_router() -> APIRouter:
         res = await _call(request, "profiles_delete", name)
         _fail_if_needed(res.success, res.message)
         return {"ok": True, "name": res.name}
+
+    @router.post("/{name}/rename")
+    async def rename_one(
+        name: str,
+        body: ProfileRenameBody,
+        request: Request,
+        x_admin_pin: Optional[str] = Header(default=None),
+    ) -> dict[str, Any]:
+        _require_write_access(request, x_admin_pin)
+        res = await _call(request, "profiles_rename", name, body.new_name)
+        _fail_if_needed(res.success, res.message)
+        return {
+            "ok": True,
+            "old_name": res.old_name,
+            "name": res.new_name,
+            "path": res.path,
+            "active": bool(res.active),
+        }
 
     @router.post("/{name}/activate")
     async def activate_one(

@@ -238,6 +238,35 @@ def delete_profile(paths: ConfigPaths, name: str, *, allow_active: bool = False)
     path.unlink()
 
 
+def rename_profile(paths: ConfigPaths, old_name: str, new_name: str) -> Path:
+    """Rename ``profiles/<old>.yaml`` → ``<new>.yaml``. Updates ``active`` if needed."""
+    src_name = validate_profile_name(old_name)
+    dst_name = validate_profile_name(new_name)
+    if src_name == dst_name:
+        path = profile_path(paths, src_name)
+        if not path.is_file():
+            raise FileNotFoundError(f"profil neexistuje: {path}")
+        return path
+
+    src = profile_path(paths, src_name)
+    if not src.is_file():
+        raise FileNotFoundError(f"profil neexistuje: {src}")
+
+    dest_yaml = paths.profiles_dir / f"{dst_name}.yaml"
+    dest_yml = paths.profiles_dir / f"{dst_name}.yml"
+    if dest_yaml.is_file() or dest_yml.is_file():
+        raise FileExistsError(f"profil už existuje: {dst_name}")
+
+    # Keep original suffix (.yaml / .yml)
+    dest = paths.profiles_dir / f"{dst_name}{src.suffix}"
+    src.rename(dest)
+
+    if read_active_name(paths) == src_name:
+        set_active(paths, dst_name)
+
+    return dest
+
+
 def configs_root_from_profile_file(profile: Path) -> Optional[Path]:
     """If ``…/configs/profiles/foo.yaml``, return ``…/configs``; else None."""
     p = Path(profile).expanduser().resolve()

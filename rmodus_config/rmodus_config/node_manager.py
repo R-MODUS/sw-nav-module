@@ -17,6 +17,7 @@ from rmodus_interface.srv import (
     DeleteProfile,
     GetProfile,
     ListProfiles,
+    RenameProfile,
     SaveProfile,
 )
 
@@ -30,9 +31,11 @@ from rmodus_config.store import (
     profile_path,
     read_active_name,
     read_profile_text,
+    rename_profile,
     resolve_active_profile,
     set_active,
     write_profile_text,
+    validate_profile_name,
 )
 
 
@@ -84,6 +87,7 @@ class ConfigManagerNode(Node):
         self.create_service(SaveProfile, "/rmodus/config/save", self._on_save)
         self.create_service(CreateProfile, "/rmodus/config/create", self._on_create)
         self.create_service(DeleteProfile, "/rmodus/config/delete", self._on_delete)
+        self.create_service(RenameProfile, "/rmodus/config/rename", self._on_rename)
         self.create_service(ActivateProfile, "/rmodus/config/activate", self._on_activate)
         self.create_service(Trigger, "/rmodus/config/reload", self._on_reload)
         self.create_service(Trigger, "/rmodus/system/restart", self._on_restart)
@@ -226,6 +230,26 @@ class ConfigManagerNode(Node):
             self._publish()
         except Exception as exc:  # noqa: BLE001
             res.name = req.name
+            res.success = False
+            res.message = str(exc)
+        return res
+
+    def _on_rename(self, req, res):
+        try:
+            path = rename_profile(self._paths, req.old_name, req.new_name)
+            new_n = validate_profile_name(req.new_name)
+            res.old_name = req.old_name
+            res.new_name = new_n
+            res.path = str(path)
+            res.active = read_active_name(self._paths) == new_n
+            res.success = True
+            res.message = ""
+            self._publish()
+        except Exception as exc:  # noqa: BLE001
+            res.old_name = req.old_name
+            res.new_name = req.new_name
+            res.path = ""
+            res.active = False
             res.success = False
             res.message = str(exc)
         return res

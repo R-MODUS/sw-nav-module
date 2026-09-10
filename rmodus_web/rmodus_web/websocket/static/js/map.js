@@ -9,10 +9,12 @@ const mapState = {
     map: null, /* { frameId, width, height, resolution, origin:{x,y}, data:[] } */
     robotPose: null, /* { x, y, yaw, inMapFrame } */
     navPath: null, /* [{x,y}, ...] */
+    lidarScan: null, /* { angle_min, angle_increment, max_range, ranges } */
 
     /* View controls */
     zoom: 1.0,
     followRobot: false, /* false => keep map origin (0,0) in center */
+    showLidar: false,
     margin: 20,
     viewRotationRad: Math.PI / 2, /* Additional 180 deg rotation */
 
@@ -61,6 +63,18 @@ window.initMap = function initMap() {
         followRobotToggle.checked = mapState.followRobot;
         followRobotToggle.addEventListener('change', (event) => {
             mapState.followRobot = Boolean(event.target.checked);
+            requestDraw();
+        });
+    }
+
+    const showLidarToggle = document.getElementById('showLidarToggle');
+    if (showLidarToggle) {
+        showLidarToggle.checked = mapState.showLidar;
+        showLidarToggle.addEventListener('change', (event) => {
+            mapState.showLidar = Boolean(event.target.checked);
+            if (!mapState.showLidar) {
+                mapState.lidarScan = null;
+            }
             requestDraw();
         });
     }
@@ -154,6 +168,19 @@ window.updateRobotPose = function updateRobotPose(x, y, yaw) {
 
 window.updateRobotPosition = function updateRobotPosition(x, y, yaw) {
     setRobotPose(x, y, yaw, false);
+};
+
+window.updateLidarScan = function updateLidarScan(payload) {
+    if (!mapState.showLidar) return;
+    if (!payload || !Array.isArray(payload.ranges)) return;
+
+    mapState.lidarScan = {
+        angle_min: Number(payload.angle_min) || 0,
+        angle_increment: Number(payload.angle_increment) || 0,
+        max_range: Number(payload.max_range) || 0,
+        ranges: payload.ranges,
+    };
+    requestDraw();
 };
 
 window.handleMapTfFrames = function handleMapTfFrames(payload) {
@@ -346,15 +373,20 @@ function getViewport() {
     }
 
     const centerWorld = { x: 0, y: 0 };
-    if (
-        mapState.followRobot &&
-        mapState.robotPose &&
-        mapState.robotPose.inMapFrame &&
-        Number.isFinite(mapState.robotPose.x) &&
-        Number.isFinite(mapState.robotPose.y)
-    ) {
-        centerWorld.x = mapState.robotPose.x;
-        centerWorld.y = mapState.robotPose.y;
+    const pose = mapState.robotPose;
+    const hasPose = pose && Number.isFinite(pose.x) && Number.isFinite(pose.y);
+    /* Without occupancy map, lidar preview keeps the robot centered. */
+    const lidarOnlyView = mapState.showLidar && !mapState.map;
+    const shouldFollow =
+        hasPose &&
+        (
+            (mapState.followRobot && pose.inMapFrame) ||
+            lidarOnlyView
+        );
+
+    if (shouldFollow) {
+        centerWorld.x = pose.x;
+        centerWorld.y = pose.y;
     }
 
     return {
@@ -413,10 +445,13 @@ function draw() {
     drawViewportBorder(ctx, viewport);
     drawGrid(ctx, viewport);
     drawMap(ctx, viewport);
+    drawLidarScan(ctx, viewport);
     drawNavPath(ctx, viewport);
     drawGoals(ctx, viewport);
     drawRobot(ctx, viewport);
-    drawMapOriginMarker(ctx, viewport);
+    if (mapState.map) {
+        drawMapOriginMarker(ctx, viewport);
+    }
 }
 
 function drawBackground(ctx) {
@@ -520,9 +555,54 @@ function drawNavPath(ctx, viewport) {
     ctx.stroke();
 }
 
-function drawRobot(ctx, viewport) {
+function getDrawRobotPose() {
     const pose = mapState.robotPose;
-    if (!pose || !Number.isFinite(pose.x) || !Number.isFinite(pose.y)) return;
+    if (pose && Number.isFinite(pose.x) && Number.isFinite(pose.y)) {
+        return pose;
+    }
+    /* Lidar-only preview: keep the same robot glyph centered even without TF. */
+    if (mapState.showLidar) {
+        return { x: 0, y: 0, yaw: 0, inMapFrame: false };
+    }
+    return null;
+}
+
+function drawLidarScan(ctx, viewport) {
+    if (!mapState.showLidar) return;
+    const scan = mapState.lidarScan;
+    if (!scan || !Array.isArray(scan.ranges) || scan.ranges.length === 0) return;
+
+    const pose = getDrawRobotPose();
+    if (!pose) return;
+
+    const yaw = Number.isFinite(pose.yaw) ? pose.yaw : 0;
+    const angleMin = Number(scan.angle_min) || 0;
+    const angleInc = Number(scan.angle_increment) || 0;
+    const maxRange = Number(scan.max_range) || 0;
+    const pointSize = Math.max(2, Math.min(3, viewport.ppm * 0.04));
+
+    ctx.fillStyle = 'rgba(255, 149, 0, 0.9)';
+    for (let i = 0; i < scan.ranges.length; i += 1) {
+        const range = Number(scan.ranges[i]);
+        if (!Number.isFinite(range) || range <= 0) continue;
+        if (maxRange > 0 && range > maxRange) continue;
+
+        const angle = yaw + angleMin + i * angleInc;
+        const worldX = pose.x + Math.cos(angle) * range;
+        const worldY = pose.y + Math.sin(angle) * range;
+        const screen = worldToScreen(worldX, worldY, viewport);
+        ctx.fillRect(
+            Math.round(screen.x - pointSize / 2),
+            Math.round(screen.y - pointSize / 2),
+            pointSize,
+            pointSize
+        );
+    }
+}
+
+function drawRobot(ctx, viewport) {
+    const pose = getDrawRobotPose();
+    if (!pose) return;
     drawDirectionalMarker(ctx, viewport, pose, {
         front: 0.34,
         rear: 0.25,
@@ -704,18 +784,16 @@ function updateGoalUI() {
     const goalYaw = document.getElementById('goalYaw');
     const cancelBtn = document.getElementById('btnCancelGoal');
     const sendBtn = document.getElementById('btnSendGoal');
-    const instruction = document.getElementById('mapInstruction');
 
     if (!mapState.goalPending) {
-        if (goalStatus) goalStatus.textContent = 'Klikněte na mapu pro zadání cíle';
+        if (goalStatus) goalStatus.textContent = 'Pro zadání cíle klikněte na mapu';
         if (coordsPanel) coordsPanel.style.display = 'none';
         if (cancelBtn) cancelBtn.style.display = 'none';
         if (sendBtn) sendBtn.style.display = 'none';
-        if (instruction) instruction.textContent = '1. Klik = pozice cíle';
         return;
     }
 
-    if (goalStatus) goalStatus.textContent = '🎯 Nastavte směr cíle druhým klikem';
+    if (goalStatus) goalStatus.textContent = 'Druhým kliknutím určete směr';
     if (coordsPanel) {
         coordsPanel.style.display = 'block';
         if (goalX) goalX.textContent = mapState.goalPending.x.toFixed(2);
@@ -724,7 +802,6 @@ function updateGoalUI() {
     }
     if (cancelBtn) cancelBtn.style.display = 'block';
     if (sendBtn) sendBtn.style.display = 'block';
-    if (instruction) instruction.textContent = '2. Klik = natočení, potom "Poslat cíl"';
 }
 
 /* ------------------------------

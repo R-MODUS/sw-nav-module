@@ -14,13 +14,17 @@
 }
 
 .map-info {
-    padding: 9px 14px;
+    padding: 12px 14px;
     background: rgba(245, 158, 11, 0.16);
     border: 1px solid rgba(245, 158, 11, 0.28);
-    border-radius: 10px;
-    font-size: 0.86rem;
+    border-radius: 12px;
+    font-size: 0.82rem;
     color: #f9d79b;
-    white-space: nowrap;
+    line-height: 1.35;
+}
+
+.map-info #goalStatus {
+    display: block;
 }
 
 .map-container {
@@ -60,18 +64,6 @@
     border-radius: 8px;
     background: #000;
     cursor: crosshair;
-}
-
-.map-instructions {
-    position: absolute;
-    bottom: 10px;
-    left: 10px;
-    background: rgba(0, 0, 0, 0.8);
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 12px;
-    color: var(--accent);
-    border: 1px solid var(--ui-border);
 }
 
 .control-panel {
@@ -127,11 +119,24 @@
     border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
+.legend-color.lidar {
+    background: #ff9500;
+    box-shadow: 0 0 10px rgba(255, 149, 0, 0.45);
+}
+
+.map-toggle-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
 .map-toggle {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 14px;
+    margin: 0;
     font-size: 12px;
     color: #cbd5e1;
     user-select: none;
@@ -139,6 +144,10 @@
 }
 
 .map-toggle input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    margin: 0;
+    flex-shrink: 0;
     accent-color: var(--accent);
 }
 

@@ -97,9 +97,7 @@ async function restartRmodusService(options) {
             const detail = body && (body.detail || body.message);
             throw new Error(typeof detail === 'string' ? detail : `HTTP ${res.status}`);
         }
-        if (!opts.quiet) {
-            alert((body && body.message) || 'Restart naplánován — web se krátce odpojí.');
-        }
+        // Úspěch: žádný alert — služba se stejně odpojí; browser dialog je zbytečný.
     } catch (err) {
         alert(err.message || String(err));
         if (btn) btn.disabled = false;

@@ -125,13 +125,9 @@
     }
 
     function fillForm(config) {
-        const boot = (config && config.boot) || {};
         const net = (config && config.network) || {};
         const ap = net.ap || {};
         const fb = net.fallback_ap || {};
-
-        const bootEl = document.getElementById('net-boot-network');
-        if (bootEl) bootEl.value = boot.network === false ? 'false' : 'true';
 
         const modeEl = document.getElementById('net-mode');
         if (modeEl) modeEl.value = net.mode || 'client';
@@ -168,9 +164,10 @@
     }
 
     function buildPayload() {
+        const prevBoot = (loaded && loaded.boot) || {};
         return {
             boot: {
-                network: document.getElementById('net-boot-network')?.value === 'true',
+                network: prevBoot.network !== false,
             },
             network: {
                 mode: document.getElementById('net-mode')?.value || 'client',
@@ -199,7 +196,11 @@
             const data = await api('/api/network');
             loaded = data.config || {};
             const pathLabel = document.getElementById('network-path-label');
-            if (pathLabel && data.path) pathLabel.textContent = data.path;
+            if (pathLabel && data.path) {
+                pathLabel.textContent = 'Nastavení připojení';
+                pathLabel.title = data.path;
+                pathLabel.dataset.path = data.path;
+            }
             fillForm(loaded);
         } catch (err) {
             reportError(err);
@@ -245,21 +246,15 @@
 
     async function rebootHost() {
         if (!confirm(
-            'Opravdu restartovat celé zařízení (Raspberry Pi)?\n'
-            + 'Web i SSH se odpojí; robot bude několik desítek sekund offline.'
+            'Opravdu restartovat celé zařízení?\n'
+            + 'Web i SSH se odpojí.'
         )) {
-            return;
-        }
-        const typed = window.prompt('Pro potvrzení napiš REBOOT:');
-        if ((typed || '').trim() !== 'REBOOT') {
-            alert('Zrušeno — musíš napsat přesně REBOOT.');
             return;
         }
         const btn = document.getElementById('system-reboot-btn');
         if (btn) btn.disabled = true;
         try {
-            const res = await api('/api/system/reboot', { method: 'POST', body: '{}' });
-            alert(res.message || 'Reboot naplánován. Spojení se přeruší.');
+            await api('/api/system/reboot', { method: 'POST', body: '{}' });
         } catch (err) {
             reportError(err);
             if (btn) btn.disabled = false;
@@ -279,6 +274,16 @@
         document.getElementById('system-reboot-btn')?.addEventListener('click', (e) => {
             e.preventDefault();
             rebootHost();
+        });
+        document.getElementById('network-path-label')?.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const path = e.currentTarget.dataset.path || e.currentTarget.title || '';
+            if (!path) return;
+            try {
+                await navigator.clipboard.writeText(path);
+            } catch (_err) {
+                window.prompt('Cesta k network.yaml:', path);
+            }
         });
         document.getElementById('net-mode')?.addEventListener('change', updateModeVisibility);
         document.getElementById('net-add-client-btn')?.addEventListener('click', () => {

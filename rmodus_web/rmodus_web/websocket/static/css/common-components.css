@@ -210,6 +210,33 @@ button { background: var(--accent); color: black; border: none; padding: 15px 30
     font-size: 0.92rem;
 }
 
+.network-form .network-subpanel {
+    padding-top: 14px;
+    border-top: 1px solid var(--ui-border, rgba(255, 255, 255, 0.08));
+}
+
+.network-form .network-subpanel:first-child {
+    padding-top: 0;
+    border-top: none;
+}
+
+.network-path-link {
+    color: var(--ui-accent, #5b9fd4);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+}
+
+.network-path-link:hover {
+    color: #d7e3f4;
+}
+
+.settings-section-title {
+    margin: 0;
+    font-size: 1.18rem;
+    font-weight: 700;
+}
+
 .network-form .network-field input[type="text"],
 .network-form .network-field input[type="password"],
 .network-form .network-field input[type="number"],

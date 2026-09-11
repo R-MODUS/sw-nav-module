@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>rmodus_localization</name>
+  <version>0.0.0</version>
+  <description>R-MODUS localization (EKF + optional rf2o / slam_toolbox / obstacle_cloud)</description>
+  <maintainer email="pi@todo.todo">pi</maintainer>
+  <license>TODO: License declaration</license>
+
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <depend>rclpy</depend>
+  <depend>rmodus_interface</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>tf2_ros</depend>
+  <exec_depend>sensor_msgs_py</exec_depend>
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>python3-yaml</exec_depend>
+  <!-- Core fusion — keep hard so EKF always works when this package is installed. -->
+  <exec_depend>robot_localization</exec_depend>
+  <exec_depend>rmodus_description</exec_depend>
+
+  <!--
+    Optional (NOT exec_depend → rosdep does not install).
+    Declared again under <export><rmodus> for sw_install.
+      - rf2o_laser_odometry
+      - slam_toolbox
+  -->
+
+  <export>
+    <build_type>ament_python</build_type>
+    <rmodus>
+      <optional_depend>rf2o_laser_odometry</optional_depend>
+      <optional_depend>slam_toolbox</optional_depend>
+    </rmodus>
+  </export>
+</package>

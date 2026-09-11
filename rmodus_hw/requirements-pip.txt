@@ -1,0 +1,3 @@
+# PyPI deps for remaining rmodus_hw (fan / gpio).
+gpiozero
+RPi.GPIO

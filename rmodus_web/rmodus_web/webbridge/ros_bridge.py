@@ -3,43 +3,48 @@
 import asyncio
 import math
 import time
-from typing import Dict, List
+from typing import Dict, List, Optional
 
-from geometry_msgs.msg import PoseStamped, Twist
+from geometry_msgs.msg import PoseStamped, Twist, TwistStamped
 from nav_msgs.msg import OccupancyGrid, Path
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, QoSProfile, qos_profile_sensor_data
 from sensor_msgs.msg import Imu, LaserScan, Range
+from std_msgs.msg import Bool
+from std_srvs.srv import Trigger
 from tf2_msgs.msg import TFMessage
 
 from rmodus_interface.msg import Bumper, PiStatus
-
-from rmodus_web.webbridge.config import (
-    BUMPER_TOPIC_PREFIX,
-    CLIFF_TOPIC_PREFIX,
-    GOAL_POSE_TOPIC,
-    IMU_TOPIC,
-    LIDAR_TOPIC,
-    MAP_TOPIC,
-    MAP_UPDATES_TOPIC,
-    PLAN_TOPIC,
-    SENSOR_DISCOVERY_RATE_HZ,
-    TF_BROADCAST_RATE_HZ,
-    TF_RESUBSCRIBE_COOLDOWN_SEC,
-    TF_ROOT_FRAME,
-    TF_STALE_TIMEOUT_SEC,
+from rmodus_interface.srv import (
+    ActivateProfile,
+    CreateProfile,
+    DeleteProfile,
+    GetNetworkConfig,
+    GetProfile,
+    ListProfiles,
+    RenameProfile,
+    SaveProfile,
+    SetNetworkConfig,
 )
+
+from rmodus_web.webbridge.config import WebConfig
 from rmodus_web.webbridge.connection_manager import ConnectionManager
 from rmodus_web.webbridge.sensor_catalog import SensorDefinition
 from rmodus_web.webbridge.tf_utils import quaternion_to_yaw
 
 
 class WebBridgeNode(Node):
-    def __init__(self, loop: asyncio.AbstractEventLoop, manager: ConnectionManager):
+    def __init__(
+        self,
+        loop: asyncio.AbstractEventLoop,
+        manager: ConnectionManager,
+        cfg: Optional[WebConfig] = None,
+    ):
         super().__init__("web_bridge_node")
         self.loop = loop
         self.manager = manager
-        self.root_frame = TF_ROOT_FRAME
+        self.cfg = cfg or WebConfig()
+        self.root_frame = self.cfg.tf_root_frame
         self.sensor_definitions: Dict[str, SensorDefinition] = {}
         self.latest_sensor_messages: Dict[str, dict] = {}
         self.tf_frames: Dict[str, dict] = {}
@@ -47,33 +52,82 @@ class WebBridgeNode(Node):
         self.latest_map = None
         self.latest_plan = None
         self.latest_goal = None
+        self.latest_e_stop = None
         self.tf_subscription = None
         self.tf_static_subscription = None
         self.tf_last_update_time = 0.0
         self.tf_last_resubscribe_time = 0.0
         self.tf_is_stale = True
         self._last_sensor_catalog_signature = None
+        self._profile_service_timeout_sec = 8.0
 
-        self.publisher_goal_pose = self.create_publisher(PoseStamped, GOAL_POSE_TOPIC, 10)
-        self.publisher_cmd = self.create_publisher(Twist, "/vector", 10)
-        self.publisher_cmd_vel = self.create_publisher(Twist, "/cmd_vel", 10)
+        self.cmd_use_twist_stamped = bool(self.cfg.cmd_use_twist_stamped)
+        self.cmd_frame_id = self.cfg.cmd_frame_id or "base_link"
+        cmd_msg_type = TwistStamped if self.cmd_use_twist_stamped else Twist
+
+        self.publisher_goal_pose = self.create_publisher(PoseStamped, self.cfg.goal_pose_topic, 10)
+        self.publisher_cmd_vel = self.create_publisher(cmd_msg_type, self.cfg.cmd_vel_topic, 10)
+        self.publisher_e_stop_request = self.create_publisher(
+            Bool, self.cfg.e_stop_request_topic, 10
+        )
+        self.publisher_e_stop_reset = self.create_publisher(Bool, self.cfg.e_stop_reset_topic, 10)
         self.sub_status = self.create_subscription(PiStatus, "/system/pi_status", self.status_cb, 10)
+        self.sub_e_stop = self.create_subscription(
+            Bool, self.cfg.e_stop_state_topic, self.e_stop_callback, 10
+        )
+
+        self._cli_list = self.create_client(ListProfiles, "/rmodus/config/list")
+        self._cli_get = self.create_client(GetProfile, "/rmodus/config/get")
+        self._cli_save = self.create_client(SaveProfile, "/rmodus/config/save")
+        self._cli_create = self.create_client(CreateProfile, "/rmodus/config/create")
+        self._cli_delete = self.create_client(DeleteProfile, "/rmodus/config/delete")
+        self._cli_rename = self.create_client(RenameProfile, "/rmodus/config/rename")
+        self._cli_activate = self.create_client(ActivateProfile, "/rmodus/config/activate")
+        self._cli_restart = self.create_client(Trigger, "/rmodus/system/restart")
+        self._cli_reboot = self.create_client(Trigger, "/rmodus/system/reboot")
+        self._cli_net_get = self.create_client(GetNetworkConfig, "/rmodus/network/get")
+        self._cli_net_set = self.create_client(SetNetworkConfig, "/rmodus/network/set")
+        self._cli_net_apply = self.create_client(Trigger, "/rmodus/network/apply")
+
+        self.get_logger().info(
+            f"Cmd output: {'TwistStamped' if self.cmd_use_twist_stamped else 'Twist'}"
+            f" on {self.cfg.cmd_vel_topic}"
+            + (f" (frame_id={self.cmd_frame_id})" if self.cmd_use_twist_stamped else "")
+        )
+        self.get_logger().info(
+            f"E-stop topics: state={self.cfg.e_stop_state_topic} "
+            f"request={self.cfg.e_stop_request_topic} reset={self.cfg.e_stop_reset_topic}"
+        )
+        self.get_logger().info(f"Web config: {self.cfg.source}")
+        self.get_logger().info(
+            "Profile/network services: /rmodus/config/* /rmodus/network/{get,set,apply}"
+        )
 
         self._create_static_sensor_subscriptions()
         self._discover_dynamic_topics()
         self._create_tf_subscriptions()
 
         qos_volatile = QoSProfile(depth=1, durability=DurabilityPolicy.VOLATILE)
-        self.sub_map = self.create_subscription(OccupancyGrid, MAP_TOPIC, self.map_callback, qos_volatile)
-        self.sub_map_updates = self.create_subscription(
-            OccupancyGrid, MAP_UPDATES_TOPIC, self.map_updates_callback, qos_volatile
+        self.sub_map = self.create_subscription(
+            OccupancyGrid, self.cfg.map_topic, self.map_callback, qos_volatile
         )
-        self.sub_plan = self.create_subscription(Path, PLAN_TOPIC, self.plan_callback, qos_volatile)
-        self.sub_goal_pose = self.create_subscription(PoseStamped, GOAL_POSE_TOPIC, self.goal_pose_callback, 10)
+        self.sub_map_updates = self.create_subscription(
+            OccupancyGrid, self.cfg.map_updates_topic, self.map_updates_callback, qos_volatile
+        )
+        self.sub_plan = self.create_subscription(
+            Path, self.cfg.plan_topic, self.plan_callback, qos_volatile
+        )
+        self.sub_goal_pose = self.create_subscription(
+            PoseStamped, self.cfg.goal_pose_topic, self.goal_pose_callback, 10
+        )
 
-        self.create_timer(1.0 / TF_BROADCAST_RATE_HZ, self.publish_tf_snapshot)
+        tf_period = 1.0 / self.cfg.tf_broadcast_rate_hz if self.cfg.tf_broadcast_rate_hz > 0 else 0.2
+        discovery_period = (
+            1.0 / self.cfg.sensor_discovery_rate_hz if self.cfg.sensor_discovery_rate_hz > 0 else 1.0
+        )
+        self.create_timer(tf_period, self.publish_tf_snapshot)
         self.create_timer(1.0, self.check_tf_health)
-        self.create_timer(1.0 / SENSOR_DISCOVERY_RATE_HZ, self._discover_dynamic_topics)
+        self.create_timer(discovery_period, self._discover_dynamic_topics)
         self.get_logger().info("WebBridgeNode initialized.")
 
     def _broadcast_threadsafe(self, data: dict):
@@ -103,12 +157,14 @@ class WebBridgeNode(Node):
 
     def _create_static_sensor_subscriptions(self):
         self._register_sensor(
-            SensorDefinition("lidar", "scan", LIDAR_TOPIC, "Hlavní LiDAR", "laser", "sensor_msgs/LaserScan"),
+            SensorDefinition(
+                "lidar", "scan", self.cfg.lidar_topic, "Hlavní LiDAR", "laser", "sensor_msgs/LaserScan"
+            ),
             LaserScan,
             self.scan_callback,
         )
         self._register_sensor(
-            SensorDefinition("imu", "imu_data", IMU_TOPIC, "IMU senzor", "imu_link", "sensor_msgs/Imu"),
+            SensorDefinition("imu", "imu_data", self.cfg.imu_topic, "IMU senzor", "imu_link", "sensor_msgs/Imu"),
             Imu,
             self.imu_callback,
         )
@@ -116,11 +172,11 @@ class WebBridgeNode(Node):
     def _discover_dynamic_topics(self):
         active_dynamic_topics = set()
         for topic_name, topic_types in self.get_topic_names_and_types():
-            if topic_name.startswith(BUMPER_TOPIC_PREFIX) and "rmodus_interface/msg/Bumper" in topic_types:
+            if topic_name.startswith(self.cfg.bumper_topic_prefix) and "rmodus_interface/msg/Bumper" in topic_types:
                 sensor = self._sensor_from_topic("bumper", topic_name, "rmodus_interface/Bumper")
                 self._register_sensor(sensor, Bumper, self.bumper_callback)
                 active_dynamic_topics.add(topic_name)
-            if topic_name.startswith(CLIFF_TOPIC_PREFIX) and "sensor_msgs/msg/Range" in topic_types:
+            if topic_name.startswith(self.cfg.cliff_topic_prefix) and "sensor_msgs/msg/Range" in topic_types:
                 sensor = self._sensor_from_topic("cliff", topic_name, "sensor_msgs/Range")
                 self._register_sensor(sensor, Range, self.cliff_callback)
                 active_dynamic_topics.add(topic_name)
@@ -302,7 +358,7 @@ class WebBridgeNode(Node):
 
     def check_tf_health(self):
         now = time.monotonic()
-        stale_by_timeout = (now - self.tf_last_update_time) > TF_STALE_TIMEOUT_SEC
+        stale_by_timeout = (now - self.tf_last_update_time) > self.cfg.tf_stale_timeout_sec
         has_tf_data = bool(self.tf_frames)
         current_stale = stale_by_timeout or not has_tf_data
         if current_stale != self.tf_is_stale:
@@ -319,7 +375,7 @@ class WebBridgeNode(Node):
             state_text = "stale" if self.tf_is_stale else "healthy"
             self.get_logger().info(f"TF stream state changed: {state_text}.")
 
-        if self.tf_is_stale and (now - self.tf_last_resubscribe_time) > TF_RESUBSCRIBE_COOLDOWN_SEC:
+        if self.tf_is_stale and (now - self.tf_last_resubscribe_time) > self.cfg.tf_resubscribe_cooldown_sec:
             self.get_logger().warn("TF stream stale. Recreating /tf and /tf_static subscriptions.")
             self._create_tf_subscriptions()
 
@@ -335,12 +391,41 @@ class WebBridgeNode(Node):
             }
         )
 
+    def e_stop_callback(self, msg: Bool):
+        payload = {"type": "e_stop", "active": bool(msg.data)}
+        self.latest_e_stop = payload
+        if not self._has_clients():
+            return
+        self._broadcast_threadsafe(payload)
+
+    def publish_e_stop_request(self):
+        msg = Bool()
+        msg.data = True
+        self.publisher_e_stop_request.publish(msg)
+
+    def publish_e_stop_reset(self):
+        msg = Bool()
+        msg.data = True
+        self.publisher_e_stop_reset.publish(msg)
+
     def publish_joystick_cmd(self, data: dict):
-        msg = Twist()
-        msg.linear.x = float(data.get("linear_y", 0))
-        msg.linear.y = float(data.get("linear_x", 0)) * (-1)
-        msg.angular.z = float(data.get("angular_z", 0))
-        self.publisher_cmd.publish(msg)
+        linear_x = float(data.get("linear_y", 0))
+        linear_y = float(data.get("linear_x", 0)) * (-1)
+        angular_z = float(data.get("angular_z", 0))
+
+        if self.cmd_use_twist_stamped:
+            msg = TwistStamped()
+            msg.header.stamp = self.get_clock().now().to_msg()
+            msg.header.frame_id = self.cmd_frame_id
+            msg.twist.linear.x = linear_x
+            msg.twist.linear.y = linear_y
+            msg.twist.angular.z = angular_z
+        else:
+            msg = Twist()
+            msg.linear.x = linear_x
+            msg.linear.y = linear_y
+            msg.angular.z = angular_z
+
         self.publisher_cmd_vel.publish(msg)
 
     def get_tf_frames_snapshot(self) -> List[dict]:
@@ -366,6 +451,8 @@ class WebBridgeNode(Node):
             messages.append(self.latest_plan)
         if self.latest_goal:
             messages.append(self.latest_goal)
+        if self.latest_e_stop:
+            messages.append(self.latest_e_stop)
         messages.extend(self.latest_sensor_messages.values())
         return messages
 
@@ -450,3 +537,75 @@ class WebBridgeNode(Node):
         payload = self._goal_pose_payload(goal_msg.header.frame_id, x, y, yaw)
         self.latest_goal = payload
         self._broadcast_threadsafe(payload)
+
+    def _call_profile_service(self, client, request):
+        """Call a /rmodus/config/* service while another thread spins this node."""
+        if not client.wait_for_service(timeout_sec=self._profile_service_timeout_sec):
+            raise TimeoutError(
+                "rmodus_config services nedostupné — běží bringup.config / config_manager?"
+            )
+        future = client.call_async(request)
+        deadline = time.time() + self._profile_service_timeout_sec
+        while not future.done():
+            if time.time() >= deadline:
+                raise TimeoutError("timeout při volání rmodus_config service")
+            time.sleep(0.02)
+        result = future.result()
+        if result is None:
+            raise RuntimeError("prázdná odpověď z rmodus_config service")
+        return result
+
+    def profiles_list(self):
+        return self._call_profile_service(self._cli_list, ListProfiles.Request())
+
+    def profiles_get(self, name: str):
+        req = GetProfile.Request()
+        req.name = name
+        return self._call_profile_service(self._cli_get, req)
+
+    def profiles_save(self, name: str, content: str):
+        req = SaveProfile.Request()
+        req.name = name
+        req.content = content
+        return self._call_profile_service(self._cli_save, req)
+
+    def profiles_create(self, name: str, source: str = "", content: str = ""):
+        req = CreateProfile.Request()
+        req.name = name
+        req.source = source or ""
+        req.content = content or ""
+        return self._call_profile_service(self._cli_create, req)
+
+    def profiles_delete(self, name: str):
+        req = DeleteProfile.Request()
+        req.name = name
+        return self._call_profile_service(self._cli_delete, req)
+
+    def profiles_rename(self, old_name: str, new_name: str):
+        req = RenameProfile.Request()
+        req.old_name = old_name
+        req.new_name = new_name
+        return self._call_profile_service(self._cli_rename, req)
+
+    def profiles_activate(self, name: str):
+        req = ActivateProfile.Request()
+        req.name = name
+        return self._call_profile_service(self._cli_activate, req)
+
+    def system_restart_rmodus(self):
+        return self._call_profile_service(self._cli_restart, Trigger.Request())
+
+    def system_reboot_host(self):
+        return self._call_profile_service(self._cli_reboot, Trigger.Request())
+
+    def network_get(self):
+        return self._call_profile_service(self._cli_net_get, GetNetworkConfig.Request())
+
+    def network_set(self, config_json: str, apply: bool = False):
+        req = SetNetworkConfig.Request()
+        req.config_json = config_json
+        req.apply = bool(apply)
+        return self._call_profile_service(self._cli_net_set, req)
+
+    def network_apply(self):
+        return self._call_profile_service(self._cli_net_apply, Trigger.Request())

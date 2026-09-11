@@ -23,12 +23,16 @@
 
 
                 <li onclick="window.loadPage('docs')" id="nav-docs">📄 Manuál</li>
-                <li onclick="window.loadPage('config')" id="nav-config">⚙️ Konfigurace</li>
+                <li onclick="window.loadPage('config')" id="nav-config">🧩 Profily</li>
+                <li onclick="window.loadPage('settings')" id="nav-settings">⚙️ Nastavení</li>
             </ul>
             <div class="sidebar-footer">
                 <ul class="nav-links-bottom">
                     <li onclick="window.loadPage('users')" id="nav-users">👥 Uživatelé</li>
                 </ul>
+                <button type="button" class="btn-sidebar-restart" id="sidebar-restart-btn" title="Restartovat R-MODUS (rmodus.service)">
+                    Restartovat
+                </button>
                 <p id="conn">❌ Odpojeno</p>
             </div>
             </nav>
@@ -46,6 +50,8 @@
     <script src="static/js/map.js"></script>
     <script src="static/js/robot_view.js"></script>
     <script src="static/js/sensors.js"></script>
+    <script src="static/js/profiles.js"></script>
+    <script src="static/js/settings.js"></script>
 
 </body>
 </html>

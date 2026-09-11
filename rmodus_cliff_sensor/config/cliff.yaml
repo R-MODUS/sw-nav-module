@@ -1,0 +1,65 @@
+cliff_sensors:
+  enabled: true
+  address: "0x48"
+  timer_period: 0.1
+  range_msg_min: 0.02
+  range_msg_max: 0.5
+  field_of_view: 0.05
+  v_points: [0.3, 0.4, 0.8, 1.2, 2.0, 2.5]
+  d_points: [0.20, 0.15, 0.08, 0.05, 0.03, 0.02]
+
+  # Rising-edge Bool(true) → /rmodus/e_stop/request (central latch in rmodus_estop)
+  estop_request:
+    enabled: true
+    request_topic: /rmodus/e_stop/request
+    cliff_range_threshold_m: 0.12
+    retrigger_while_cliff: false
+
+  items:
+    - name: fl
+      enabled: true
+      topic: /cliff/fl
+      frame_id: cliff_sensor_fl_beam
+      pin: 0
+      mount_parent_frame: base_link
+      mount_offset: [0.25, 0.20, 0.0]
+      mount_rpy: [0.0, 0.0, 0.0]
+      size: [0.02, 0.02, 0.02]
+      beam_offset: [0.0, 0.0, -0.01]
+      beam_rpy: [0.0, 1.5708, 0.0]
+
+    - name: fr
+      enabled: true
+      topic: /cliff/fr
+      frame_id: cliff_sensor_fr_beam
+      pin: 1
+      mount_parent_frame: base_link
+      mount_offset: [0.25, -0.20, 0.0]
+      mount_rpy: [0.0, 0.0, 0.0]
+      size: [0.02, 0.02, 0.02]
+      beam_offset: [0.0, 0.0, -0.01]
+      beam_rpy: [0.0, 1.5708, 0.0]
+
+    - name: rl
+      enabled: true
+      topic: /cliff/rl
+      frame_id: cliff_sensor_rl_beam
+      pin: 2
+      mount_parent_frame: base_link
+      mount_offset: [-0.25, 0.20, 0.0]
+      mount_rpy: [0.0, 0.0, 3.14159]
+      size: [0.02, 0.02, 0.02]
+      beam_offset: [0.0, 0.0, -0.01]
+      beam_rpy: [0.0, 1.5708, 0.0]
+
+    - name: rr
+      enabled: true
+      topic: /cliff/rr
+      frame_id: cliff_sensor_rr_beam
+      pin: 3
+      mount_parent_frame: base_link
+      mount_offset: [-0.25, -0.20, 0.0]
+      mount_rpy: [0.0, 0.0, 3.14159]
+      size: [0.02, 0.02, 0.02]
+      beam_offset: [0.0, 0.0, -0.01]
+      beam_rpy: [0.0, 1.5708, 0.0]

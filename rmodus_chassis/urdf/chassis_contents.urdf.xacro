@@ -1,0 +1,44 @@
+<?xml version='1.0'?>
+<!-- Host links only (no <robot> wrapper). Expects base_cfg in scope. -->
+
+<robot xmlns:xacro='http://www.ros.org/wiki/xacro'>
+
+<xacro:macro name='rmodus_chassis_box_inertia' params='m x y z'>
+  <inertial>
+    <mass value='${m}'/>
+    <inertia ixx='${m/12 * (y*y + z*z)}' ixy='0.0' ixz='0.0'
+             iyy='${m/12 * (x*x + z*z)}' iyz='0.0'
+             izz='${m/12 * (x*x + y*y)}'/>
+  </inertial>
+</xacro:macro>
+
+<xacro:macro name='rmodus_chassis_links'>
+  <xacro:property name='base_mass' value='${base_cfg["mass"]}'/>
+  <xacro:property name='base_size_x' value='${base_cfg["size"][0]}'/>
+  <xacro:property name='base_size_y' value='${base_cfg["size"][1]}'/>
+  <xacro:property name='base_size_z' value='${base_cfg["size"][2]}'/>
+  <xacro:property name='base_offset_z' value='${base_cfg["offset_z"]}'/>
+
+  <link name='base_footprint'/>
+
+  <link name='base_link'>
+    <xacro:rmodus_chassis_box_inertia m='${base_mass}' x='${base_size_x}' y='${base_size_y}' z='${base_size_z}'/>
+    <visual>
+      <geometry><box size='${base_size_x} ${base_size_y} ${base_size_z}'/></geometry>
+      <material name='chassis_mat'>
+        <color rgba='0.28 0.31 0.35 1'/>
+      </material>
+    </visual>
+    <collision>
+      <geometry><box size='${base_size_x} ${base_size_y} ${base_size_z}'/></geometry>
+    </collision>
+  </link>
+
+  <joint name='body_link_joint' type='fixed'>
+    <parent link='base_footprint'/>
+    <child link='base_link'/>
+    <origin xyz='0 0 ${base_offset_z}' rpy='0 0 0'/>
+  </joint>
+</xacro:macro>
+
+</robot>

@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>rmodus_navigation</name>
+  <version>0.0.0</version>
+  <description>R-MODUS navigation (Nav2 launch + params; Nav2 debs are optional)</description>
+  <maintainer email="pi@todo.todo">pi</maintainer>
+  <license>TODO: License declaration</license>
+
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>python3-yaml</exec_depend>
+
+  <!--
+    Optional Nav2 stack (NOT exec_depend → rosdep does not install).
+    Launch checks at runtime; sw_install reads <export><rmodus>.
+      - nav2_common (RewrittenYaml)
+      - nav2_controller, nav2_smoother, nav2_planner, nav2_behaviors
+      - nav2_bt_navigator, nav2_waypoint_follower, nav2_velocity_smoother
+      - nav2_lifecycle_manager
+  -->
+
+  <export>
+    <build_type>ament_python</build_type>
+    <rmodus>
+      <optional_depend>nav2_common</optional_depend>
+      <optional_depend>nav2_controller</optional_depend>
+      <optional_depend>nav2_smoother</optional_depend>
+      <optional_depend>nav2_planner</optional_depend>
+      <optional_depend>nav2_behaviors</optional_depend>
+      <optional_depend>nav2_bt_navigator</optional_depend>
+      <optional_depend>nav2_waypoint_follower</optional_depend>
+      <optional_depend>nav2_velocity_smoother</optional_depend>
+      <optional_depend>nav2_lifecycle_manager</optional_depend>
+    </rmodus>
+  </export>
+</package>

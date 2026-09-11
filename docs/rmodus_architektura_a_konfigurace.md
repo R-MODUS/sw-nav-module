@@ -12,7 +12,7 @@ Dokument vychází z aktuálního stavu workspace. V aktuálním rootu jsou př�
 - `rmodus_description`
 - `rmodus_hw`
 - `rmodus_brain`
-- `rmodus_sim`
+- `rmodus_gazebo`
 - `rmodus_bringup`
 
 V některých launch souborech jsou reference na externí balíčky (typicky instalované v ROS prostředí mimo tento repozitář), například `slam_toolbox` nebo `xsens_mti_ros2_driver`.
@@ -26,7 +26,7 @@ Systém je navržen jako modulární ROS 2 stack se třemi hlavními vrstvami:
 3. **Runtime vrstvy**
    - HW provoz (`rmodus_hw`)
    - aplikační a navigační logika (`rmodus_brain`)
-   - simulace (`rmodus_sim`)
+   - simulace (`rmodus_gazebo`)
 4. **Orchestrace celého systému** (`rmodus_bringup`)
 
 Návrh směřuje k tomu, aby fyzická konfigurace robota a senzorů existovala v jednom společném modelu, zatímco konkrétní runtime uzly si z tohoto modelu berou relevantní podmnožiny. Díky tomu se snižuje konfigurační duplicita a zvyšuje konzistence mezi HW a Sim režimem.
@@ -37,7 +37,7 @@ Návrh směřuje k tomu, aby fyzická konfigurace robota a senzorů existovala v
 flowchart LR
     A[rmodus_bringup] --> B[rmodus_hw]
     A --> C[rmodus_brain]
-    A --> D[rmodus_sim]
+    A --> D[rmodus_gazebo]
 
     B --> E[rmodus_description]
     D --> E
@@ -158,20 +158,20 @@ Balíček zajišťuje vyšší logiku systému: fúzi stavových dat, navigaci, 
 - Nav2 stack používá vlastní nav2 YAML a `RewrittenYaml` pro vložení `use_sim_time` a `autostart`.
 - Webbridge drží katalog senzorů, odebírá mapu/plán/TF a broadcastuje je přes websocket.
 
-### 3.5 `rmodus_sim`
+### 3.5 `rmodus_gazebo`
 
 **Role v systému:**
 Balíček realizuje simulační vrstvu, včetně spawnu robota, bridge mezi Gazebo a ROS a převodu kontaktů bumperů do interního formátu.
 
 **Klíčové soubory:**
 
-- [rmodus_sim/launch/sim.launch.py](../rmodus_sim/launch/sim.launch.py)
-- [rmodus_sim/config/bridge_parameters.yaml](../rmodus_sim/config/bridge_parameters.yaml)
-- [rmodus_sim/rmodus_sim/sim_bumper_bridge.py](../rmodus_sim/rmodus_sim/sim_bumper_bridge.py)
-- [rmodus_sim/urdf/gz_lidar.urdf.xacro](../rmodus_sim/urdf/gz_lidar.urdf.xacro)
-- [rmodus_sim/urdf/gz_imu.urdf.xacro](../rmodus_sim/urdf/gz_imu.urdf.xacro)
-- [rmodus_sim/urdf/gz_bumpers.urdf.xacro](../rmodus_sim/urdf/gz_bumpers.urdf.xacro)
-- [rmodus_sim/urdf/gz_cliff_sensors.urdf.xacro](../rmodus_sim/urdf/gz_cliff_sensors.urdf.xacro)
+- [rmodus_gazebo/launch/sim.launch.py](../rmodus_gazebo/launch/sim.launch.py)
+- [rmodus_gazebo/config/bridge_parameters.yaml](../rmodus_gazebo/config/bridge_parameters.yaml)
+- [rmodus_gazebo/rmodus_gazebo/sim_bumper_bridge.py](../rmodus_gazebo/rmodus_gazebo/sim_bumper_bridge.py)
+- [rmodus_gazebo/urdf/gz_lidar.urdf.xacro](../rmodus_gazebo/urdf/gz_lidar.urdf.xacro)
+- [rmodus_gazebo/urdf/gz_imu.urdf.xacro](../rmodus_gazebo/urdf/gz_imu.urdf.xacro)
+- [rmodus_gazebo/urdf/gz_bumpers.urdf.xacro](../rmodus_gazebo/urdf/gz_bumpers.urdf.xacro)
+- [rmodus_gazebo/urdf/gz_cliff_sensors.urdf.xacro](../rmodus_gazebo/urdf/gz_cliff_sensors.urdf.xacro)
 
 **Důležité chování:**
 
@@ -204,7 +204,7 @@ Top-level orchestrace. Je to vstupní bod pro integrační běh celého stacku.
 V systému se kombinují dva přístupy:
 
 1. **Deep merge stromových YAML**
-   - používá se v `rmodus_description`, `rmodus_sim` a `ekf_dynamic`.
+   - používá se v `rmodus_description`, `rmodus_gazebo` a `ekf_dynamic`.
 2. **ROS2 precedence seznamu parametrů + dict override**
    - používá se zejména v `rmodus_hw`.
 
@@ -288,12 +288,12 @@ Důsledky:
 
 Tento režim je vhodný pro ladění algoritmické a komunikační vrstvy.
 
-### 5.4 Samostatné spuštění `rmodus_sim`
+### 5.4 Samostatné spuštění `rmodus_gazebo`
 
 Typicky:
 
 ```bash
-ros2 launch rmodus_sim sim.launch.py
+ros2 launch rmodus_gazebo sim.launch.py
 ```
 
 Důsledky:
@@ -356,7 +356,7 @@ sequenceDiagram
 sequenceDiagram
     participant U as Uživatel
     participant B as rmodus_bringup
-    participant S as rmodus_sim
+    participant S as rmodus_gazebo
     participant BR as rmodus_brain
     participant G as Gazebo
 
@@ -397,7 +397,7 @@ Architektonicky je to boundary mezi robotikou a HMI.
 
 ### 7.3 Sim vrstva
 
-`rmodus_sim` realizuje kompatibilní virtuální dvojče:
+`rmodus_gazebo` realizuje kompatibilní virtuální dvojče:
 
 - stejné senzorové koncepty jako HW,
 - topic bridging,

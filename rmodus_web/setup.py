@@ -18,6 +18,7 @@ setup(
     data_files=[
         ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
         ("share/" + package_name + "/launch", glob("launch/*.py")),
+        ("share/" + package_name + "/config", glob("config/*.yaml")),
         ("share/" + package_name + "/websocket", [str(websocket_root / "index.html")]),
         ("share/" + package_name, ["package.xml"]),
     ] + websocket_data_files,
@@ -30,7 +31,7 @@ setup(
     extras_require={"test": ["pytest"]},
     entry_points={
         "console_scripts": [
-            "websocket = rmodus_web.node_websocket:run",
+            "web = rmodus_web.node_websocket:run",
         ],
     },
 )

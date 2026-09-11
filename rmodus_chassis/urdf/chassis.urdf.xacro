@@ -1,0 +1,16 @@
+<?xml version='1.0'?>
+<!-- Standalone host: base_footprint → base_link. -->
+
+<robot
+  name='rmodus_chassis'
+  xmlns:xacro='http://www.ros.org/wiki/xacro'>
+
+<xacro:arg name='config_path' default='' />
+
+<xacro:property name='robot_cfg' value="${xacro.load_yaml('$(arg config_path)')}" />
+<xacro:property name='base_cfg' value="${robot_cfg['/**']['ros__parameters']['base_link']}" />
+
+<xacro:include filename="chassis_contents.urdf.xacro"/>
+<xacro:rmodus_chassis_links/>
+
+</robot>

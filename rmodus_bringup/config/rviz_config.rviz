@@ -103,7 +103,7 @@ Visualization Manager:
           Value: false
         lidar_mount:
           Value: false
-        main_module_mount:
+        rmodus_mount:
           Value: false
         map:
           Value: true
@@ -151,7 +151,7 @@ Visualization Manager:
                   {}
                 front_right_wheel:
                   {}
-                main_module_mount:
+                rmodus_mount:
                   imu_mount:
                     imu_link:
                       {}
@@ -314,7 +314,7 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
-        main_module_mount:
+        rmodus_mount:
           Alpha: 1
           Show Axes: false
           Show Trail: false

@@ -1,0 +1,68 @@
+# Výchozí konfig rmodus_web (blok web:).
+# Launch ho předá jako robot_yaml; bringup ho přepíše
+# aktivním robot profilem (configs/profiles/<active>.yaml).
+#
+# Stejné klíče jako ve vzoru: setup/examples/rmodus-example.yaml
+
+web:
+  # true  = vývojový režim (volnější autentizace ve websocketu)
+  # false = ostrý provoz, přihlášení PINem je povinné
+  testing: true
+
+  # Kořen configs (install: ~/rmodus/configs). Prázdné = odvoď z --config
+  # nebo $RMODUS_CONFIGS / ~/rmodus/configs.
+  configs_root: ""
+
+  # Adresa a port HTTP/WebSocket serveru (uvicorn).
+  # 0.0.0.0 = poslouchá na všech rozhraních (Wi-Fi i Ethernet).
+  host: "0.0.0.0"
+  port: 8080
+  log_level: info                  # uvicorn: critical|error|warning|info|debug|trace
+
+  # PIN kódy UI (prostý text — chraňte práva souboru).
+  # operator = ovládání robota, admin = správa uživatelů / nastavení
+  operator_pin: "1234"
+  admin_pin: "4321"
+
+  tf:
+    # Kořenový rámec 2D stromu TF posílaného do prohlížeče
+    root_frame: base_link
+    # Jak často posílat snímek TF do UI (Hz)
+    broadcast_rate_hz: 5.0
+    # Po této době bez /tf se strom považuje za zastaralý (s)
+    stale_timeout_sec: 3.0
+    # Minimální pauza mezi opětovným přihlášením k /tf při výpadku (s)
+    resubscribe_cooldown_sec: 8.0
+
+  topics:
+    # Topic, které web odebírá / publikuje.
+    lidar: /scan
+    imu: /imu/data
+    bumper_prefix: /bumper/        # dynamicky se hledají /bumper/<jméno>
+    cliff_prefix: /cliff/          # dynamicky se hledají /cliff/<jméno>
+    map: /map
+    map_updates: /map_updates
+    plan: /received_global_plan
+    goal_pose: /goal_pose
+    cmd_vel: /cmd_vel              # výstup joysticku z UI
+    e_stop_state: /rmodus/e_stop           # stav (true = stop aktivní)
+    e_stop_request: /rmodus/e_stop/request # podnět k zastavení (UI tlačítko později)
+    e_stop_reset: /rmodus/e_stop/reset     # podnět k resetu
+    discovery_rate_hz: 1.0         # perioda znovuobjevení bumper/cliff topiců (Hz)
+
+  cmd:
+    # false = geometry_msgs/Twist, true = geometry_msgs/TwistStamped
+    use_twist_stamped: false
+    frame_id: base_link
+
+  ui:
+    # Viditelnost záložek v levém menu (true = zobrazit, false = skrýt).
+    nav_tabs:
+      status: true
+      controls: true
+      map: true
+      sensors: true
+      docs: true
+      config: true
+      settings: true
+      users: true

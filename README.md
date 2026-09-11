@@ -1,22 +1,55 @@
-# sw-nav-module
+# R-MODUS nav module
 
-ROS 2 navigation workspace for R-Modus packages.
+## Spuštění
 
-## Parameter Config Migration
+```bash
+ros2 launch rmodus_bringup rmodus.launch.py
+# aktivní profil na Pi (stejná logika jako entrypoint):
+ros2 launch rmodus_bringup rmodus.launch.py \
+  robot_yaml:=$HOME/rmodus/configs/profiles/$(tr -d '[:space:]' < $HOME/rmodus/configs/active).yaml
+```
 
-The parameter layout was simplified to remove redundant YAML copies.
+Na robotovi `rmodus.service` spouští totéž s aktivním souborem z `~/rmodus/configs/profiles/` (ukazatel `active`).
+- `boot.rmodus` v robot profilu; `boot.network` v `network.yaml`
+- co běží z bringupu: top-level `bringup:`
 
-Active parameter sources are now:
+Přepnutí: web UI Profily (ROS services `/rmodus/config/*`), nebo
+`ros2 run rmodus_config rmodus_config activate <name>`, pak `sudo systemctl restart rmodus`.
 
-- `rmodus_description/config/default_robot_config.yaml` for shared robot and sensor model.
-- `rmodus_sim/config/robot_config.yaml` for standalone sim package robot model.
-- `rmodus_hw/config/base_params.yaml` for HW node default parameters.
-- `rmodus_bringup/config/user_params.yaml` for global runtime overrides.
+Services (node `config_manager`, `bringup.config: true`):
 
-Removed redundant files:
+```bash
+ros2 service call /rmodus/config/list rmodus_interface/srv/ListProfiles {}
+ros2 service call /rmodus/config/activate rmodus_interface/srv/ActivateProfile "{name: demo}"
+ros2 service call /rmodus/system/restart std_srvs/srv/Trigger {}
+ros2 service call /rmodus/system/reboot std_srvs/srv/Trigger {}
+ros2 service call /rmodus/network/get rmodus_interface/srv/GetNetworkConfig {}
+```
 
-- `rmodus_hw/config/robot_config.yaml`
-- `rmodus_bringup/config/base_params.yaml`
-- `rmodus_sim/config/base_params.yaml`
+Co se spustí řídí top-level `bringup:` v profilu (`rmodus_bringup/config/rmodus.yaml`).  
+Druhá vrstva: `*.enabled` v blocích modulů (node + TF + EKF).  
+`bringup.extras:` — libovolné `package`+`launch` (nebo `path`) mimo jádro; `$robot_yaml` v `args` → aktivní profil.
 
-If you used any removed file in custom scripts, switch to the active sources listed above.
+Chybí-li volitelný balíček na disku (např. `rmodus_bumper`, Nav2, rf2o, `neato_lidar`), launch ho **přeskočí s logem** — nespadne celý bringup.
+
+`rosdep` / `package.xml` **netáhne** těžké optional deps. Optional jsou zapsané v `<export><rmodus><optional_depend>…`.
+
+Kanonický ROS blok (`bringup:` + `/**`) musí sedět se `sw-install/examples/rmodus-example.yaml` (ten má navíc `meta` / `web` / `boot.rmodus`). Síť je v `network.yaml`.
+
+## Balíčky (orientace)
+
+| Balíček | Role |
+|---|---|
+| `rmodus_bringup` | profil + `rmodus.launch.py` |
+| `rmodus_config` | profile services (list/get/save/create/delete/activate) |
+| `rmodus_chassis` | host `base_link` |
+| `rmodus_description` | sada `rmodus_mount` + imu/lidar TF |
+| `rmodus_localization` | EKF + optional rf2o/slam + obstacle_cloud |
+| `rmodus_navigation` | Nav2 (optional debs) |
+| `rmodus_bumper` / `cliff` / `flow` / `display` / … | feature moduly (optional vůči bringup) |
+
+## TF model
+
+- **Host**: `base_footprint` → `base_link`
+- **Sada**: `base_link` → `rmodus_mount` → volitelné imu/lidar  
+  Při `bringup.chassis` + `description` → jeden URDF/RSP.

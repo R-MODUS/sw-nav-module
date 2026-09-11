@@ -18,7 +18,7 @@ setup(
     zip_safe=True,
     maintainer='pi',
     maintainer_email='pi@todo.todo',
-    description='Robot description - shared URDF and sensor config for hw and sim',
+    description='R-MODUS kit description (rmodus_mount + optional sensor TF)',
     license='TODO: License declaration',
     extras_require={
         'test': ['pytest'],

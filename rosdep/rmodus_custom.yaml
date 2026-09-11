@@ -1,0 +1,23 @@
+# Doplnkove rosdep klice pro zavislosti, ktere nejsou v centralnim rosdistro.
+# ament_python: rosdep nema klic (buildtool pro ament_python baliky) - install.py pouziva --skip-keys ament_python.
+# Zaregistruj zdroj (jednou na stroji), napr.:
+#   sudo sh -c 'echo "yaml file://$(pwd)/rosdep/rmodus_custom.yaml" > /etc/ros/rosdep/sources.list.d/20-rmodus.list'
+#   rosdep update
+#
+# Pak: rosdep install --from-paths <cesta_k_ws>/src --ignore-src -r -y --rosdistro jazzy
+
+rmodus-pmw3901-pip:
+  ubuntu:
+    pip:
+      packages: [pmw3901]
+  debian:
+    pip:
+      packages: [pmw3901]
+
+rmodus-adafruit-ssd1306-pip:
+  ubuntu:
+    pip:
+      packages: [adafruit-circuitpython-ssd1306]
+  debian:
+    pip:
+      packages: [adafruit-circuitpython-ssd1306]

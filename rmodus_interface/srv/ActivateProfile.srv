@@ -1,0 +1,6 @@
+string name
+---
+string active
+string path
+bool success
+string message

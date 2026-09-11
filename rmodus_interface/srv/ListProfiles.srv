@@ -1,0 +1,8 @@
+# Request — empty
+---
+string[] names
+string active
+string configs_root
+string profiles_dir
+bool success
+string message

@@ -8,8 +8,17 @@ find_package(std_msgs REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/GamepadState.msg"
   "msg/PiStatus.msg"
-  "srv/GetWifiNetworks.srv"
   "msg/Bumper.msg"
+  "srv/GetWifiNetworks.srv"
+  "srv/ListProfiles.srv"
+  "srv/GetProfile.srv"
+  "srv/SaveProfile.srv"
+  "srv/CreateProfile.srv"
+  "srv/DeleteProfile.srv"
+  "srv/RenameProfile.srv"
+  "srv/ActivateProfile.srv"
+  "srv/GetNetworkConfig.srv"
+  "srv/SetNetworkConfig.srv"
   DEPENDENCIES std_msgs
 )
 

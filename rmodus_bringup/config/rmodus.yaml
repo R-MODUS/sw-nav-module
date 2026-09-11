@@ -1,0 +1,198 @@
+# ROS default profil R-MODUS (bringup + parametry modulů).
+# Kanonický tvar bringup: + /** musí sedět s:
+#   sw-install/examples/rmodus-example.yaml
+# Example = meta + boot.rmodus + web + stejný obsah jako tento soubor.
+# Runtime: ~/rmodus/configs/profiles/<active>.yaml (ukazatel configs/active)
+# Síť:     ~/rmodus/configs/network.yaml
+#
+# Spouštění řídí top-level bringup:; druhá vrstva je *.enabled v blocích níže.
+# Těžké / feature balíčky jsou optional — chybí-li na disku, launch je přeskočí s logem.
+
+bringup:
+  config: true           # rmodus_config: profile CRUD services
+  chassis: true          # false = cizí host už publikuje base_link
+  description: true      # sada: rmodus_mount + imu/lidar TF
+  hw: true
+  uart_output: true
+  estop: true
+  bumper: true           # optional package rmodus_bumper
+  cliff: true            # optional package rmodus_cliff_sensor
+  flow: true             # optional package rmodus_flow_sensor
+  display: true          # optional package rmodus_display
+  web: true
+  rviz: false
+  sim: false             # optional rmodus_gazebo + ros_gz_* (zatím nespouští stack)
+  localization: true     # rmodus_localization (EKF; rf2o/slam optional debs)
+  navigation: true       # rmodus_navigation (Nav2 optional debs)
+  slam: true             # slam_toolbox (optional deb)
+  rf2o: false            # rf2o_laser_odometry (optional deb)
+  obstacle_cloud: true
+  # Vlastní / third-party launch soubory (lidar driver, …).
+  # Chybí-li package nebo soubor → skip + log (bringup nespadne).
+  # args: hodnoty "$robot_yaml" → cesta k tomuto profilu.
+  extras: []
+  # extras:
+  #   - package: neato_lidar
+  #     launch: neato_lidar.launch.py
+  #     args:
+  #       config_file: $robot_yaml
+  #   - path: /home/robot/extra.launch.py
+
+# Volitelný blok web: — pokud chybí, rmodus_web použije package default.
+# Plný web: je v profiles/*.yaml (example).
+
+/**:
+  ros__parameters:
+
+    base_link:
+      mass: 5.0
+      size: [0.5, 0.5, 0.1]
+      offset_z: 0.0973
+
+    rmodus_module:
+      mass: 2.0
+      size: [0.25, 0.25, 0.05]
+      offset_x: 0.032
+      offset_y: 0.0
+      offset_z: 0.02
+
+    wheel_odom:
+      enabled: true
+      type: 'odom'
+      topic: '/odom'
+
+    lidar_odom:
+      enabled: false
+      type: 'odom'
+      topic: '/odom_lidar'
+
+    # Lidar/IMU: kontrakt (topic + TF). Driver spouští uživatel mimo bringup.
+    imu:
+      enabled: true
+      type: 'imu'
+      topic: '/imu/data'
+      frame_id: 'imu_link'
+      mount_parent_frame: 'rmodus_mount'
+      mount_offset: [0.0, 0.0, 0.0]
+      mount_rpy: [0.0, 0.0, 0.0]
+      offset: [0.056, 0.020, 0.015]
+      rpy: [0.0, 0.0, 0.0]
+
+    lidar:
+      enabled: true
+      topic: '/scan'
+      frame_id: 'lidar_beam'
+      mount_parent_frame: 'rmodus_mount'
+      mount_offset: [0.0, 0.0, 0.0]
+      mount_rpy: [0.0, 0.0, 0.0]
+      offset: [0.005, 0.0, 0.2]
+      rpy: [0.0, 0.0, 0.0]
+
+    uart_output:
+      enabled: true
+      port: '/dev/ttyUSB0'
+      baudrate: 115200
+      cmd_vel_topic: '/cmd_vel_safe'
+
+    rmodus_estop:
+      enabled: true
+      publish_rate_hz: 50.0
+      cmd_vel_input_topic: /cmd_vel
+      cmd_vel_output_topic: /cmd_vel_safe
+      state_topic: /rmodus/e_stop
+      request_topic: /rmodus/e_stop/request
+      reset_topic: /rmodus/e_stop/reset
+      hw_active_topic: /rmodus/e_stop/hw_active
+      gpio_button:
+        enabled: false
+        pin: 16
+      platform:
+        enabled: false
+
+    flow_sensor:
+      enabled: true
+      type: 'twist'
+      topic: '/visual_flow/data'
+      frame_id: 'flow_front_link'
+      mount_parent_frame: 'base_link'
+      mount_offset: [0.3, 0.0, 0.0]
+      mount_rpy: [0.0, 0.0, 0.0]
+      spi_port: 0
+      spi_cs: 0
+      deadzone: 3
+      timer_period: 0.05
+      z_height: 0.025
+      fov_deg: 42.0
+      res_pix: 35
+
+    bumpers:
+      enabled: true
+      publish_rate_hz: 50.0
+      mcp_address: '0x20'
+      corner_pin_indices: [0, 1, 2, 3]
+      estop_request:
+        enabled: true
+        request_topic: /rmodus/e_stop/request
+        retrigger_while_contact: false
+      items:
+        - name: 'front'
+          enabled: true
+          topic: '/bumper/front'
+          frame_id: 'bumper_front_contact'
+          mount_parent_frame: 'base_link'
+          mount_offset: [0.30, 0.0, 0.0]
+          mount_rpy: [0.0, 0.0, 0.0]
+          size: [0.02, 0.30, 0.05]
+          contact_offset: [0.02, 0.0, -0.025]
+          contact_rpy: [0.0, 0.0, 0.0]
+
+    cliff_sensors:
+      enabled: true
+      address: '0x48'
+      estop_request:
+        enabled: true
+        request_topic: /rmodus/e_stop/request
+        cliff_range_threshold_m: 0.12
+        retrigger_while_cliff: false
+      items:
+        - name: 'fl'
+          enabled: true
+          topic: '/cliff/fl'
+          frame_id: 'cliff_sensor_fl_beam'
+          pin: 0
+          mount_parent_frame: 'base_link'
+          mount_offset: [0.25, 0.20, 0.0]
+          mount_rpy: [0.0, 0.0, 0.0]
+          size: [0.02, 0.02, 0.02]
+          beam_offset: [0.0, 0.0, -0.01]
+          beam_rpy: [0.0, 1.5708, 0.0]
+        - name: 'fr'
+          enabled: true
+          topic: '/cliff/fr'
+          frame_id: 'cliff_sensor_fr_beam'
+          pin: 1
+          mount_parent_frame: 'base_link'
+          mount_offset: [0.25, -0.20, 0.0]
+          mount_rpy: [0.0, 0.0, 0.0]
+          size: [0.02, 0.02, 0.02]
+          beam_offset: [0.0, 0.0, -0.01]
+          beam_rpy: [0.0, 1.5708, 0.0]
+
+    display:
+      enabled: true
+      address: '0x3C'
+      width: 128
+      height: 32
+      orientation: 0
+      brightness: 5
+      frame_id: 'display_link'
+      mount_parent_frame: 'rmodus_mount'
+      mount_offset: [0.0, 0.0, 0.0]
+      mount_rpy: [0.0, 0.0, 0.0]
+
+    fan:
+      enabled: true
+      fan_pin: 13
+      frequency: 10
+      min_to_run: 0.25
+      user_power: [0.0, 0.5, 1.0]

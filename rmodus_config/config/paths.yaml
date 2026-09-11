@@ -1,0 +1,10 @@
+/**:
+  ros__parameters:
+    rmodus_config:
+      # Default po install.py: ~/rmodus/configs (nebo $RMODUS_CONFIGS).
+      # Prázdné / omit → ten default. Web: web.configs_root v robot profilu.
+      configs_root: ""
+      # Optional absolute overrides (empty = <configs_root>/…):
+      profiles_dir: ""
+      active_file: ""
+      network_yaml: ""

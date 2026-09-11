@@ -12,65 +12,72 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from rmodus_web.webbridge.config import (
-    ADMIN_PIN,
-    HOST,
-    INDEX_HTML,
-    LOG_LEVEL,
-    OPERATOR_PIN,
-    PORT,
-    STATIC_DIR,
-    TESTING,
-    WEB_UI_NAV_TABS,
-)
+from rmodus_web.webbridge.config import INDEX_HTML, STATIC_DIR, WebConfig
 from rmodus_web.webbridge.connection_manager import ConnectionManager
 from rmodus_web.webbridge.message_dispatcher import MessageDispatcher
+from rmodus_web.webbridge.network_api import create_network_router
+from rmodus_web.webbridge.profiles_api import create_profiles_router
 from rmodus_web.webbridge.role_state import RoleState
 from rmodus_web.webbridge.ros_bridge import WebBridgeNode
+from rmodus_web.webbridge.system_api import create_system_router
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    print("Server startup: Initializing ROS... ⏳")
-    manager = ConnectionManager()
-    role_state = RoleState()
+def create_app(cfg: Optional[WebConfig] = None) -> FastAPI:
+    cfg = cfg or WebConfig()
 
-    rclpy.init()
-    loop = asyncio.get_running_loop()
-    ros_node = WebBridgeNode(loop, manager)
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        print("Server startup: Initializing ROS... ⏳")
+        manager = ConnectionManager()
+        role_state = RoleState()
 
-    ros_thread = threading.Thread(target=rclpy.spin, args=(ros_node,), daemon=True)
-    ros_thread.start()
+        if not rclpy.ok():
+            rclpy.init()
+        loop = asyncio.get_running_loop()
+        ros_node = WebBridgeNode(loop, manager, cfg)
 
-    app.state.manager = manager
-    app.state.role_state = role_state
-    app.state.ros_node = ros_node
-    app.state.dispatcher = MessageDispatcher(
-        manager=manager,
-        role_state=role_state,
-        operator_pin=OPERATOR_PIN,
-        admin_pin=ADMIN_PIN,
-        testing_mode=TESTING,
-    )
+        ros_thread = threading.Thread(target=rclpy.spin, args=(ros_node,), daemon=True)
+        ros_thread.start()
 
-    print("Server startup: ROS node running in background thread. ✅")
-    try:
-        yield
-    finally:
-        print("Server shutdown: Cleaning up ROS... ⏳")
-        ros_node.destroy_node()
-        rclpy.shutdown()
-        print("Server shutdown: ROS resources released. ✅")
+        app.state.manager = manager
+        app.state.role_state = role_state
+        app.state.ros_node = ros_node
+        app.state.web_cfg = cfg
+        app.state.dispatcher = MessageDispatcher(
+            manager=manager,
+            role_state=role_state,
+            operator_pin=cfg.operator_pin,
+            admin_pin=cfg.admin_pin,
+            testing_mode=cfg.testing,
+        )
 
+        print("Server startup: ROS node running in background thread. ✅")
+        try:
+            yield
+        finally:
+            print("Server shutdown: Cleaning up ROS... ⏳")
+            ros_node.destroy_node()
+            if rclpy.ok():
+                rclpy.shutdown()
+            print("Server shutdown: ROS resources released. ✅")
 
-def create_app() -> FastAPI:
     app = FastAPI(lifespan=lifespan)
+    app.state.web_cfg = cfg
+    app.include_router(create_profiles_router())
+    app.include_router(create_network_router())
+    app.include_router(create_system_router())
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
     @app.get("/")
     async def get_index():
         html = INDEX_HTML.read_text(encoding="utf-8")
-        ui_config = json.dumps({"nav_tabs": WEB_UI_NAV_TABS})
+        ui_config = json.dumps(
+            {
+                "nav_tabs": cfg.web_ui_nav_tabs,
+                "configs_root": cfg.configs_root,
+                "testing": cfg.testing,
+            }
+        )
         inject = f'<script>window.__RMODUS_UI_CONFIG__ = {ui_config};</script>\n    '
         marker = '<script src="static/js/app.js"></script>'
         if marker not in html:
@@ -105,7 +112,8 @@ def create_app() -> FastAPI:
     return app
 
 
-def run_server(app: FastAPI):
-    config = uvicorn.Config(app, host=HOST, port=PORT, log_level=LOG_LEVEL)
+def run_server(app: FastAPI, cfg: Optional[WebConfig] = None):
+    cfg = cfg or WebConfig()
+    config = uvicorn.Config(app, host=cfg.host, port=cfg.port, log_level=cfg.log_level)
     server = uvicorn.Server(config)
     server.run()

@@ -1,0 +1,58 @@
+# Default bumper module config.
+bumpers:
+  enabled: true
+  publish_rate_hz: 50.0
+  mcp_address: "0x20"
+  # MCP pins: FL, FR, RL, RR — faces are OR of corners
+  corner_pin_indices: [0, 1, 2, 3]
+
+  # Rising-edge Bool(true) → /rmodus/e_stop/request (central latch in rmodus_estop)
+  estop_request:
+    enabled: true
+    request_topic: /rmodus/e_stop/request
+    retrigger_while_contact: false
+
+  items:
+    - name: front
+      enabled: true
+      topic: /bumper/front
+      frame_id: bumper_front_contact
+      mount_parent_frame: base_link
+      mount_offset: [0.30, 0.0, 0.0]
+      mount_rpy: [0.0, 0.0, 0.0]
+      size: [0.02, 0.30, 0.05]
+      contact_offset: [0.02, 0.0, -0.025]
+      contact_rpy: [0.0, 0.0, 0.0]
+
+    - name: rear
+      enabled: true
+      topic: /bumper/rear
+      frame_id: bumper_rear_contact
+      mount_parent_frame: base_link
+      mount_offset: [-0.30, 0.0, 0.0]
+      mount_rpy: [0.0, 0.0, 3.14159]
+      size: [0.02, 0.30, 0.05]
+      contact_offset: [0.02, 0.0, -0.025]
+      contact_rpy: [0.0, 0.0, 0.0]
+
+    - name: left
+      enabled: true
+      topic: /bumper/left
+      frame_id: bumper_left_contact
+      mount_parent_frame: base_link
+      mount_offset: [0.0, 0.30, 0.0]
+      mount_rpy: [0.0, 0.0, 1.5708]
+      size: [0.02, 0.20, 0.05]
+      contact_offset: [0.02, 0.0, -0.025]
+      contact_rpy: [0.0, 0.0, 0.0]
+
+    - name: right
+      enabled: true
+      topic: /bumper/right
+      frame_id: bumper_right_contact
+      mount_parent_frame: base_link
+      mount_offset: [0.0, -0.30, 0.0]
+      mount_rpy: [0.0, 0.0, -1.5708]
+      size: [0.02, 0.20, 0.05]
+      contact_offset: [0.02, 0.0, -0.025]
+      contact_rpy: [0.0, 0.0, 0.0]

@@ -15,7 +15,7 @@ const JOYSTICK_SCRIPT_LOAD_TIMEOUT_MS = 4000;
 let joystickScriptPromise = null;
 let gamepadListenersInitialized = false;
 
-const NAV_TAB_ORDER = ['status', 'controls', 'map', 'sensors', 'docs', 'config', 'users'];
+const NAV_TAB_ORDER = ['status', 'controls', 'map', 'sensors', 'docs', 'config', 'settings', 'users'];
 const SIDEBAR_COLLAPSED_KEY = 'rmodus_sidebar_collapsed';
 
 function getUiNavTabs() {
@@ -64,6 +64,48 @@ function initSidebarRail() {
     applySidebarCollapsed(collapsed);
     collapseBtn?.addEventListener('click', () => applySidebarCollapsed(true));
     expandBtn?.addEventListener('click', () => applySidebarCollapsed(false));
+}
+
+async function restartRmodusService(options) {
+    const opts = options || {};
+    const btn = document.getElementById('sidebar-restart-btn');
+    if (!opts.skipConfirm) {
+        if (!confirm(
+            'Restartovat R-MODUS?\n\n'
+            + 'Načte aktivní profil a krátce odpojí web. Pokračovat?'
+        )) {
+            return;
+        }
+    }
+    if (btn) btn.disabled = true;
+    const headers = { 'Content-Type': 'application/json' };
+    try {
+        const pin = localStorage.getItem(ADMIN_TOKEN_KEY);
+        if (pin) headers['X-Admin-Pin'] = pin;
+    } catch (_e) {
+        /* ignore */
+    }
+    try {
+        const res = await fetch('/api/system/restart', { method: 'POST', headers, body: '{}' });
+        let body = null;
+        try {
+            body = await res.json();
+        } catch (_e) {
+            body = null;
+        }
+        if (!res.ok) {
+            const detail = body && (body.detail || body.message);
+            throw new Error(typeof detail === 'string' ? detail : `HTTP ${res.status}`);
+        }
+        // Úspěch: žádný alert — služba se stejně odpojí; browser dialog je zbytečný.
+    } catch (err) {
+        alert(err.message || String(err));
+        if (btn) btn.disabled = false;
+    }
+}
+
+function initSidebarRestart() {
+    document.getElementById('sidebar-restart-btn')?.addEventListener('click', restartRmodusService);
 }
 
 /* === HLAVNÍ LOGIKA APLIKACE === */
@@ -120,6 +162,18 @@ window.loadPage = async function(pageName) {
                     } else {
                         console.error('initSensorsPage function not found. Was sensors.js loaded correctly?');
                     }
+                } else if (pageName === 'config') {
+                    if (typeof window.initProfilesPage === 'function') {
+                        window.initProfilesPage();
+                    } else {
+                        console.error('initProfilesPage function not found. Was profiles.js loaded correctly?');
+                    }
+                } else if (pageName === 'settings') {
+                    if (typeof window.initSettingsPage === 'function') {
+                        window.initSettingsPage();
+                    } else {
+                        console.error('initSettingsPage function not found. Was settings.js loaded correctly?');
+                    }
                 }
             }, 50); // Krátké zpoždění pro jistotu
         });
@@ -134,6 +188,7 @@ window.loadPage = async function(pageName) {
 function bootstrapApp() {
     applyNavTabsVisibility();
     initSidebarRail();
+    initSidebarRestart();
     initWebSocket();
     updateUI();
     window.loadPage(getInitialPageName());

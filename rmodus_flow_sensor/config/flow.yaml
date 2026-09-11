@@ -1,0 +1,15 @@
+flow_sensor:
+  enabled: true
+  type: twist
+  topic: /visual_flow/data
+  frame_id: flow_front_link
+  mount_parent_frame: base_link
+  mount_offset: [0.3, 0.0, 0.0]
+  mount_rpy: [0.0, 0.0, 0.0]
+  spi_port: 0
+  spi_cs: 0
+  deadzone: 3
+  timer_period: 0.05
+  z_height: 0.025
+  fov_deg: 42.0
+  res_pix: 35

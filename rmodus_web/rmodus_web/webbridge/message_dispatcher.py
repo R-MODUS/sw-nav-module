@@ -31,6 +31,8 @@ class MessageDispatcher:
             "kick_operator": self.handle_kick_operator,
             "cmd_joy": self.handle_cmd_joy,
             "set_goal_pose": self.handle_set_goal_pose,
+            "e_stop_trigger": self.handle_e_stop_trigger,
+            "e_stop_reset": self.handle_e_stop_reset,
         }
 
     async def dispatch(self, websocket: WebSocket, data: dict, ros_node: Optional[WebBridgeNode]):
@@ -120,3 +122,29 @@ class MessageDispatcher:
             y = data.get("y", 0.0)
             yaw = data.get("yaw", 0.0)
             ros_node.publish_goal_pose(float(x), float(y), float(yaw))
+
+    async def handle_e_stop_trigger(
+        self, websocket: WebSocket, data: dict, ros_node: Optional[WebBridgeNode]
+    ):
+        del data
+        # Any connected client may request stop (safety). UI button later.
+        if ros_node:
+            ros_node.publish_e_stop_request()
+            await self.manager.send_personal_message(
+                {"type": "info", "message": "E-stop request sent."}, websocket
+            )
+
+    async def handle_e_stop_reset(
+        self, websocket: WebSocket, data: dict, ros_node: Optional[WebBridgeNode]
+    ):
+        del data
+        if websocket != self.role_state.current_operator:
+            await self.manager.send_personal_message(
+                {"type": "info", "message": "You are not the operator."}, websocket
+            )
+            return
+        if ros_node:
+            ros_node.publish_e_stop_reset()
+            await self.manager.send_personal_message(
+                {"type": "info", "message": "E-stop reset sent."}, websocket
+            )

@@ -41,6 +41,33 @@ window.initMap = function initMap() {
     mapState.ctx = canvas.getContext('2d');
     mapState.initialized = true;
 
+    const prefs = window.RmodusUiPrefs;
+    if (prefs && prefs.isEnabled()) {
+        const mapPrefs = prefs.get('map', {}) || {};
+        if (typeof mapPrefs.zoom === 'number') {
+            mapState.zoom = clamp(mapPrefs.zoom, 0.2, 6.0);
+        }
+        if (typeof mapPrefs.followRobot === 'boolean') {
+            mapState.followRobot = mapPrefs.followRobot;
+        }
+        if (typeof mapPrefs.showLidar === 'boolean') {
+            mapState.showLidar = mapPrefs.showLidar;
+        }
+    }
+
+    function saveMapPrefs() {
+        if (!prefs || !prefs.isEnabled()) {
+            return;
+        }
+        prefs.patch({
+            map: {
+                zoom: mapState.zoom,
+                followRobot: mapState.followRobot,
+                showLidar: mapState.showLidar,
+            },
+        });
+    }
+
     updateCanvasSize();
     window.addEventListener('resize', updateCanvasSize);
     canvas.addEventListener('click', handleCanvasClick);
@@ -54,6 +81,7 @@ window.initMap = function initMap() {
         zoomSlider.value = String(mapState.zoom);
         zoomSlider.addEventListener('input', (event) => {
             mapState.zoom = clamp(Number.parseFloat(event.target.value) || 1.0, 0.2, 6.0);
+            saveMapPrefs();
             requestDraw();
         });
     }
@@ -63,6 +91,7 @@ window.initMap = function initMap() {
         followRobotToggle.checked = mapState.followRobot;
         followRobotToggle.addEventListener('change', (event) => {
             mapState.followRobot = Boolean(event.target.checked);
+            saveMapPrefs();
             requestDraw();
         });
     }
@@ -75,6 +104,7 @@ window.initMap = function initMap() {
             if (!mapState.showLidar) {
                 mapState.lidarScan = null;
             }
+            saveMapPrefs();
             requestDraw();
         });
     }

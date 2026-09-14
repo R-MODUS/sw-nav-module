@@ -55,6 +55,7 @@ class WebConfig:
     e_stop_request_topic: str = "/rmodus/e_stop/request"
     e_stop_reset_topic: str = "/rmodus/e_stop/reset"
     web_ui_nav_tabs: dict = field(default_factory=lambda: dict(DEFAULT_NAV_TABS))
+    web_ui_persist_local: bool = True
     # Empty → derive from --config (…/profiles/*.yaml) or ~/rmodus/configs / $RMODUS_CONFIGS
     configs_root: str = ""
     source: str = "defaults"
@@ -180,6 +181,9 @@ def _web_config_from_block(defaults: WebConfig, block: Mapping[str, Any], source
         ),
         e_stop_reset_topic=_as_str(topics.get("e_stop_reset"), defaults.e_stop_reset_topic),
         web_ui_nav_tabs=nav_tabs,
+        web_ui_persist_local=(
+            _as_bool(ui["persist_local"]) if "persist_local" in ui else defaults.web_ui_persist_local
+        ),
         configs_root=_as_str(block.get("configs_root"), defaults.configs_root),
         source=source,
     )

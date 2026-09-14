@@ -4,8 +4,45 @@
         rootFrame: 'base_link',
         tfStale: true,
         selectedFrameId: null,
+        showLabels: false,
+        zoom: 2.0,
         robotView: null,
     };
+
+    function prefsApi() {
+        return window.RmodusUiPrefs || null;
+    }
+
+    function loadTfPrefs() {
+        const api = prefsApi();
+        if (!api || !api.isEnabled()) {
+            return;
+        }
+        const tfPrefs = api.get('tf', {}) || {};
+        if (typeof tfPrefs.showLabels === 'boolean') {
+            state.showLabels = tfPrefs.showLabels;
+        }
+        if (typeof tfPrefs.zoom === 'number') {
+            state.zoom = tfPrefs.zoom;
+        }
+        if (typeof tfPrefs.selectedFrameId === 'string' || tfPrefs.selectedFrameId === null) {
+            state.selectedFrameId = tfPrefs.selectedFrameId;
+        }
+    }
+
+    function saveTfPrefs() {
+        const api = prefsApi();
+        if (!api || !api.isEnabled()) {
+            return;
+        }
+        api.patch({
+            tf: {
+                showLabels: state.showLabels,
+                zoom: state.zoom,
+                selectedFrameId: state.selectedFrameId,
+            },
+        });
+    }
 
     function normalizeFrameId(frameId) {
         if (!frameId) {
@@ -82,6 +119,7 @@
                 if (state.robotView) {
                     state.robotView.setSelectedFrame(state.selectedFrameId);
                 }
+                saveTfPrefs();
                 renderFrameList();
             });
             list.appendChild(button);
@@ -104,24 +142,29 @@
         const zoomValue = document.getElementById('tf-zoom-value');
 
         if (showLabelsInput) {
-            state.robotView.setShowLabels(showLabelsInput.checked);
+            showLabelsInput.checked = state.showLabels;
+            state.robotView.setShowLabels(state.showLabels);
             showLabelsInput.onchange = () => {
-                state.robotView.setShowLabels(showLabelsInput.checked);
+                state.showLabels = showLabelsInput.checked;
+                state.robotView.setShowLabels(state.showLabels);
+                saveTfPrefs();
             };
         }
 
         if (zoomInput) {
-            const zoom = Number.parseFloat(zoomInput.value || '2.0');
-            state.robotView.setZoom(zoom);
+            zoomInput.value = String(state.zoom);
+            state.robotView.setZoom(state.zoom);
             if (zoomValue) {
-                zoomValue.textContent = `${zoom.toFixed(1)}×`;
+                zoomValue.textContent = `${Number(state.zoom).toFixed(1)}×`;
             }
             zoomInput.oninput = () => {
                 const currentZoom = Number.parseFloat(zoomInput.value || '2.0');
+                state.zoom = currentZoom;
                 state.robotView.setZoom(currentZoom);
                 if (zoomValue) {
                     zoomValue.textContent = `${currentZoom.toFixed(1)}×`;
                 }
+                saveTfPrefs();
             };
         }
     }
@@ -134,6 +177,7 @@
 
     window.initTfPage = function initTfPage() {
         state.robotView = null;
+        loadTfPrefs();
         renderAll();
     };
 

@@ -59,6 +59,9 @@ web:
     frame_id: base_link
 
   ui:
+    # Ukládat UI preference v prohlížeči (localStorage): záložka, sidebar,
+    # senzory, mapa, TF. false = vždy výchozí stav po refreshi.
+    persist_local: true
     # Viditelnost záložek v levém menu (true = zobrazit, false = skrýt).
     nav_tabs:
       status: true

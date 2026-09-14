@@ -1,5 +1,4 @@
 (() => {
-    const STORAGE_PINNED = 'rmodus.sensors.pinned';
     const LIVE_STALE_MS = 3000;
 
     const SENSOR_TYPE_LABELS = {
@@ -56,6 +55,10 @@
         liveTimer: null,
     };
 
+    function prefsApi() {
+        return window.RmodusUiPrefs || null;
+    }
+
     function sensorKey(sensorType, sensorId) {
         return `${sensorType}:${sensorId}`;
     }
@@ -79,27 +82,27 @@
     }
 
     function loadPrefs() {
-        try {
-            const rawPinned = localStorage.getItem(STORAGE_PINNED);
-            if (rawPinned) {
-                const parsed = JSON.parse(rawPinned);
-                if (Array.isArray(parsed)) {
-                    state.pinnedKeys = new Set(parsed.map(String));
-                    state.prefsLoaded = true;
-                }
-            }
-        } catch (_err) {
+        const api = prefsApi();
+        if (!api || !api.isEnabled()) {
+            state.prefsLoaded = false;
+            return;
+        }
+        const pinned = api.get('sensors.pinned', null);
+        if (Array.isArray(pinned)) {
+            state.pinnedKeys = new Set(pinned.map(String));
+            state.prefsLoaded = true;
+        } else {
             state.prefsLoaded = false;
         }
     }
 
     function savePinned() {
-        try {
-            localStorage.setItem(STORAGE_PINNED, JSON.stringify([...state.pinnedKeys]));
-            state.prefsLoaded = true;
-        } catch (_err) {
-            /* ignore quota / private mode */
+        const api = prefsApi();
+        if (!api || !api.isEnabled()) {
+            return;
         }
+        api.set('sensors.pinned', [...state.pinnedKeys]);
+        state.prefsLoaded = true;
     }
 
     function groupedCatalog() {
@@ -124,7 +127,9 @@
                     state.pinnedKeys.delete(key);
                 }
             });
-            savePinned();
+            if (state.prefsLoaded) {
+                savePinned();
+            }
         }
 
         if (state.expandedKey && !state.pinnedKeys.has(state.expandedKey)) {

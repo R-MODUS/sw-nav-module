@@ -74,6 +74,7 @@ def create_app(cfg: Optional[WebConfig] = None) -> FastAPI:
         ui_config = json.dumps(
             {
                 "nav_tabs": cfg.web_ui_nav_tabs,
+                "persist_local": cfg.web_ui_persist_local,
                 "configs_root": cfg.configs_root,
                 "testing": cfg.testing,
             }

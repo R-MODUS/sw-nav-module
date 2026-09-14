@@ -16,7 +16,15 @@ let joystickScriptPromise = null;
 let gamepadListenersInitialized = false;
 
 const NAV_TAB_ORDER = ['status', 'controls', 'map', 'sensors', 'tf', 'docs', 'config', 'settings', 'users'];
-const SIDEBAR_COLLAPSED_KEY = 'rmodus_sidebar_collapsed';
+
+function prefsApi() {
+    return window.RmodusUiPrefs || null;
+}
+
+function prefsEnabled() {
+    const api = prefsApi();
+    return api ? api.isEnabled() : true;
+}
 
 function getUiNavTabs() {
     const cfg = typeof window.__RMODUS_UI_CONFIG__ === 'object' && window.__RMODUS_UI_CONFIG__
@@ -36,6 +44,13 @@ function applyNavTabsVisibility() {
 
 function getInitialPageName() {
     const tabs = getUiNavTabs();
+    const api = prefsApi();
+    if (api && api.isEnabled()) {
+        const saved = api.get('lastPage', null);
+        if (saved && tabs[saved] !== false && document.getElementById(`nav-${saved}`)) {
+            return saved;
+        }
+    }
     const chosen = NAV_TAB_ORDER.find((k) => tabs[k] !== false);
     return chosen || 'status';
 }
@@ -45,10 +60,9 @@ function applySidebarCollapsed(collapsed) {
     if (root) {
         root.classList.toggle('sidebar-collapsed', collapsed);
     }
-    try {
-        localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? '1' : '0');
-    } catch (_e) {
-        /* nepřístupné localStorage např. v privátním režimu */
+    const api = prefsApi();
+    if (api && api.isEnabled()) {
+        api.set('sidebarCollapsed', Boolean(collapsed));
     }
 }
 
@@ -56,10 +70,9 @@ function initSidebarRail() {
     const expandBtn = document.getElementById('sidebar-expand-btn');
     const collapseBtn = document.getElementById('sidebar-collapse-btn');
     let collapsed = false;
-    try {
-        collapsed = localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1';
-    } catch (_e) {
-        collapsed = false;
+    const api = prefsApi();
+    if (api && api.isEnabled()) {
+        collapsed = Boolean(api.get('sidebarCollapsed', false));
     }
     applySidebarCollapsed(collapsed);
     collapseBtn?.addEventListener('click', () => applySidebarCollapsed(true));
@@ -135,6 +148,11 @@ window.loadPage = async function(pageName) {
         const html = await response.text();
         document.getElementById('main-content').innerHTML = html;
         activePage = pageName;
+
+        const prefs = prefsApi();
+        if (prefs && prefs.isEnabled()) {
+            prefs.set('lastPage', pageName);
+        }
 
         // Označení aktivního odkazu v navigaci
         document.querySelectorAll('.nav-links li, .nav-links-bottom li').forEach(li => li.classList.remove('active'));

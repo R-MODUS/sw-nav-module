@@ -18,7 +18,9 @@
 .page-shell > .panel,
 .page-shell > .status-monitor,
 .page-shell > .map-container,
-.page-shell > .sensors-grid {
+.page-shell > .sensors-grid,
+.page-shell > .sensors-layout,
+.page-shell > .tf-layout {
     width: 100%;
 }
 

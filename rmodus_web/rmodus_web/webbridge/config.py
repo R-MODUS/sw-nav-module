@@ -16,6 +16,7 @@ DEFAULT_NAV_TABS = {
     "controls": True,
     "map": True,
     "sensors": True,
+    "tf": True,
     "docs": True,
     "config": True,
     "settings": True,
@@ -42,6 +43,7 @@ class WebConfig:
     imu_topic: str = "/imu/data"
     bumper_topic_prefix: str = "/bumper/"
     cliff_topic_prefix: str = "/cliff/"
+    flow_topic_prefix: str = "/visual_flow/"
     map_topic: str = "/map"
     map_updates_topic: str = "/map_updates"
     plan_topic: str = "/received_global_plan"
@@ -74,6 +76,7 @@ LIDAR_TOPIC = "/scan"
 IMU_TOPIC = "/imu/data"
 BUMPER_TOPIC_PREFIX = "/bumper/"
 CLIFF_TOPIC_PREFIX = "/cliff/"
+FLOW_TOPIC_PREFIX = "/visual_flow/"
 MAP_TOPIC = "/map"
 MAP_UPDATES_TOPIC = "/map_updates"
 PLAN_TOPIC = "/received_global_plan"
@@ -156,6 +159,7 @@ def _web_config_from_block(defaults: WebConfig, block: Mapping[str, Any], source
         imu_topic=_as_str(topics.get("imu"), defaults.imu_topic),
         bumper_topic_prefix=_as_str(topics.get("bumper_prefix"), defaults.bumper_topic_prefix),
         cliff_topic_prefix=_as_str(topics.get("cliff_prefix"), defaults.cliff_topic_prefix),
+        flow_topic_prefix=_as_str(topics.get("flow_prefix"), defaults.flow_topic_prefix),
         map_topic=_as_str(topics.get("map"), defaults.map_topic),
         map_updates_topic=_as_str(topics.get("map_updates"), defaults.map_updates_topic),
         plan_topic=_as_str(topics.get("plan"), defaults.plan_topic),

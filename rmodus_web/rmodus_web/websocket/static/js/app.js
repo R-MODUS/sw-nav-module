@@ -15,7 +15,7 @@ const JOYSTICK_SCRIPT_LOAD_TIMEOUT_MS = 4000;
 let joystickScriptPromise = null;
 let gamepadListenersInitialized = false;
 
-const NAV_TAB_ORDER = ['status', 'controls', 'map', 'sensors', 'docs', 'config', 'settings', 'users'];
+const NAV_TAB_ORDER = ['status', 'controls', 'map', 'sensors', 'tf', 'docs', 'config', 'settings', 'users'];
 const SIDEBAR_COLLAPSED_KEY = 'rmodus_sidebar_collapsed';
 
 function getUiNavTabs() {
@@ -161,6 +161,12 @@ window.loadPage = async function(pageName) {
                         window.initSensorsPage();
                     } else {
                         console.error('initSensorsPage function not found. Was sensors.js loaded correctly?');
+                    }
+                } else if (pageName === 'tf') {
+                    if (typeof window.initTfPage === 'function') {
+                        window.initTfPage();
+                    } else {
+                        console.error('initTfPage function not found. Was tf.js loaded correctly?');
                     }
                 } else if (pageName === 'config') {
                     if (typeof window.initProfilesPage === 'function') {
@@ -374,22 +380,22 @@ function initWebSocket() {
                     if (typeof window.handleMapTfFrames === "function") {
                         window.handleMapTfFrames(data);
                     }
-                    if (typeof window.handleSensorsTfFrames === "function") {
-                        window.handleSensorsTfFrames(data);
+                    if (typeof window.handleTfPageFrames === "function") {
+                        window.handleTfPageFrames(data);
                     }
                     /* Backward compatibility for legacy pages/scripts */
                     if (
                         typeof window.handleTfFrames === "function" &&
                         window.handleTfFrames !== window.handleMapTfFrames &&
-                        window.handleTfFrames !== window.handleSensorsTfFrames
+                        window.handleTfFrames !== window.handleTfPageFrames
                     ) {
                         window.handleTfFrames(data);
                     }
                     break;
 
                 case "tf_status":
-                    if (typeof window.handleTfStatus === "function") {
-                        window.handleTfStatus(data);
+                    if (typeof window.handleTfPageStatus === "function") {
+                        window.handleTfPageStatus(data);
                     }
                     break;
 

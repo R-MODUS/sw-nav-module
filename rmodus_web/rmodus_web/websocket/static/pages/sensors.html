@@ -2,67 +2,69 @@
     <div class="page-head sensors-header">
         <div>
             <h1 class="page-title">Senzory</h1>
-            <p class="page-subtitle">Online diagnostika senzoru a TF stromu.</p>
+            <p class="page-subtitle">Vyberte senzory z katalogu a poskládejte si přehled.</p>
         </div>
         <div class="sensor-summary" id="sensor-summary">
             <div class="sensor-summary-item">
-                <span class="summary-label">TF rámy</span>
-                <strong id="tf-frame-count">0</strong>
+                <span class="summary-label">Zjištěno</span>
+                <strong id="sensor-count">0</strong>
             </div>
             <div class="sensor-summary-item">
-                <span class="summary-label">Senzory</span>
-                <strong id="sensor-count">0</strong>
+                <span class="summary-label">V přehledu</span>
+                <strong id="pinned-count">0</strong>
             </div>
         </div>
     </div>
 
-    <div class="sensors-grid">
-        <section class="sensor-card sensor-card-visual">
+    <div class="sensors-layout">
+        <aside class="sensor-card sensor-catalog-card">
             <div class="card-title-row">
                 <div>
-                    <p class="sensor-tf-lead">2D přehled TF pro kontrolu umístění senzorů.</p>
+                    <h2>Katalog</h2>
+                    <p>Zaškrtnutím přidáte senzor do přehledu.</p>
                 </div>
-                <span class="sensor-badge" id="tf-root-frame">base_link</span>
             </div>
-            <div class="tf-controls">
-                <label class="tf-control-item tf-control-check" for="tf-show-labels">
-                    <input type="checkbox" id="tf-show-labels" />
-                    <span>Zobrazit popisky TF</span>
-                </label>
-                <label class="tf-control-item" for="tf-zoom">
-                    <span>Přiblížení</span>
-                    <input type="range" id="tf-zoom" min="0.5" max="8.0" step="0.1" value="2.0" />
-                    <strong id="tf-zoom-value">2.0×</strong>
-                </label>
+            <div class="sensor-catalog-actions">
+                <button type="button" class="sensor-text-btn" id="sensor-pin-all">Vybrat vše</button>
+                <button type="button" class="sensor-text-btn" id="sensor-pin-none">Zrušit výběr</button>
             </div>
-            <canvas id="robotTfCanvas" width="640" height="520"></canvas>
-            <div class="sensor-card-footer" id="tf-status">Čekání na data TF...</div>
-        </section>
+            <div id="sensor-catalog" class="sensor-catalog"></div>
+            <div class="sensor-selection-empty" id="sensor-catalog-empty">Čekám na katalog senzorů…</div>
+        </aside>
 
-        <section class="sensor-card sensor-card-panel">
+        <section class="sensor-card sensor-dashboard-card">
             <div class="card-title-row">
                 <div>
-                    <h2>Výběr senzoru</h2>
-                    <p>Vyberte senzor a zobrazí se jeho aktuální výstup.</p>
+                    <h2>Můj přehled</h2>
+                    <p>Dlaždice živých dat. Kliknutím otevřete detail.</p>
                 </div>
             </div>
-            <div id="sensor-selector" class="sensor-selector"></div>
-            <div class="sensor-selection-empty" id="sensor-selection-empty">Zatím nebyl přijat katalog senzorů.</div>
+            <div id="sensor-dashboard" class="sensor-dashboard"></div>
+            <div class="sensor-dashboard-empty" id="sensor-dashboard-empty">
+                V katalogu vlevo zaškrtněte senzory, které chcete sledovat.
+            </div>
         </section>
+    </div>
 
-        <section class="sensor-card sensor-card-detail">
-            <div class="card-title-row">
-                <div>
-                    <h2 id="sensor-detail-title">Výstup senzoru</h2>
-                    <p id="sensor-detail-subtitle">Vyberte senzor ze seznamu výše.</p>
-                </div>
+    <section class="sensor-card sensor-detail-panel" id="sensor-detail-panel" hidden>
+        <div class="card-title-row">
+            <div>
+                <h2 id="sensor-detail-title">Detail senzoru</h2>
+                <p id="sensor-detail-subtitle"></p>
+            </div>
+            <div class="sensor-detail-actions">
                 <span class="sensor-badge" id="sensor-detail-type">—</span>
+                <button type="button" class="sensor-text-btn" id="sensor-detail-close">Zavřít</button>
             </div>
+        </div>
+        <div class="sensor-detail-body">
             <div class="sensor-detail-canvas-wrap">
                 <canvas id="sensorDetailCanvas" width="640" height="300"></canvas>
             </div>
-            <div class="sensor-metrics" id="sensor-metrics"></div>
-            <pre class="sensor-raw-output" id="sensor-raw-output">Není vybrán žádný senzor.</pre>
-        </section>
-    </div>
+            <div class="sensor-detail-side">
+                <div class="sensor-metrics" id="sensor-metrics"></div>
+                <pre class="sensor-raw-output" id="sensor-raw-output"></pre>
+            </div>
+        </div>
+    </section>
 </div>

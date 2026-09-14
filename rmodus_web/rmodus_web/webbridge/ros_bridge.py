@@ -5,7 +5,7 @@ import math
 import time
 from typing import Dict, List, Optional
 
-from geometry_msgs.msg import PoseStamped, Twist, TwistStamped
+from geometry_msgs.msg import PoseStamped, Twist, TwistStamped, TwistWithCovarianceStamped
 from nav_msgs.msg import OccupancyGrid, Path
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, QoSProfile, qos_profile_sensor_data
@@ -180,6 +180,15 @@ class WebBridgeNode(Node):
                 sensor = self._sensor_from_topic("cliff", topic_name, "sensor_msgs/Range")
                 self._register_sensor(sensor, Range, self.cliff_callback)
                 active_dynamic_topics.add(topic_name)
+            if (
+                topic_name.startswith(self.cfg.flow_topic_prefix)
+                and "geometry_msgs/msg/TwistWithCovarianceStamped" in topic_types
+            ):
+                sensor = self._sensor_from_topic(
+                    "optical_flow", topic_name, "geometry_msgs/TwistWithCovarianceStamped"
+                )
+                self._register_sensor(sensor, TwistWithCovarianceStamped, self.optical_flow_callback)
+                active_dynamic_topics.add(topic_name)
         self._prune_missing_dynamic_topics(active_dynamic_topics)
 
     def _sensor_from_topic(self, sensor_type: str, topic_name: str, message_type: str) -> SensorDefinition:
@@ -204,7 +213,7 @@ class WebBridgeNode(Node):
     def _prune_missing_dynamic_topics(self, active_dynamic_topics: set):
         to_remove = []
         for topic_name, sensor in self.sensor_definitions.items():
-            if sensor.sensor_type not in ("bumper", "cliff"):
+            if sensor.sensor_type not in ("bumper", "cliff", "optical_flow"):
                 continue
             if topic_name in active_dynamic_topics:
                 continue
@@ -234,6 +243,8 @@ class WebBridgeNode(Node):
             return any("lidar" in fr for fr in self.tf_frames)
         if st == "imu":
             return any("imu" in fr for fr in self.tf_frames)
+        if st == "optical_flow":
+            return any("flow" in fr for fr in self.tf_frames)
         return False
 
     def _broadcast_sensor_catalog(self, *, force: bool = False):
@@ -312,6 +323,24 @@ class WebBridgeNode(Node):
             "linear_acceleration_z": float(msg.linear_acceleration.z),
         }
         self._remember_sensor_message(sensor, payload)
+
+    def optical_flow_callback(self, msg: TwistWithCovarianceStamped, sensor: SensorDefinition):
+        if msg.header.frame_id:
+            self._update_sensor_frame(sensor.topic, msg.header.frame_id)
+        if not self._has_clients():
+            return
+        twist = msg.twist.twist
+        self._remember_sensor_message(
+            sensor,
+            {
+                "vx": float(twist.linear.x),
+                "vy": float(twist.linear.y),
+                "vz": float(twist.linear.z),
+                "wx": float(twist.angular.x),
+                "wy": float(twist.angular.y),
+                "wz": float(twist.angular.z),
+            },
+        )
 
     def _update_sensor_frame(self, topic_name: str, frame_id: str):
         normalized_frame = self._normalize_frame_id(frame_id)

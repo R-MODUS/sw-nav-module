@@ -36,6 +36,8 @@ web:
 
   topics:
     # Topic, které web odebírá / publikuje.
+    # lidar / imu = preferovaný „hlavní“ topic (mapa bere lidar overlay odtud).
+    # Katalog Senzory objeví všechny LaserScan / Imu s publisherem.
     lidar: /scan
     imu: /imu/data
     bumper_prefix: /bumper/        # dynamicky se hledají /bumper/<jméno>
@@ -49,7 +51,7 @@ web:
     e_stop_state: /rmodus/e_stop           # stav (true = stop aktivní)
     e_stop_request: /rmodus/e_stop/request # podnět k zastavení (UI tlačítko později)
     e_stop_reset: /rmodus/e_stop/reset     # podnět k resetu
-    discovery_rate_hz: 1.0         # perioda znovuobjevení bumper/cliff/flow topiců (Hz)
+    discovery_rate_hz: 1.0         # perioda discovery senzorů (lidar/imu/bumper/cliff/flow)
 
   cmd:
     # false = geometry_msgs/Twist, true = geometry_msgs/TwistStamped

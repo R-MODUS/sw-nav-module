@@ -27,6 +27,7 @@ bringup:
   slam: true             # slam_toolbox (optional deb)
   rf2o: false            # rf2o_laser_odometry (optional deb)
   obstacle_cloud: true
+  microros: true         # jeden micro_ros_agent na každou položku v microros.items
   # Vlastní / third-party launch soubory (lidar driver, …).
   # Chybí-li package nebo soubor → skip + log (bringup nespadne).
   # args: hodnoty "$robot_yaml" → cesta k tomuto profilu.
@@ -37,6 +38,16 @@ bringup:
   #     args:
   #       config_file: $robot_yaml
   #   - path: /home/robot/extra.launch.py
+
+# Jedna deska = jedna položka. device je seriový port ESP. Firmware bumperů: 115200.
+microros:
+  enabled: true
+  items:
+    - name: bumpers
+      enabled: true
+      transport: serial
+      device: /dev/ttyACM0
+      baudrate: 115200
 
 # Volitelný blok web: — pokud chybí, rmodus_web použije package default.
 # Plný web: je v profiles/*.yaml (example).

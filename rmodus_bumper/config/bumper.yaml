@@ -1,10 +1,7 @@
-# Default bumper module config.
+# Nárazníky. pin = index 0..7 v poli z ESP (/robot/bumpers/state), ne číslo GPIO.
 bumpers:
   enabled: true
-  publish_rate_hz: 50.0
-  mcp_address: "0x20"
-  # MCP pins: FL, FR, RL, RR — faces are OR of corners
-  corner_pin_indices: [0, 1, 2, 3]
+  state_topic: /robot/bumpers/state
 
   # Rising-edge Bool(true) → /rmodus/e_stop/request (central latch in rmodus_estop)
   estop_request:
@@ -15,6 +12,7 @@ bumpers:
   items:
     - name: front
       enabled: true
+      pin: 0
       topic: /bumper/front
       frame_id: bumper_front_contact
       mount_parent_frame: base_link
@@ -26,6 +24,7 @@ bumpers:
 
     - name: rear
       enabled: true
+      pin: 1
       topic: /bumper/rear
       frame_id: bumper_rear_contact
       mount_parent_frame: base_link
@@ -37,6 +36,7 @@ bumpers:
 
     - name: left
       enabled: true
+      pin: 2
       topic: /bumper/left
       frame_id: bumper_left_contact
       mount_parent_frame: base_link
@@ -48,6 +48,7 @@ bumpers:
 
     - name: right
       enabled: true
+      pin: 3
       topic: /bumper/right
       frame_id: bumper_right_contact
       mount_parent_frame: base_link

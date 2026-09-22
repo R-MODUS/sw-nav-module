@@ -156,10 +156,10 @@ def _named_sensor_entries(block: Any):
 
 
 def collect_sensor_names(loaded: Mapping[str, Any]) -> dict:
-    """Map LaserScan/Imu topics to display names from lidar.name / imu.name."""
+    """Map sensor topics to display names from lidar/imu/bumpers .name."""
     params = _ros_parameters(loaded)
     names: dict = {}
-    for key in ("lidar", "imu"):
+    for key in ("lidar", "imu", "bumpers"):
         for topic, name in _named_sensor_entries(params.get(key)):
             normalized = normalize_topic(topic)
             if normalized and normalized not in names:

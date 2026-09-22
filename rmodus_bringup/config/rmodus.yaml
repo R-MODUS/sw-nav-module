@@ -127,9 +127,7 @@ bringup:
 
     bumpers:
       enabled: true
-      publish_rate_hz: 50.0
-      mcp_address: '0x20'
-      corner_pin_indices: [0, 1, 2, 3]
+      state_topic: /robot/bumpers/state
       estop_request:
         enabled: true
         request_topic: /rmodus/e_stop/request
@@ -137,6 +135,7 @@ bringup:
       items:
         - name: 'front'
           enabled: true
+          pin: 0
           topic: '/bumper/front'
           frame_id: 'bumper_front_contact'
           mount_parent_frame: 'base_link'

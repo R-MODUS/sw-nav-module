@@ -16,6 +16,7 @@ DEFAULT_NAV_TABS = {
     "controls": True,
     "map": True,
     "sensors": True,
+    "tf": True,
     "docs": True,
     "config": True,
     "settings": True,
@@ -42,6 +43,7 @@ class WebConfig:
     imu_topic: str = "/imu/data"
     bumper_topic_prefix: str = "/bumper/"
     cliff_topic_prefix: str = "/cliff/"
+    flow_topic_prefix: str = "/visual_flow/"
     map_topic: str = "/map"
     map_updates_topic: str = "/map_updates"
     plan_topic: str = "/received_global_plan"
@@ -52,7 +54,10 @@ class WebConfig:
     e_stop_state_topic: str = "/rmodus/e_stop"
     e_stop_request_topic: str = "/rmodus/e_stop/request"
     e_stop_reset_topic: str = "/rmodus/e_stop/reset"
+    # topic (s úvodním /) → zobrazované jméno z lidar/imu .name v profilu
+    sensor_names: dict = field(default_factory=dict)
     web_ui_nav_tabs: dict = field(default_factory=lambda: dict(DEFAULT_NAV_TABS))
+    web_ui_persist_local: bool = True
     # Empty → derive from --config (…/profiles/*.yaml) or ~/rmodus/configs / $RMODUS_CONFIGS
     configs_root: str = ""
     source: str = "defaults"
@@ -74,6 +79,7 @@ LIDAR_TOPIC = "/scan"
 IMU_TOPIC = "/imu/data"
 BUMPER_TOPIC_PREFIX = "/bumper/"
 CLIFF_TOPIC_PREFIX = "/cliff/"
+FLOW_TOPIC_PREFIX = "/visual_flow/"
 MAP_TOPIC = "/map"
 MAP_UPDATES_TOPIC = "/map_updates"
 PLAN_TOPIC = "/received_global_plan"
@@ -105,6 +111,60 @@ def _as_float(value: Any, default: float) -> float:
         return float(value)
     except (TypeError, ValueError):
         return default
+
+
+def normalize_topic(topic: Any) -> str:
+    """Canonical topic name: leading slash, no trailing slash."""
+    text = str(topic or "").strip()
+    if not text:
+        return ""
+    return "/" + text.strip("/")
+
+
+def _enabled(value: Any, default: bool = True) -> bool:
+    if value is None:
+        return default
+    return _as_bool(value)
+
+
+def _ros_parameters(loaded: Mapping[str, Any]) -> Mapping[str, Any]:
+    block = loaded.get("/**")
+    if not isinstance(block, dict):
+        return {}
+    params = block.get("ros__parameters")
+    return params if isinstance(params, dict) else {}
+
+
+def _named_sensor_entries(block: Any):
+    """Yield (topic, name) from a flat lidar/imu block or from its items list."""
+    if not isinstance(block, dict) or not _enabled(block.get("enabled"), True):
+        return
+    items = block.get("items")
+    if isinstance(items, list):
+        for item in items:
+            if not isinstance(item, dict) or not _enabled(item.get("enabled"), True):
+                continue
+            topic = str(item.get("topic") or "").strip()
+            name = str(item.get("name") or "").strip()
+            if topic and name:
+                yield topic, name
+        return
+    topic = str(block.get("topic") or "").strip()
+    name = str(block.get("name") or "").strip()
+    if topic and name:
+        yield topic, name
+
+
+def collect_sensor_names(loaded: Mapping[str, Any]) -> dict:
+    """Map sensor topics to display names from lidar/imu/bumpers .name."""
+    params = _ros_parameters(loaded)
+    names: dict = {}
+    for key in ("lidar", "imu", "bumpers"):
+        for topic, name in _named_sensor_entries(params.get(key)):
+            normalized = normalize_topic(topic)
+            if normalized and normalized not in names:
+                names[normalized] = name
+    return names
 
 
 def _as_str(value: Any, default: str) -> str:
@@ -156,6 +216,7 @@ def _web_config_from_block(defaults: WebConfig, block: Mapping[str, Any], source
         imu_topic=_as_str(topics.get("imu"), defaults.imu_topic),
         bumper_topic_prefix=_as_str(topics.get("bumper_prefix"), defaults.bumper_topic_prefix),
         cliff_topic_prefix=_as_str(topics.get("cliff_prefix"), defaults.cliff_topic_prefix),
+        flow_topic_prefix=_as_str(topics.get("flow_prefix"), defaults.flow_topic_prefix),
         map_topic=_as_str(topics.get("map"), defaults.map_topic),
         map_updates_topic=_as_str(topics.get("map_updates"), defaults.map_updates_topic),
         plan_topic=_as_str(topics.get("plan"), defaults.plan_topic),
@@ -176,6 +237,9 @@ def _web_config_from_block(defaults: WebConfig, block: Mapping[str, Any], source
         ),
         e_stop_reset_topic=_as_str(topics.get("e_stop_reset"), defaults.e_stop_reset_topic),
         web_ui_nav_tabs=nav_tabs,
+        web_ui_persist_local=(
+            _as_bool(ui["persist_local"]) if "persist_local" in ui else defaults.web_ui_persist_local
+        ),
         configs_root=_as_str(block.get("configs_root"), defaults.configs_root),
         source=source,
     )
@@ -235,7 +299,16 @@ def load_web_config(cli_path: Optional[str] = None) -> WebConfig:
 
     cfg = _web_config_from_block(defaults, loaded["web"], str(path))
     root = resolve_configs_root(cfg, path)
-    cfg = WebConfig(**{**cfg.__dict__, "configs_root": root})
+    sensor_names = collect_sensor_names(loaded)
+    cfg = WebConfig(
+        **{
+            **cfg.__dict__,
+            "configs_root": root,
+            "sensor_names": sensor_names,
+        }
+    )
     print(f"rmodus_web: nacten blok web: z {path}")
     print(f"rmodus_web: configs_root={root}")
+    if sensor_names:
+        print(f"rmodus_web: jmena senzoru z profilu: {len(sensor_names)}")
     return cfg

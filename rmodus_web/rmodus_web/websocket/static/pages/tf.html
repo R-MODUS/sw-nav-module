@@ -1,0 +1,54 @@
+<div class="page-shell tf-page">
+    <div class="page-head tf-header">
+        <div>
+            <h1 class="page-title">TF</h1>
+            <p class="page-subtitle">2D přehled transformačního stromu robota.</p>
+        </div>
+        <div class="tf-summary">
+            <div class="tf-summary-item">
+                <span class="summary-label">Rámy</span>
+                <strong id="tf-frame-count">0</strong>
+            </div>
+            <div class="tf-summary-item">
+                <span class="summary-label">Kořen</span>
+                <strong id="tf-root-frame-summary">base_link</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="tf-layout">
+        <section class="tf-card tf-visual-card">
+            <div class="card-title-row">
+                <div>
+                    <h2>Strom rámců</h2>
+                    <p>Kontrola umístění senzorů a vazeb mezi linky.</p>
+                </div>
+                <span class="tf-badge" id="tf-root-frame">base_link</span>
+            </div>
+            <div class="tf-controls">
+                <label class="tf-control-item tf-control-check" for="tf-show-labels">
+                    <input type="checkbox" id="tf-show-labels" />
+                    <span>Popisky</span>
+                </label>
+                <label class="tf-control-item" for="tf-zoom">
+                    <span>Přiblížení</span>
+                    <input type="range" id="tf-zoom" min="0.5" max="8.0" step="0.1" value="2.0" />
+                    <strong id="tf-zoom-value">2.0×</strong>
+                </label>
+            </div>
+            <canvas id="robotTfCanvas" width="800" height="520"></canvas>
+            <div class="tf-card-footer" id="tf-status">Čekání na data TF…</div>
+        </section>
+
+        <aside class="tf-card tf-frames-card">
+            <div class="card-title-row">
+                <div>
+                    <h2>Seznam rámců</h2>
+                    <p>Kliknutím zvýrazníte rám ve stromu.</p>
+                </div>
+            </div>
+            <div id="tf-frame-list" class="tf-frame-list"></div>
+            <div class="tf-frame-empty" id="tf-frame-empty">Zatím žádné TF rámy.</div>
+        </aside>
+    </div>
+</div>

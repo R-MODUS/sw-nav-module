@@ -1,23 +1,16 @@
 .sensors-page {
     width: 100%;
-    max-width: 1220px;
+    max-width: 1280px;
 }
 
 .sensors-header {
     margin-bottom: 0;
 }
 
-.page-eyebrow {
-    margin: 0 0 8px;
-    color: var(--accent);
-    text-transform: uppercase;
-    letter-spacing: 0.14em;
-    font-size: 0.75rem;
-}
-
 .sensor-summary {
     display: flex;
     gap: 14px;
+    flex-wrap: wrap;
 }
 
 .sensor-summary-item,
@@ -29,7 +22,7 @@
 }
 
 .sensor-summary-item {
-    min-width: 120px;
+    min-width: 110px;
     padding: 16px 18px;
 }
 
@@ -45,27 +38,15 @@
     color: var(--ui-primary);
 }
 
-.sensors-grid {
+.sensors-layout {
     display: grid;
-    grid-template-columns: 1.2fr 0.8fr;
+    grid-template-columns: minmax(240px, 320px) 1fr;
     gap: 24px;
+    align-items: start;
 }
 
 .sensor-card {
     padding: 22px;
-}
-
-.sensor-card-visual,
-.sensor-card-detail {
-    min-height: 0;
-}
-
-.sensor-card-visual .card-title-row {
-    align-items: center;
-}
-
-.sensor-card-detail {
-    grid-column: 1 / span 2;
 }
 
 .card-title-row {
@@ -85,12 +66,9 @@
     color: var(--ui-text-muted);
 }
 
-.card-title-row .sensor-tf-lead {
-    margin: 0;
-    max-width: 520px;
-    font-size: 1.18rem;
+#sensor-detail-subtitle {
+    white-space: pre-line;
     line-height: 1.45;
-    color: #d7e4f7;
 }
 
 .sensor-badge {
@@ -103,41 +81,231 @@
     white-space: nowrap;
 }
 
-.tf-controls {
+.sensor-text-btn {
+    background: transparent;
+    border: 1px solid var(--ui-border);
+    color: var(--ui-text-muted);
+    border-radius: 10px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.85rem;
+    transition: 0.15s ease;
+}
+
+.sensor-text-btn:hover {
+    border-color: var(--ui-border-strong);
+    color: var(--ui-text);
+}
+
+.sensor-catalog-actions {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 14px;
+    gap: 8px;
     margin-bottom: 14px;
 }
 
-.tf-control-item {
-    display: inline-flex;
+.sensor-catalog {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-height: min(70vh, 720px);
+    overflow: auto;
+    padding-right: 4px;
+}
+
+.sensor-group h3 {
+    margin: 0 0 10px;
+    font-size: 0.92rem;
+    color: var(--ui-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.sensor-catalog-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sensor-catalog-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--ui-border);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    cursor: pointer;
+    transition: 0.15s ease;
+}
+
+.sensor-catalog-item:hover {
+    border-color: var(--ui-border-strong);
+}
+
+.sensor-catalog-item.is-pinned {
+    border-color: rgba(0, 212, 255, 0.35);
+    background: rgba(0, 212, 255, 0.08);
+}
+
+.sensor-catalog-item input {
+    margin-top: 3px;
+    accent-color: var(--accent, var(--ui-primary));
+}
+
+.sensor-catalog-meta {
+    min-width: 0;
+    flex: 1;
+}
+
+.sensor-catalog-meta strong {
+    display: block;
+    font-size: 0.95rem;
+}
+
+.sensor-catalog-meta span {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.78rem;
+    color: var(--ui-text-muted);
+    word-break: break-all;
+}
+
+.sensor-live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-top: 6px;
+    flex-shrink: 0;
+    background: #64748b;
+}
+
+.sensor-live-dot.is-live {
+    background: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
+}
+
+.sensor-selection-empty,
+.sensor-dashboard-empty,
+.sensor-metric-empty {
+    color: var(--ui-text-muted);
+    padding: 14px 0;
+}
+
+.sensor-dashboard {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 14px;
+}
+
+.sensor-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+    border: 1px solid var(--ui-border);
+    border-radius: 14px;
+    background: rgba(5, 8, 13, 0.65);
+    cursor: pointer;
+    text-align: left;
+    color: inherit;
+    font: inherit;
+    transition: 0.15s ease;
+}
+
+.sensor-tile:hover,
+.sensor-tile.is-expanded {
+    border-color: var(--ui-border-strong);
+    background: rgba(0, 212, 255, 0.08);
+}
+
+.sensor-tile-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.sensor-tile-head strong {
+    display: block;
+    font-size: 0.98rem;
+}
+
+.sensor-tile-head span {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.75rem;
+    color: var(--ui-text-muted);
+}
+
+.sensor-tile-status {
+    font-size: 0.72rem;
+    padding: 4px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--ui-border);
+    color: var(--ui-text-muted);
+    white-space: nowrap;
+}
+
+.sensor-tile-status.is-live {
+    color: #86efac;
+    border-color: rgba(34, 197, 94, 0.35);
+    background: rgba(34, 197, 94, 0.1);
+}
+
+.sensor-tile canvas {
+    width: 100%;
+    height: 140px;
+    border-radius: 10px;
+    border: 1px solid var(--ui-border);
+    background: #05080d;
+}
+
+.sensor-tile-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.sensor-tile-metric {
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.sensor-tile-metric span {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--ui-text-muted);
+    margin-bottom: 4px;
+}
+
+.sensor-tile-metric strong {
+    font-size: 0.92rem;
+}
+
+.sensor-detail-panel {
+    margin-top: 24px;
+}
+
+.sensor-detail-actions {
+    display: flex;
     align-items: center;
     gap: 10px;
-    font-size: 0.9rem;
-    color: #d7e4f7;
 }
 
-.tf-control-check {
-    cursor: pointer;
-    user-select: none;
+.sensor-detail-body {
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) minmax(260px, 0.9fr);
+    gap: 18px;
+    align-items: start;
 }
 
-.tf-control-item input[type='checkbox'] {
-    accent-color: var(--accent);
+.sensor-detail-canvas-wrap {
+    min-width: 0;
 }
 
-.tf-control-item input[type='range'] {
-    width: 150px;
-}
-
-.tf-control-item strong {
-    color: var(--ui-primary);
-    min-width: 34px;
-}
-
-#robotTfCanvas,
 #sensorDetailCanvas {
     width: 100%;
     border: 1px solid var(--ui-border);
@@ -145,60 +313,17 @@
     background: #05080d;
 }
 
-.sensor-detail-canvas-wrap {
-    width: 50%;
-    min-width: 320px;
-}
-
-.sensor-card-footer {
-    margin-top: 14px;
-    color: var(--ui-text-muted);
-}
-
-.sensor-selector {
+.sensor-detail-side {
     display: flex;
     flex-direction: column;
-    gap: 18px;
-}
-
-.sensor-selection-empty,
-.sensor-metric-empty {
-    color: var(--ui-text-muted);
-    padding: 14px 0;
-}
-
-.sensor-group h3 {
-    margin: 0 0 10px;
-}
-
-.sensor-group-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.sensor-select-button {
-    background: #10161f;
-    color: var(--text);
-    border: 1px solid var(--ui-border);
-    padding: 10px 14px;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: 0.2s ease;
-}
-
-.sensor-select-button:hover,
-.sensor-select-button.active {
-    border-color: var(--ui-border-strong);
-    background: rgba(0, 212, 255, 0.12);
-    color: white;
+    gap: 14px;
+    min-width: 0;
 }
 
 .sensor-metrics {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 12px;
-    margin: 18px 0;
 }
 
 .sensor-metric {
@@ -227,25 +352,25 @@
     border: 1px solid var(--ui-border);
     border-radius: 14px;
     color: #d7e4f7;
-    overflow-x: auto;
-    max-height: 260px;
+    overflow: auto;
+    max-height: 320px;
 }
 
 @media (max-width: 1100px) {
-    .sensors-grid {
+    .sensors-layout {
         grid-template-columns: 1fr;
     }
 
-    .sensor-card-detail {
-        grid-column: 1;
+    .sensor-catalog {
+        max-height: none;
+    }
+
+    .sensor-detail-body {
+        grid-template-columns: 1fr;
     }
 }
 
 @media (max-width: 760px) {
-    .main-view {
-        padding: 20px;
-    }
-
     .sensors-header {
         flex-direction: column;
     }
@@ -258,12 +383,6 @@
         flex: 1;
     }
 
-    .sensor-detail-canvas-wrap {
-        width: 100%;
-        min-width: 0;
-    }
-
-    #robotTfCanvas,
     #sensorDetailCanvas {
         height: auto;
     }

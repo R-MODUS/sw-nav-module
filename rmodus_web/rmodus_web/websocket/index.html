@@ -20,6 +20,7 @@
                 <li onclick="window.loadPage('controls')" id="nav-controls">🕹️ Ovládání</li>
                 <li onclick="window.loadPage('map')" id="nav-map">🗺️ Mapa</li>
                 <li onclick="window.loadPage('sensors')" id="nav-sensors">🧭 Senzory</li>
+                <li onclick="window.loadPage('tf')" id="nav-tf">🔗 TF</li>
 
 
                 <li onclick="window.loadPage('docs')" id="nav-docs">📄 Manuál</li>
@@ -44,12 +45,14 @@
     </div>
 
     <!-- Hlavní logika aplikace -->
+    <script src="static/js/ui_prefs.js"></script>
     <script src="static/js/app.js"></script>
     
     <!-- Skripty specifické pro stránky -->
     <script src="static/js/map.js"></script>
     <script src="static/js/robot_view.js"></script>
     <script src="static/js/sensors.js"></script>
+    <script src="static/js/tf.js"></script>
     <script src="static/js/profiles.js"></script>
     <script src="static/js/settings.js"></script>
 

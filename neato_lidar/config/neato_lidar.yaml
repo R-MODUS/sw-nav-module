@@ -1,6 +1,9 @@
 # Standalone Neato LDS driver (not an R-MODUS module).
-# TF mount belongs in the robot profile / description — this package only
-# publishes LaserScan with header.frame_id.
+# TF mount and the UI name (lidar.name) belong in the robot profile.
+# This package only publishes LaserScan with header.frame_id.
+#
+# Více kusů: neato_lidar.items (každá položka vlastní topic, port, frame_id).
+# name je ROS node name (písmena, čísla, _), ne popisek v UI.
 neato_lidar:
   enabled: true
   topic: /scan

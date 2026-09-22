@@ -1,103 +1,74 @@
+"""Map ESP bumper index array onto one rmodus_interface/Bumper topic per item."""
+
+from __future__ import annotations
+
 import rclpy
 from rclpy.node import Node
-import board
-import busio
-from adafruit_mcp230xx.mcp23017 import MCP23017
-import digitalio
+from rclpy.qos import DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPolicy
+from std_msgs.msg import UInt8MultiArray
 
 from rmodus_interface.msg import Bumper
 
 
 class BumperNode(Node):
-    """Read corner contacts (MCP23017) and publish face Bumper topics."""
+    """Subscribe to /robot/bumpers/state and publish /bumper/<name>."""
 
     def __init__(self):
-        super().__init__("bumper_node")
+        super().__init__("bumper_sensors_node")
 
-        self.declare_parameter("publish_rate_hz", 50.0)
-        self.declare_parameter("mcp_address", "0x20")
-        self.declare_parameter(
-            "bumper_topics",
-            ["/bumper/front", "/bumper/rear", "/bumper/left", "/bumper/right"],
-        )
-        self.declare_parameter("bumper_widths", [0.45, 0.45, 0.4, 0.4])
-        self.declare_parameter("bumper_depths", [0.03, 0.03, 0.03, 0.03])
-        self.declare_parameter("bumper_heights", [0.06, 0.06, 0.06, 0.06])
-        self.declare_parameter(
-            "bumper_frame_ids",
-            [
-                "bumper_front_contact",
-                "bumper_rear_contact",
-                "bumper_left_contact",
-                "bumper_right_contact",
-            ],
-        )
-        self.declare_parameter("corner_pin_indices", [0, 1, 2, 3])
+        self.declare_parameter("state_topic", "/robot/bumpers/state")
+        self.declare_parameter("bumper_indices", [0])
+        self.declare_parameter("bumper_topics", ["/bumper/front"])
+        self.declare_parameter("bumper_frame_ids", ["bumper_front_contact"])
+        self.declare_parameter("bumper_widths", [0.30])
+        self.declare_parameter("bumper_depths", [0.02])
+        self.declare_parameter("bumper_heights", [0.05])
 
-        rate = max(1.0, float(self.get_parameter("publish_rate_hz").value))
-        topics = list(self.get_parameter("bumper_topics").value)
-        self._widths = list(self.get_parameter("bumper_widths").value)
-        self._depths = list(self.get_parameter("bumper_depths").value)
-        self._heights = list(self.get_parameter("bumper_heights").value)
-        self._frame_ids = list(self.get_parameter("bumper_frame_ids").value)
-        pins_idx = [int(x) for x in self.get_parameter("corner_pin_indices").value]
-        mcp_address = str(self.get_parameter("mcp_address").value)
+        state_topic = str(self.get_parameter("state_topic").value)
+        self._indices = [int(v) for v in self.get_parameter("bumper_indices").value]
+        topics = [str(v) for v in self.get_parameter("bumper_topics").value]
+        self._frames = [str(v) for v in self.get_parameter("bumper_frame_ids").value]
+        self._widths = [float(v) for v in self.get_parameter("bumper_widths").value]
+        self._depths = [float(v) for v in self.get_parameter("bumper_depths").value]
+        self._heights = [float(v) for v in self.get_parameter("bumper_heights").value]
 
-        if len(topics) != 4 or len(pins_idx) != 4:
-            self.get_logger().error("bumper_topics and corner_pin_indices must have length 4")
-            return
-
-        for name, seq in (
-            ("bumper_widths", self._widths),
-            ("bumper_depths", self._depths),
-            ("bumper_heights", self._heights),
-            ("bumper_frame_ids", self._frame_ids),
+        count = len(self._indices)
+        if not count or any(
+            len(seq) != count
+            for seq in (topics, self._frames, self._widths, self._depths, self._heights)
         ):
-            if len(seq) != 4:
-                self.get_logger().error(f"{name} must have length 4")
-                return
-
-        try:
-            self.i2c = busio.I2C(board.SCL, board.SDA)
-            self.mcp = MCP23017(self.i2c, address=int(mcp_address, 16))
-        except Exception as e:
-            self.get_logger().error(f"MCP23017 init failed: {e}")
+            self.get_logger().error("bumper index/topic/frame/size lists must be the same length")
+            self._pubs = []
             return
 
-        self._pins = []
-        for idx in pins_idx:
-            pin = self.mcp.get_pin(idx)
-            pin.direction = digitalio.Direction.INPUT
-            pin.pull = digitalio.Pull.UP
-            self._pins.append(pin)
-
-        self._face_pin_groups = (
-            (0, 1),
-            (2, 3),
-            (0, 2),
-            (1, 3),
+        self._pubs = [self.create_publisher(Bumper, topics[i], 10) for i in range(count)]
+        qos = QoSProfile(
+            reliability=ReliabilityPolicy.RELIABLE,
+            durability=DurabilityPolicy.VOLATILE,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=10,
+        )
+        self.create_subscription(UInt8MultiArray, state_topic, self._on_state, qos)
+        self.get_logger().info(
+            f"Bumper bridge {state_topic} index {self._indices} → {topics}"
         )
 
-        self._pubs = [self.create_publisher(Bumper, topics[i], 10) for i in range(4)]
-        self.create_timer(1.0 / rate, self.timer_callback)
-        self.get_logger().info(f"Bumper HW → {topics} ({rate:.0f} Hz)")
-
-    def timer_callback(self):
-        if not self._pins:
+    def _on_state(self, msg: UInt8MultiArray):
+        if not self._pubs:
             return
-        corner_contact = [not p.value for p in self._pins]
         stamp = self.get_clock().now().to_msg()
-
-        for face_i, group in enumerate(self._face_pin_groups):
-            contact = any(corner_contact[j] for j in group)
-            msg = Bumper()
-            msg.header.stamp = stamp
-            msg.header.frame_id = self._frame_ids[face_i]
-            msg.contact = contact
-            msg.width = float(self._widths[face_i])
-            msg.depth = float(self._depths[face_i])
-            msg.height = float(self._heights[face_i])
-            self._pubs[face_i].publish(msg)
+        values = list(msg.data)
+        for i, index in enumerate(self._indices):
+            if index < 0 or index >= len(values):
+                continue
+            out = Bumper()
+            out.header.stamp = stamp
+            out.header.frame_id = self._frames[i]
+            out.contact = bool(int(values[index]))
+            out.width = self._widths[i]
+            out.depth = self._depths[i]
+            out.height = self._heights[i]
+            self._pubs[i].publish(out)
 
 
 def main(args=None):
@@ -109,7 +80,7 @@ def main(args=None):
         pass
     finally:
         node.destroy_node()
-    rclpy.shutdown()
+        rclpy.shutdown()
 
 
 if __name__ == "__main__":

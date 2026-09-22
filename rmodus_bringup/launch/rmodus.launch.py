@@ -32,6 +32,7 @@ _DEFAULT_BRINGUP = {
     "slam": True,
     "rf2o": False,
     "obstacle_cloud": True,
+    "microros": False,
 }
 
 # bringup flag → ROS package that must exist to include
@@ -244,6 +245,8 @@ def _build(context):
         "uart_output", "rmodus_uart_output", "uart_output.launch.py", config_file=robot_yaml
     )
     _try_feature("estop", "rmodus_estop", "estop.launch.py", config_file=robot_yaml)
+    # Agent musi bezet driv, nez ESP zacne publikovat /robot/bumpers/state.
+    _try_feature("microros", "rmodus_bringup", "microros.launch.py", config_file=robot_yaml)
     _try_feature("bumper", "rmodus_bumper", "bumper.launch.py", config_file=robot_yaml)
     _try_feature(
         "cliff", "rmodus_cliff_sensor", "cliff_sensor.launch.py", config_file=robot_yaml

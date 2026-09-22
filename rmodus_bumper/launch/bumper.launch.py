@@ -81,29 +81,15 @@ def _create(context):
     frames = [
         str(i.get("frame_id") or f"bumper_{i.get('name')}_contact") for i in items
     ]
+    # pin = index 0..7 v poli z ESP, ne číslo GPIO.
+    indices = [int(i.get("pin", n)) for n, i in enumerate(items)]
     widths = [float((i.get("size") or [0.02, 0.3, 0.05])[1]) for i in items]
     depths = [float((i.get("size") or [0.02, 0.3, 0.05])[0]) for i in items]
     heights = [float((i.get("size") or [0.02, 0.3, 0.05])[2]) for i in items]
 
-    # HW node currently expects exactly 4 faces; pad or trim to 4 for compatibility.
-    while len(topics) < 4:
-        topics.append(f"/bumper/unused_{len(topics)}")
-        frames.append(f"bumper_unused_{len(frames)}_contact")
-        widths.append(0.01)
-        depths.append(0.01)
-        heights.append(0.01)
-    topics, frames, widths, depths, heights = (
-        topics[:4],
-        frames[:4],
-        widths[:4],
-        depths[:4],
-        heights[:4],
-    )
-
     params = {
-        "publish_rate_hz": float(cfg.get("publish_rate_hz", 50.0)),
-        "mcp_address": str(cfg.get("mcp_address", "0x20")),
-        "corner_pin_indices": list(cfg.get("corner_pin_indices", [0, 1, 2, 3])),
+        "state_topic": str(cfg.get("state_topic", "/robot/bumpers/state")),
+        "bumper_indices": indices,
         "bumper_topics": topics,
         "bumper_frame_ids": frames,
         "bumper_widths": widths,
@@ -125,7 +111,6 @@ def _create(context):
 
     estop = cfg.get("estop_request") if isinstance(cfg.get("estop_request"), dict) else {}
     if bool(estop.get("enabled", True)):
-        active_topics = [t for t in topics if not t.startswith("/bumper/unused_")]
         nodes.append(
             Node(
                 package="rmodus_bumper",
@@ -137,7 +122,7 @@ def _create(context):
                         "request_topic": str(
                             estop.get("request_topic", "/rmodus/e_stop/request")
                         ),
-                        "bumper_topics": active_topics,
+                        "bumper_topics": topics,
                         "retrigger_while_contact": bool(
                             estop.get("retrigger_while_contact", False)
                         ),

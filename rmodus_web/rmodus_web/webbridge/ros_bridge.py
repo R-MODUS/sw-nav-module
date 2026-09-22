@@ -5,7 +5,7 @@ import math
 import time
 from typing import Dict, List, Optional
 
-from geometry_msgs.msg import PoseStamped, Twist, TwistStamped
+from geometry_msgs.msg import PoseStamped, Twist, TwistStamped, TwistWithCovarianceStamped
 from nav_msgs.msg import OccupancyGrid, Path
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, QoSProfile, qos_profile_sensor_data
@@ -27,7 +27,7 @@ from rmodus_interface.srv import (
     SetNetworkConfig,
 )
 
-from rmodus_web.webbridge.config import WebConfig
+from rmodus_web.webbridge.config import WebConfig, normalize_topic
 from rmodus_web.webbridge.connection_manager import ConnectionManager
 from rmodus_web.webbridge.sensor_catalog import SensorDefinition
 from rmodus_web.webbridge.tf_utils import quaternion_to_yaw
@@ -103,7 +103,6 @@ class WebBridgeNode(Node):
             "Profile/network services: /rmodus/config/* /rmodus/network/{get,set,apply}"
         )
 
-        self._create_static_sensor_subscriptions()
         self._discover_dynamic_topics()
         self._create_tf_subscriptions()
 
@@ -155,38 +154,73 @@ class WebBridgeNode(Node):
             return ""
         return frame_id.lstrip("/")
 
-    def _create_static_sensor_subscriptions(self):
-        self._register_sensor(
-            SensorDefinition(
-                "lidar", "scan", self.cfg.lidar_topic, "Hlavní LiDAR", "laser", "sensor_msgs/LaserScan"
-            ),
-            LaserScan,
-            self.scan_callback,
-        )
-        self._register_sensor(
-            SensorDefinition("imu", "imu_data", self.cfg.imu_topic, "IMU senzor", "imu_link", "sensor_msgs/Imu"),
-            Imu,
-            self.imu_callback,
-        )
+    def _topic_has_publishers(self, topic_name: str) -> bool:
+        """True jen když topic někdo skutečně publikuje (ne stačí náš vlastní subscribe)."""
+        try:
+            return bool(self.get_publishers_info_by_topic(topic_name))
+        except Exception:
+            return False
+
+    def _sensor_id_from_topic(self, topic_name: str) -> str:
+        parts = [part for part in topic_name.strip("/").split("/") if part]
+        return "_".join(parts) if parts else "sensor"
+
+    def _sensor_label_from_topic(self, _sensor_type: str, topic_name: str) -> str:
+        configured = self.cfg.sensor_names.get(normalize_topic(topic_name), "")
+        if configured:
+            return str(configured)
+        return topic_name.strip("/").replace("/", " · ").replace("_", " ")
 
     def _discover_dynamic_topics(self):
         active_dynamic_topics = set()
-        for topic_name, topic_types in self.get_topic_names_and_types():
+        topic_types_by_name = {name: types for name, types in self.get_topic_names_and_types()}
+
+        for topic_name, topic_types in topic_types_by_name.items():
+            if not self._topic_has_publishers(topic_name):
+                continue
+
+            if "sensor_msgs/msg/LaserScan" in topic_types:
+                sensor = self._sensor_from_topic("lidar", topic_name, "sensor_msgs/LaserScan")
+                self._register_sensor(sensor, LaserScan, self.scan_callback)
+                active_dynamic_topics.add(topic_name)
+                continue
+
+            if "sensor_msgs/msg/Imu" in topic_types:
+                sensor = self._sensor_from_topic("imu", topic_name, "sensor_msgs/Imu")
+                self._register_sensor(sensor, Imu, self.imu_callback)
+                active_dynamic_topics.add(topic_name)
+                continue
+
             if topic_name.startswith(self.cfg.bumper_topic_prefix) and "rmodus_interface/msg/Bumper" in topic_types:
                 sensor = self._sensor_from_topic("bumper", topic_name, "rmodus_interface/Bumper")
                 self._register_sensor(sensor, Bumper, self.bumper_callback)
                 active_dynamic_topics.add(topic_name)
+                continue
+
             if topic_name.startswith(self.cfg.cliff_topic_prefix) and "sensor_msgs/msg/Range" in topic_types:
                 sensor = self._sensor_from_topic("cliff", topic_name, "sensor_msgs/Range")
                 self._register_sensor(sensor, Range, self.cliff_callback)
                 active_dynamic_topics.add(topic_name)
+                continue
+
+            if (
+                topic_name.startswith(self.cfg.flow_topic_prefix)
+                and "geometry_msgs/msg/TwistWithCovarianceStamped" in topic_types
+            ):
+                sensor = self._sensor_from_topic(
+                    "optical_flow", topic_name, "geometry_msgs/TwistWithCovarianceStamped"
+                )
+                self._register_sensor(sensor, TwistWithCovarianceStamped, self.optical_flow_callback)
+                active_dynamic_topics.add(topic_name)
+
         self._prune_missing_dynamic_topics(active_dynamic_topics)
 
     def _sensor_from_topic(self, sensor_type: str, topic_name: str, message_type: str) -> SensorDefinition:
+        sensor_id = self._sensor_id_from_topic(topic_name)
+        label = self._sensor_label_from_topic(sensor_type, topic_name)
         suffix = topic_name.rstrip("/").split("/")[-1]
-        label = suffix.replace("_", " ").title()
         frame_suffix = suffix if suffix.endswith("_link") else f"{suffix}_link"
-        return SensorDefinition(sensor_type, suffix, topic_name, label, frame_suffix, message_type)
+        return SensorDefinition(sensor_type, sensor_id, topic_name, label, frame_suffix, message_type)
 
     def _register_sensor(self, sensor: SensorDefinition, message_cls, callback):
         if sensor.topic in self.sensor_subscriptions:
@@ -204,7 +238,7 @@ class WebBridgeNode(Node):
     def _prune_missing_dynamic_topics(self, active_dynamic_topics: set):
         to_remove = []
         for topic_name, sensor in self.sensor_definitions.items():
-            if sensor.sensor_type not in ("bumper", "cliff"):
+            if sensor.sensor_type not in ("lidar", "imu", "bumper", "cliff", "optical_flow"):
                 continue
             if topic_name in active_dynamic_topics:
                 continue
@@ -234,6 +268,8 @@ class WebBridgeNode(Node):
             return any("lidar" in fr for fr in self.tf_frames)
         if st == "imu":
             return any("imu" in fr for fr in self.tf_frames)
+        if st == "optical_flow":
+            return any("flow" in fr for fr in self.tf_frames)
         return False
 
     def _broadcast_sensor_catalog(self, *, force: bool = False):
@@ -269,7 +305,17 @@ class WebBridgeNode(Node):
             "ranges": clean_ranges,
         }
         self._remember_sensor_message(sensor, payload)
-        self._broadcast_threadsafe({"type": "lidar", **payload})
+        current = self.sensor_definitions.get(sensor.topic, sensor)
+        self._broadcast_threadsafe(
+            {
+                "type": "lidar",
+                "topic": current.topic,
+                "label": current.label,
+                "sensor_id": current.sensor_id,
+                "frame_id": current.frame_id,
+                **payload,
+            }
+        )
 
     def bumper_callback(self, msg: Bumper, sensor: SensorDefinition):
         if msg.header.frame_id:
@@ -312,6 +358,24 @@ class WebBridgeNode(Node):
             "linear_acceleration_z": float(msg.linear_acceleration.z),
         }
         self._remember_sensor_message(sensor, payload)
+
+    def optical_flow_callback(self, msg: TwistWithCovarianceStamped, sensor: SensorDefinition):
+        if msg.header.frame_id:
+            self._update_sensor_frame(sensor.topic, msg.header.frame_id)
+        if not self._has_clients():
+            return
+        twist = msg.twist.twist
+        self._remember_sensor_message(
+            sensor,
+            {
+                "vx": float(twist.linear.x),
+                "vy": float(twist.linear.y),
+                "vz": float(twist.linear.z),
+                "wx": float(twist.angular.x),
+                "wy": float(twist.angular.y),
+                "wz": float(twist.angular.z),
+            },
+        )
 
     def _update_sensor_frame(self, topic_name: str, frame_id: str):
         normalized_frame = self._normalize_frame_id(frame_id)

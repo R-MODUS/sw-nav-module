@@ -9,7 +9,10 @@ const mapState = {
     map: null, /* { frameId, width, height, resolution, origin:{x,y}, data:[] } */
     robotPose: null, /* { x, y, yaw, inMapFrame } */
     navPath: null, /* [{x,y}, ...] */
-    lidarScan: null, /* { angle_min, angle_increment, max_range, ranges } */
+    lidarScans: {}, /* topic -> { label, frame_id, ranges, seenAt, ... } */
+    lidarHidden: {}, /* topic -> true when that layer is off */
+    tfChildFrames: null,
+    poseRootFrame: null,
 
     /* View controls */
     zoom: 1.0,
@@ -26,6 +29,18 @@ const mapState = {
 
 const BASE_FRAME_PRIORITY = ['base_footprint', 'base_link'];
 const GRID_STEP_METERS = 1.0;
+const LIDAR_STALE_MS = 3000;
+/* Jedna barva (legendární oranžová) v odstínech. První je #ff9500. */
+const LIDAR_SHADES = [
+    [255, 149, 0],
+    [255, 196, 120],
+    [184, 96, 0],
+    [255, 220, 170],
+    [120, 62, 0],
+    [230, 150, 60],
+];
+
+let persistMapPrefs = () => {};
 
 /* ------------------------------
  * Initialization
@@ -41,6 +56,38 @@ window.initMap = function initMap() {
     mapState.ctx = canvas.getContext('2d');
     mapState.initialized = true;
 
+    const prefs = window.RmodusUiPrefs;
+    if (prefs && prefs.isEnabled()) {
+        const mapPrefs = prefs.get('map', {}) || {};
+        if (typeof mapPrefs.zoom === 'number') {
+            mapState.zoom = clamp(mapPrefs.zoom, 0.2, 6.0);
+        }
+        if (typeof mapPrefs.followRobot === 'boolean') {
+            mapState.followRobot = mapPrefs.followRobot;
+        }
+        if (typeof mapPrefs.showLidar === 'boolean') {
+            mapState.showLidar = mapPrefs.showLidar;
+        }
+        if (mapPrefs.lidarHidden && typeof mapPrefs.lidarHidden === 'object') {
+            mapState.lidarHidden = { ...mapPrefs.lidarHidden };
+        }
+    }
+
+    function saveMapPrefs() {
+        if (!prefs || !prefs.isEnabled()) {
+            return;
+        }
+        prefs.patch({
+            map: {
+                zoom: mapState.zoom,
+                followRobot: mapState.followRobot,
+                showLidar: mapState.showLidar,
+                lidarHidden: mapState.lidarHidden,
+            },
+        });
+    }
+    persistMapPrefs = saveMapPrefs;
+
     updateCanvasSize();
     window.addEventListener('resize', updateCanvasSize);
     canvas.addEventListener('click', handleCanvasClick);
@@ -54,6 +101,7 @@ window.initMap = function initMap() {
         zoomSlider.value = String(mapState.zoom);
         zoomSlider.addEventListener('input', (event) => {
             mapState.zoom = clamp(Number.parseFloat(event.target.value) || 1.0, 0.2, 6.0);
+            saveMapPrefs();
             requestDraw();
         });
     }
@@ -63,6 +111,7 @@ window.initMap = function initMap() {
         followRobotToggle.checked = mapState.followRobot;
         followRobotToggle.addEventListener('change', (event) => {
             mapState.followRobot = Boolean(event.target.checked);
+            saveMapPrefs();
             requestDraw();
         });
     }
@@ -72,12 +121,24 @@ window.initMap = function initMap() {
         showLidarToggle.checked = mapState.showLidar;
         showLidarToggle.addEventListener('change', (event) => {
             mapState.showLidar = Boolean(event.target.checked);
-            if (!mapState.showLidar) {
-                mapState.lidarScan = null;
+            if (mapState.showLidar) {
+                mapState.lidarHidden = {};
             }
+            saveMapPrefs();
+            renderLidarLayerList();
             requestDraw();
         });
     }
+
+    if (!mapState.lidarPruneTimer) {
+        mapState.lidarPruneTimer = window.setInterval(() => {
+            if (pruneLidarScans()) {
+                renderLidarLayerList();
+                requestDraw();
+            }
+        }, 1000);
+    }
+    renderLidarLayerList();
 
     const cancelButton = document.getElementById('btnCancelGoal');
     if (cancelButton) {
@@ -171,16 +232,25 @@ window.updateRobotPosition = function updateRobotPosition(x, y, yaw) {
 };
 
 window.updateLidarScan = function updateLidarScan(payload) {
-    if (!mapState.showLidar) return;
     if (!payload || !Array.isArray(payload.ranges)) return;
 
-    mapState.lidarScan = {
+    const topic = String(payload.topic || payload.sensor_id || '/scan');
+    const label = String(payload.label || '').trim() || topic.replace(/^\/+/, '');
+    mapState.lidarScans[topic] = {
+        topic,
+        label,
+        frame_id: normalizeFrameId(payload.frame_id),
         angle_min: Number(payload.angle_min) || 0,
         angle_increment: Number(payload.angle_increment) || 0,
         max_range: Number(payload.max_range) || 0,
         ranges: payload.ranges,
+        seenAt: Date.now(),
     };
-    requestDraw();
+    pruneLidarScans();
+    renderLidarLayerList();
+    if (mapState.showLidar) {
+        requestDraw();
+    }
 };
 
 window.handleMapTfFrames = function handleMapTfFrames(payload) {
@@ -189,6 +259,7 @@ window.handleMapTfFrames = function handleMapTfFrames(payload) {
 
     const mapFrameId = normalizeFrameId(mapState.map?.frameId) || 'map';
     const childFrameMap = buildChildFrameMap(frames);
+    mapState.tfChildFrames = childFrameMap;
 
     for (const baseFrameId of BASE_FRAME_PRIORITY) {
         const baseFrame = childFrameMap.get(baseFrameId);
@@ -196,6 +267,7 @@ window.handleMapTfFrames = function handleMapTfFrames(payload) {
 
         const resolved = resolvePoseToRoot(childFrameMap, baseFrameId, mapFrameId);
         if (resolved) {
+            mapState.poseRootFrame = mapFrameId;
             setRobotPose(resolved.x, resolved.y, resolved.yaw, true);
             return;
         }
@@ -205,6 +277,7 @@ window.handleMapTfFrames = function handleMapTfFrames(payload) {
     for (const baseFrameId of BASE_FRAME_PRIORITY) {
         const baseFrame = childFrameMap.get(baseFrameId);
         if (baseFrame) {
+            mapState.poseRootFrame = baseFrame.parent || null;
             setRobotPose(baseFrame.x, baseFrame.y, baseFrame.yaw, false);
             return;
         }
@@ -567,37 +640,130 @@ function getDrawRobotPose() {
     return null;
 }
 
+function sortedLidarTopics() {
+    return Object.keys(mapState.lidarScans).sort();
+}
+
+function lidarShadeCss(index) {
+    const [red, green, blue] = LIDAR_SHADES[index % LIDAR_SHADES.length];
+    return `rgba(${red}, ${green}, ${blue}, 0.92)`;
+}
+
+function pruneLidarScans() {
+    const now = Date.now();
+    let removed = false;
+    Object.keys(mapState.lidarScans).forEach((topic) => {
+        const seenAt = mapState.lidarScans[topic]?.seenAt || 0;
+        if (now - seenAt > LIDAR_STALE_MS) {
+            delete mapState.lidarScans[topic];
+            removed = true;
+        }
+    });
+    return removed;
+}
+
+function renderLidarLayerList() {
+    const list = document.getElementById('lidarLayerList');
+    if (!list) return;
+
+    const topics = sortedLidarTopics();
+    const visible = mapState.showLidar && topics.length > 0;
+    list.hidden = !visible;
+    if (!visible) {
+        list.dataset.signature = '';
+        list.replaceChildren();
+        return;
+    }
+
+    const signature = topics
+        .map((topic, index) => `${topic}|${mapState.lidarScans[topic].label}|${index}|${mapState.lidarHidden[topic] ? 1 : 0}`)
+        .join('\n');
+    if (list.dataset.signature === signature) return;
+    list.dataset.signature = signature;
+    list.replaceChildren();
+
+    topics.forEach((topic, index) => {
+        const scan = mapState.lidarScans[topic];
+        const row = document.createElement('label');
+        row.className = 'map-toggle lidar-layer';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = !mapState.lidarHidden[topic];
+        checkbox.addEventListener('change', () => {
+            if (checkbox.checked) {
+                delete mapState.lidarHidden[topic];
+            } else {
+                mapState.lidarHidden[topic] = true;
+            }
+            list.dataset.signature = '';
+            persistMapPrefs();
+            renderLidarLayerList();
+            requestDraw();
+        });
+
+        const name = document.createElement('span');
+        name.className = 'lidar-layer-name';
+        name.textContent = scan.label || topic;
+        name.title = topic;
+
+        const swatch = document.createElement('span');
+        swatch.className = 'legend-color';
+        swatch.style.background = lidarShadeCss(index);
+
+        row.append(checkbox, name, swatch);
+        list.appendChild(row);
+    });
+}
+
+function lidarDrawPose(scan) {
+    const frameId = normalizeFrameId(scan?.frame_id);
+    const frames = mapState.tfChildFrames;
+    const root = mapState.poseRootFrame;
+    if (frames && root && frameId) {
+        const resolved = resolvePoseToRoot(frames, frameId, root);
+        if (resolved) return resolved;
+    }
+    return getDrawRobotPose();
+}
+
 function drawLidarScan(ctx, viewport) {
     if (!mapState.showLidar) return;
-    const scan = mapState.lidarScan;
-    if (!scan || !Array.isArray(scan.ranges) || scan.ranges.length === 0) return;
 
-    const pose = getDrawRobotPose();
-    if (!pose) return;
-
-    const yaw = Number.isFinite(pose.yaw) ? pose.yaw : 0;
-    const angleMin = Number(scan.angle_min) || 0;
-    const angleInc = Number(scan.angle_increment) || 0;
-    const maxRange = Number(scan.max_range) || 0;
+    const topics = sortedLidarTopics();
     const pointSize = Math.max(2, Math.min(3, viewport.ppm * 0.04));
 
-    ctx.fillStyle = 'rgba(255, 149, 0, 0.9)';
-    for (let i = 0; i < scan.ranges.length; i += 1) {
-        const range = Number(scan.ranges[i]);
-        if (!Number.isFinite(range) || range <= 0) continue;
-        if (maxRange > 0 && range > maxRange) continue;
+    topics.forEach((topic, index) => {
+        if (mapState.lidarHidden[topic]) return;
+        const scan = mapState.lidarScans[topic];
+        if (!scan || !Array.isArray(scan.ranges) || scan.ranges.length === 0) return;
 
-        const angle = yaw + angleMin + i * angleInc;
-        const worldX = pose.x + Math.cos(angle) * range;
-        const worldY = pose.y + Math.sin(angle) * range;
-        const screen = worldToScreen(worldX, worldY, viewport);
-        ctx.fillRect(
-            Math.round(screen.x - pointSize / 2),
-            Math.round(screen.y - pointSize / 2),
-            pointSize,
-            pointSize
-        );
-    }
+        const pose = lidarDrawPose(scan);
+        if (!pose) return;
+
+        const yaw = Number.isFinite(pose.yaw) ? pose.yaw : 0;
+        const angleMin = Number(scan.angle_min) || 0;
+        const angleInc = Number(scan.angle_increment) || 0;
+        const maxRange = Number(scan.max_range) || 0;
+
+        ctx.fillStyle = lidarShadeCss(index);
+        for (let i = 0; i < scan.ranges.length; i += 1) {
+            const range = Number(scan.ranges[i]);
+            if (!Number.isFinite(range) || range <= 0) continue;
+            if (maxRange > 0 && range > maxRange) continue;
+
+            const angle = yaw + angleMin + i * angleInc;
+            const worldX = pose.x + Math.cos(angle) * range;
+            const worldY = pose.y + Math.sin(angle) * range;
+            const screen = worldToScreen(worldX, worldY, viewport);
+            ctx.fillRect(
+                Math.round(screen.x - pointSize / 2),
+                Math.round(screen.y - pointSize / 2),
+                pointSize,
+                pointSize
+            );
+        }
+    });
 }
 
 function drawRobot(ctx, viewport) {

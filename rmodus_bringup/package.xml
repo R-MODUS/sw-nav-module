@@ -49,6 +49,7 @@
       <optional_depend>nav2_bringup</optional_depend>
       <optional_depend>ros_gz_sim</optional_depend>
       <optional_depend>ros_gz_bridge</optional_depend>
+      <optional_depend>micro_ros_agent</optional_depend>
     </rmodus>
   </export>
 </package>

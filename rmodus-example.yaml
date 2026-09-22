@@ -1,0 +1,315 @@
+# ============================================================
+# R-MODUS: vzor robot profilu (bez Wi-Fi secretů)
+# ============================================================
+# Po instalaci: ~/rmodus/configs/profiles/rmodus-example.yaml
+# Aktivní jméno: ~/rmodus/configs/active  (např. rmodus-example)
+# Síť zvlášť:   ~/rmodus/configs/network.yaml
+# Reinstall vždy přepíše tento soubor — vlastní úpravy dej do jiného profilu.
+#
+# Bloky:  meta, boot, web, bringup, /** (hardware / ROS 2)
+#
+# bringup: + /** musí sedět s:
+#   rmodus_bringup/config/rmodus.yaml
+# ============================================================
+
+meta:
+  source: rmodus-example
+  title: Example Profile
+  last_used: ""
+  copied_at: ""
+
+# ============================================================
+# rmodus.service — false = entrypoint skončí bez bringupu
+# (síť: boot.network v network.yaml)
+# ============================================================
+
+boot:
+  rmodus: true
+
+# ============================================================
+
+web:
+  # true  = vývojový režim (bez přihlašování)
+  testing: true
+
+  # Kořen configs (install.py → ~/rmodus/configs). Prázdné = odvoď z --config
+  # (…/profiles/*.yaml) nebo $RMODUS_CONFIGS / ~/rmodus/configs.
+  configs_root: ""
+
+  host: "0.0.0.0"
+  port: 8080
+  log_level: info
+
+  operator_pin: "1234"
+  admin_pin: "4321"
+
+  tf:
+    root_frame: base_link
+    broadcast_rate_hz: 5.0
+    stale_timeout_sec: 3.0
+    resubscribe_cooldown_sec: 8.0
+
+  topics:
+    # Mapa kreslí každý LaserScan. Jména v UI jsou lidar.name / imu.name.
+    lidar: /scan
+    imu: /imu/data
+    bumper_prefix: /bumper/
+    cliff_prefix: /cliff/
+    map: /map
+    map_updates: /map_updates
+    plan: /received_global_plan
+    goal_pose: /goal_pose
+    cmd_vel: /cmd_vel
+    e_stop_state: /rmodus/e_stop
+    e_stop_request: /rmodus/e_stop/request
+    e_stop_reset: /rmodus/e_stop/reset
+    discovery_rate_hz: 1.0
+
+  cmd:
+    use_twist_stamped: false
+    frame_id: base_link
+
+  ui:
+    nav_tabs:
+      status: true
+      controls: true
+      map: true
+      sensors: true
+      docs: true
+      config: true   # záložka Profily
+      settings: true # Network settings
+      users: true
+
+# ============================================================
+# Níže: stejné jako rmodus_bringup/config/rmodus.yaml
+# ============================================================
+
+bringup:
+  config: true
+  chassis: false
+  description: false
+  hw: false
+  uart_output: false
+  estop: false
+  bumper: false
+  cliff: false
+  flow: false
+  display: false
+  web: true
+  rviz: false
+  sim: false
+  localization: false
+  navigation: false
+  slam: false
+  rf2o: false
+  obstacle_cloud: false
+  microros: false
+  # Vlastní launchy (drivers mimo jádro). Chybí-li balík → skip + log.
+  extras:
+    - package: neato_lidar
+      launch: neato_lidar.launch.py
+      args:
+        config_file: $robot_yaml
+  # - path: ~/my_stack/extra.launch.py
+
+# Jedna deska = jedna položka a jeden agent. device je seriový port (ls /dev/ttyACM* /dev/ttyUSB*).
+# Firmware bumperů běží na 115200. Další desku přidej jako další item s jiným device.
+microros:
+  enabled: true
+  items:
+    - name: bumpers
+      enabled: true
+      transport: serial
+      device: /dev/ttyACM0
+      baudrate: 115200
+    - name: extra
+      enabled: false
+      transport: serial
+      device: /dev/ttyACM1
+      baudrate: 115200
+
+/**:
+  ros__parameters:
+
+    base_link:
+      mass: 5.0
+      size: [0.5, 0.5, 0.1]
+      offset_z: 0.0973
+
+    rmodus_module:
+      mass: 2.0
+      size: [0.25, 0.25, 0.05]
+      offset_x: 0.032
+      offset_y: 0.0
+      offset_z: 0.02
+
+    wheel_odom:
+      enabled: true
+      type: 'odom'
+      topic: '/odom'
+
+    lidar_odom:
+      enabled: false
+      type: 'odom'
+      topic: '/odom_lidar'
+
+    # Jméno v UI = name. Web ho spáruje s objeveným topicem.
+    # Jeden senzor může zůstat plochý blok (name + topic), víc kusů = items.
+    # Description URDF zatím čte jen plochý blok, ne items.
+    imu:
+      enabled: true
+      items:
+        - name: 'IMU'
+          enabled: true
+          type: 'imu'
+          topic: '/imu/data'
+          frame_id: 'imu_link'
+          mount_parent_frame: 'rmodus_mount'
+          mount_offset: [0.0, 0.0, 0.0]
+          mount_rpy: [0.0, 0.0, 0.0]
+          offset: [0.056, 0.020, 0.015]
+          rpy: [0.0, 0.0, 0.0]
+
+    lidar:
+      enabled: true
+      items:
+        - name: 'Přední LiDAR'
+          enabled: true
+          topic: '/scan'
+          frame_id: 'lidar_beam'
+          mount_parent_frame: 'rmodus_mount'
+          mount_offset: [0.0, 0.0, 0.0]
+          mount_rpy: [0.0, 0.0, 0.0]
+          offset: [0.005, 0.0, 0.2]
+          rpy: [0.0, 0.0, 0.0]
+        # - name: 'Zadní LiDAR'
+        #   enabled: true
+        #   topic: '/scan_rear'
+        #   frame_id: 'lidar_rear_beam'
+        #   mount_parent_frame: 'rmodus_mount'
+        #   mount_offset: [0.0, 0.0, 0.0]
+        #   mount_rpy: [0.0, 0.0, 3.1416]
+        #   offset: [-0.08, 0.0, 0.2]
+        #   rpy: [0.0, 0.0, 0.0]
+
+    # Driver (bringup.extras → neato_lidar). Jméno v UI je lidar.items[].name.
+    # Druhý kus: neato_lidar.items, každý s vlastním port, topic a frame_id.
+    # name tady je jméno ROS uzlu (neato_front), ne popisek v UI.
+    neato_lidar:
+      enabled: true
+      topic: /scan
+      frame_id: lidar_beam
+      port: /dev/ttyUSB0
+      motor_pin: 19
+      frequency: 10000
+      target_rpm: 300
+      range_min: 0.05
+      range_max: 5.0
+
+    uart_output:
+      enabled: true
+      port: '/dev/ttyUSB0'
+      baudrate: 115200
+      cmd_vel_topic: '/cmd_vel_safe'
+
+    rmodus_estop:
+      enabled: true
+      publish_rate_hz: 50.0
+      cmd_vel_input_topic: /cmd_vel
+      cmd_vel_output_topic: /cmd_vel_safe
+      state_topic: /rmodus/e_stop
+      request_topic: /rmodus/e_stop/request
+      reset_topic: /rmodus/e_stop/reset
+      hw_active_topic: /rmodus/e_stop/hw_active
+      gpio_button:
+        enabled: false
+        pin: 16
+      platform:
+        enabled: false
+
+    flow_sensor:
+      enabled: true
+      type: 'twist'
+      topic: '/visual_flow/data'
+      frame_id: 'flow_front_link'
+      mount_parent_frame: 'base_link'
+      mount_offset: [0.3, 0.0, 0.0]
+      mount_rpy: [0.0, 0.0, 0.0]
+      spi_port: 0
+      spi_cs: 0
+      deadzone: 3
+      timer_period: 0.05
+      z_height: 0.025
+      fov_deg: 42.0
+      res_pix: 35
+
+    bumpers:
+      enabled: true
+      state_topic: /robot/bumpers/state
+      estop_request:
+        enabled: true
+        request_topic: /rmodus/e_stop/request
+        retrigger_while_contact: false
+      items:
+        - name: 'front'
+          enabled: true
+          pin: 0
+          topic: '/bumper/front'
+          frame_id: 'bumper_front_contact'
+          mount_parent_frame: 'base_link'
+          mount_offset: [0.30, 0.0, 0.0]
+          mount_rpy: [0.0, 0.0, 0.0]
+          size: [0.02, 0.30, 0.05]
+          contact_offset: [0.02, 0.0, -0.025]
+          contact_rpy: [0.0, 0.0, 0.0]
+
+    cliff_sensors:
+      enabled: true
+      address: '0x48'
+      estop_request:
+        enabled: true
+        request_topic: /rmodus/e_stop/request
+        cliff_range_threshold_m: 0.12
+        retrigger_while_cliff: false
+      items:
+        - name: 'fl'
+          enabled: true
+          topic: '/cliff/fl'
+          frame_id: 'cliff_sensor_fl_beam'
+          pin: 0
+          mount_parent_frame: 'base_link'
+          mount_offset: [0.25, 0.20, 0.0]
+          mount_rpy: [0.0, 0.0, 0.0]
+          size: [0.02, 0.02, 0.02]
+          beam_offset: [0.0, 0.0, -0.01]
+          beam_rpy: [0.0, 1.5708, 0.0]
+        - name: 'fr'
+          enabled: true
+          topic: '/cliff/fr'
+          frame_id: 'cliff_sensor_fr_beam'
+          pin: 1
+          mount_parent_frame: 'base_link'
+          mount_offset: [0.25, -0.20, 0.0]
+          mount_rpy: [0.0, 0.0, 0.0]
+          size: [0.02, 0.02, 0.02]
+          beam_offset: [0.0, 0.0, -0.01]
+          beam_rpy: [0.0, 1.5708, 0.0]
+
+    display:
+      enabled: true
+      address: '0x3C'
+      width: 128
+      height: 32
+      orientation: 0
+      brightness: 5
+      frame_id: 'display_link'
+      mount_parent_frame: 'rmodus_mount'
+      mount_offset: [0.0, 0.0, 0.0]
+      mount_rpy: [0.0, 0.0, 0.0]
+
+    fan:
+      enabled: true
+      fan_pin: 13
+      frequency: 10
+      min_to_run: 0.25
+      user_power: [0.0, 0.5, 1.0]

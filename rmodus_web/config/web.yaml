@@ -36,7 +36,8 @@ web:
 
   topics:
     # Topic, které web odebírá / publikuje.
-    # lidar / imu = preferovaný „hlavní“ topic (mapa bere lidar overlay odtud).
+    # Mapa kreslí každý LaserScan (lidar: tady výběr neurčuje).
+    # Jména bere z lidar.name / imu.name podle topicu.
     # Katalog Senzory objeví všechny LaserScan / Imu s publisherem.
     lidar: /scan
     imu: /imu/data

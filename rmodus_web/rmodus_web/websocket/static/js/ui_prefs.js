@@ -18,6 +18,7 @@
             zoom: 1.0,
             followRobot: false,
             showLidar: false,
+            lidarHidden: {},
         },
         tf: {
             showLabels: false,

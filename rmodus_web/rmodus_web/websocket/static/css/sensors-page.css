@@ -66,6 +66,11 @@
     color: var(--ui-text-muted);
 }
 
+#sensor-detail-subtitle {
+    white-space: pre-line;
+    line-height: 1.45;
+}
+
 .sensor-badge {
     border: 1px solid var(--ui-border-strong);
     background: rgba(0, 212, 255, 0.12);

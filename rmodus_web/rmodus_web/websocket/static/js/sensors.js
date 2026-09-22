@@ -509,7 +509,11 @@
         const payload = state.latestByKey[state.expandedKey] || null;
         panel.hidden = false;
         title.textContent = sensor.label;
-        subtitle.textContent = `${sensor.topic}${sensor.frame_id ? ` · rám ${sensor.frame_id}` : ''}`;
+        const detailLines = [`topic: ${sensor.topic}`];
+        if (sensor.frame_id) {
+            detailLines.push(`frame: ${sensor.frame_id}`);
+        }
+        subtitle.textContent = detailLines.join('\n');
         badge.textContent = sensorTypeDisplayName(sensor.sensor_type);
         rawOutput.textContent = payload ? JSON.stringify(payload, null, 2) : 'Čekání na první zprávu…';
         renderMetrics(sensor, payload);

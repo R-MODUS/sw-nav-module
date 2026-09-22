@@ -54,6 +54,8 @@ class WebConfig:
     e_stop_state_topic: str = "/rmodus/e_stop"
     e_stop_request_topic: str = "/rmodus/e_stop/request"
     e_stop_reset_topic: str = "/rmodus/e_stop/reset"
+    # topic (s úvodním /) → zobrazované jméno z lidar/imu .name v profilu
+    sensor_names: dict = field(default_factory=dict)
     web_ui_nav_tabs: dict = field(default_factory=lambda: dict(DEFAULT_NAV_TABS))
     web_ui_persist_local: bool = True
     # Empty → derive from --config (…/profiles/*.yaml) or ~/rmodus/configs / $RMODUS_CONFIGS
@@ -109,6 +111,60 @@ def _as_float(value: Any, default: float) -> float:
         return float(value)
     except (TypeError, ValueError):
         return default
+
+
+def normalize_topic(topic: Any) -> str:
+    """Canonical topic name: leading slash, no trailing slash."""
+    text = str(topic or "").strip()
+    if not text:
+        return ""
+    return "/" + text.strip("/")
+
+
+def _enabled(value: Any, default: bool = True) -> bool:
+    if value is None:
+        return default
+    return _as_bool(value)
+
+
+def _ros_parameters(loaded: Mapping[str, Any]) -> Mapping[str, Any]:
+    block = loaded.get("/**")
+    if not isinstance(block, dict):
+        return {}
+    params = block.get("ros__parameters")
+    return params if isinstance(params, dict) else {}
+
+
+def _named_sensor_entries(block: Any):
+    """Yield (topic, name) from a flat lidar/imu block or from its items list."""
+    if not isinstance(block, dict) or not _enabled(block.get("enabled"), True):
+        return
+    items = block.get("items")
+    if isinstance(items, list):
+        for item in items:
+            if not isinstance(item, dict) or not _enabled(item.get("enabled"), True):
+                continue
+            topic = str(item.get("topic") or "").strip()
+            name = str(item.get("name") or "").strip()
+            if topic and name:
+                yield topic, name
+        return
+    topic = str(block.get("topic") or "").strip()
+    name = str(block.get("name") or "").strip()
+    if topic and name:
+        yield topic, name
+
+
+def collect_sensor_names(loaded: Mapping[str, Any]) -> dict:
+    """Map LaserScan/Imu topics to display names from lidar.name / imu.name."""
+    params = _ros_parameters(loaded)
+    names: dict = {}
+    for key in ("lidar", "imu"):
+        for topic, name in _named_sensor_entries(params.get(key)):
+            normalized = normalize_topic(topic)
+            if normalized and normalized not in names:
+                names[normalized] = name
+    return names
 
 
 def _as_str(value: Any, default: str) -> str:
@@ -243,7 +299,16 @@ def load_web_config(cli_path: Optional[str] = None) -> WebConfig:
 
     cfg = _web_config_from_block(defaults, loaded["web"], str(path))
     root = resolve_configs_root(cfg, path)
-    cfg = WebConfig(**{**cfg.__dict__, "configs_root": root})
+    sensor_names = collect_sensor_names(loaded)
+    cfg = WebConfig(
+        **{
+            **cfg.__dict__,
+            "configs_root": root,
+            "sensor_names": sensor_names,
+        }
+    )
     print(f"rmodus_web: nacten blok web: z {path}")
     print(f"rmodus_web: configs_root={root}")
+    if sensor_names:
+        print(f"rmodus_web: jmena senzoru z profilu: {len(sensor_names)}")
     return cfg

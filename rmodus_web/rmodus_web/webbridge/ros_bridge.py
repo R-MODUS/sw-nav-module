@@ -27,7 +27,7 @@ from rmodus_interface.srv import (
     SetNetworkConfig,
 )
 
-from rmodus_web.webbridge.config import WebConfig
+from rmodus_web.webbridge.config import WebConfig, normalize_topic
 from rmodus_web.webbridge.connection_manager import ConnectionManager
 from rmodus_web.webbridge.sensor_catalog import SensorDefinition
 from rmodus_web.webbridge.tf_utils import quaternion_to_yaw
@@ -165,11 +165,10 @@ class WebBridgeNode(Node):
         parts = [part for part in topic_name.strip("/").split("/") if part]
         return "_".join(parts) if parts else "sensor"
 
-    def _sensor_label_from_topic(self, sensor_type: str, topic_name: str) -> str:
-        if sensor_type == "lidar" and topic_name == self.cfg.lidar_topic:
-            return "Hlavní LiDAR"
-        if sensor_type == "imu" and topic_name == self.cfg.imu_topic:
-            return "IMU senzor"
+    def _sensor_label_from_topic(self, _sensor_type: str, topic_name: str) -> str:
+        configured = self.cfg.sensor_names.get(normalize_topic(topic_name), "")
+        if configured:
+            return str(configured)
         return topic_name.strip("/").replace("/", " · ").replace("_", " ")
 
     def _discover_dynamic_topics(self):
@@ -306,9 +305,17 @@ class WebBridgeNode(Node):
             "ranges": clean_ranges,
         }
         self._remember_sensor_message(sensor, payload)
-        # Map overlay bere jen „hlavní“ LiDAR z web.topics.lidar
-        if sensor.topic == self.cfg.lidar_topic:
-            self._broadcast_threadsafe({"type": "lidar", **payload})
+        current = self.sensor_definitions.get(sensor.topic, sensor)
+        self._broadcast_threadsafe(
+            {
+                "type": "lidar",
+                "topic": current.topic,
+                "label": current.label,
+                "sensor_id": current.sensor_id,
+                "frame_id": current.frame_id,
+                **payload,
+            }
+        )
 
     def bumper_callback(self, msg: Bumper, sensor: SensorDefinition):
         if msg.header.frame_id:

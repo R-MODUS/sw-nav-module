@@ -124,6 +124,41 @@
     box-shadow: 0 0 10px rgba(255, 149, 0, 0.45);
 }
 
+.lidar-layer-list {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+    margin: 0;
+    padding-left: 22px;
+    box-sizing: border-box;
+}
+
+.lidar-layer-list[hidden] {
+    display: none;
+}
+
+.lidar-layer {
+    min-width: 0;
+    max-width: 100%;
+    justify-content: flex-start;
+}
+
+.lidar-layer .legend-color {
+    width: 10px;
+    height: 10px;
+    box-shadow: none;
+    margin-left: 2px;
+}
+
+.lidar-layer-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .map-toggle-group {
     display: flex;
     flex-direction: column;

@@ -25,14 +25,18 @@ web:
   admin_pin: "4321"
 
   tf:
-    # Kořenový rámec 2D stromu TF posílaného do prohlížeče
+    # Výchozí pevný rámec 3D scény TF (a kořen 2D stromu pro mapu)
     root_frame: base_link
-    # Jak často posílat snímek TF do UI (Hz)
+    # Jak často posílat snímek TF do UI (Hz) – tf_2d i tf_3d
     broadcast_rate_hz: 5.0
     # Po této době bez /tf se strom považuje za zastaralý (s)
     stale_timeout_sec: 3.0
     # Minimální pauza mezi opětovným přihlášením k /tf při výpadku (s)
     resubscribe_cooldown_sec: 8.0
+    # Stáří jednoho dynamického rámu: nad warn žlutý, nad error červený (s).
+    # Statické rámy (/tf_static) nikdy nezastarávají.
+    frame_stale_warn_sec: 0.5
+    frame_stale_error_sec: 2.0
 
   topics:
     # Topic, které web odebírá / publikuje.
@@ -54,6 +58,12 @@ web:
     e_stop_reset: /rmodus/e_stop/reset     # podnět k resetu
     discovery_rate_hz: 1.0         # perioda discovery senzorů (lidar/imu/bumper/cliff/flow)
 
+  sensors:
+    # Max. frekvence živých dat jednoho senzoru do záložky Senzory (Hz).
+    # Bumpery a cliff se neomezují (binární hrany). 0 = bez omezení.
+    # Mapa dostává LaserScan dál v plné frekvenci.
+    max_rate_hz: 10.0
+
   cmd:
     # false = geometry_msgs/Twist, true = geometry_msgs/TwistStamped
     use_twist_stamped: false
@@ -74,3 +84,12 @@ web:
       config: true
       settings: true
       users: true
+    # Widget "Robot Blueprint" (Senzory): obrys robota z base_link.size, segmenty
+    # z bumpers/cliff_sensors (mount_offset, size, name). SVG id segmentu = name.
+    # segments: přemapování / doplnění — svg_id: topic, nebo svg_id: {topic, x, y, yaw, size, threshold}
+    # (x/y/yaw v base_link, m/rad; threshold = cliff dosah [m], nad ním je "schod").
+    blueprint:
+      segments: {}
+      # segments:
+      #   bumper_front: /bumper/front
+      #   bumper_left: { topic: /platform/bumper_l, x: 0.0, y: 0.26, yaw: 1.5708, size: [0.02, 0.3] }

@@ -25,13 +25,23 @@ def _node_name(label: str, used: set) -> str:
     return candidate
 
 
+def _as_bool(value, default: bool = True) -> bool:
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value != 0
+    return str(value).strip().lower() in ("1", "true", "yes", "on", "y")
+
+
 def _entry(raw: dict, index: int) -> dict | None:
     if not isinstance(raw, dict):
         return None
     name = str(raw.get("name") or f"device_{index}").strip() or f"device_{index}"
     return {
         "name": name,
-        "enabled": bool(raw.get("enabled", True)),
+        "enabled": _as_bool(raw.get("enabled", True)),
         "transport": str(raw.get("transport") or "serial").strip(),
         "device": str(raw.get("device") or "").strip(),
         "baudrate": int(raw.get("baudrate") or 115200),
@@ -46,7 +56,7 @@ def _load_items(path: str) -> tuple[bool, list]:
     block = root.get("microros", {}) if isinstance(root, dict) else {}
     if not isinstance(block, dict):
         return True, []
-    enabled = bool(block.get("enabled", True))
+    enabled = _as_bool(block.get("enabled", True))
     raw_items = block.get("items")
     items = []
     if isinstance(raw_items, list):
@@ -67,14 +77,16 @@ def _load_items(path: str) -> tuple[bool, list]:
 def _create(context):
     path = os.path.expanduser(str(LaunchConfiguration("config_file").perform(context)).strip())
     enabled, items = _load_items(path)
+    actions = [LogInfo(msg=f"[rmodus] microros config_file={path or '(prazdne)'}")]
     if not enabled:
-        return [LogInfo(msg="[rmodus] skip 'microros': microros.enabled is false")]
+        actions.append(LogInfo(msg="[rmodus] skip 'microros': microros.enabled is false"))
+        return actions
     if not items:
-        return [LogInfo(msg="[rmodus] skip 'microros': no devices in microros.items")]
+        actions.append(LogInfo(msg="[rmodus] skip 'microros': no devices in microros.items"))
+        return actions
     if not package_available("micro_ros_agent"):
-        return [skip_log("microros", "micro_ros_agent")]
-
-    actions = []
+        actions.append(skip_log("microros", "micro_ros_agent"))
+        return actions
     used_names = set()
     used_devices = set()
     for item in items:

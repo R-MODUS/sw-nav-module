@@ -28,16 +28,17 @@ bringup:
   rf2o: false            # rf2o_laser_odometry (optional deb)
   obstacle_cloud: true
   microros: true         # jeden micro_ros_agent na každou položku v microros.items
-  # Vlastní / third-party launch soubory (lidar driver, …).
-  # Chybí-li package nebo soubor → skip + log (bringup nespadne).
-  # args: hodnoty "$robot_yaml" → cesta k tomuto profilu.
+  # Vlastní / third-party launch. enabled: false = nespoustet, definice zustava.
+  # Chybí-li package nebo soubor → skip + log. args "$robot_yaml" → tento profil.
   extras: []
   # extras:
-  #   - package: neato_lidar
+  #   - enabled: true
+  #     package: neato_lidar
   #     launch: neato_lidar.launch.py
   #     args:
   #       config_file: $robot_yaml
-  #   - path: /home/robot/extra.launch.py
+  #   - enabled: false
+  #     path: /home/robot/extra.launch.py
 
 # Jedna deska = jedna položka. device je seriový port ESP. Firmware bumperů: 115200.
 microros:

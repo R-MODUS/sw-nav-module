@@ -184,7 +184,7 @@ window.loadPage = async function(pageName) {
                     if (typeof window.initTfPage === 'function') {
                         window.initTfPage();
                     } else {
-                        console.error('initTfPage function not found. Was tf.js loaded correctly?');
+                        console.error('initTfPage function not found. Was tf/index.js loaded correctly?');
                     }
                 } else if (pageName === 'config') {
                     if (typeof window.initProfilesPage === 'function') {
@@ -398,16 +398,18 @@ function initWebSocket() {
                     if (typeof window.handleMapTfFrames === "function") {
                         window.handleMapTfFrames(data);
                     }
-                    if (typeof window.handleTfPageFrames === "function") {
-                        window.handleTfPageFrames(data);
-                    }
                     /* Backward compatibility for legacy pages/scripts */
                     if (
                         typeof window.handleTfFrames === "function" &&
-                        window.handleTfFrames !== window.handleMapTfFrames &&
-                        window.handleTfFrames !== window.handleTfPageFrames
+                        window.handleTfFrames !== window.handleMapTfFrames
                     ) {
                         window.handleTfFrames(data);
+                    }
+                    break;
+
+                case "tf_3d":
+                    if (typeof window.handleTfPage3d === "function") {
+                        window.handleTfPage3d(data);
                     }
                     break;
 

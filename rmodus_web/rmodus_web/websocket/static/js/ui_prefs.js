@@ -13,6 +13,9 @@
         sidebarCollapsed: false,
         sensors: {
             pinned: null, // null = ještě neuloženo (auto-pin all)
+            gridLayout: {}, // { "<počet sloupců>": { tileId: {x, y, w, h} } }, 12sloupcová mřížka
+            catalogCollapsed: false,
+            groupsCollapsed: {},
         },
         map: {
             zoom: 1.0,

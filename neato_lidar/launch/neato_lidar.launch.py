@@ -4,7 +4,7 @@ import re
 import yaml
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, OpaqueFunction
+from launch.actions import DeclareLaunchArgument, LogInfo, OpaqueFunction
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
@@ -30,27 +30,26 @@ def _load_configs(path: str) -> list:
 
     Prefers neato_lidar (flat or items). A flat lidar: block is the legacy
     fallback. lidar.items is a sensor list for the web/TF, not this driver.
-    Missing block → one node with parameter defaults.
+    Missing block in an existing file → no node (do not invent /dev/ttyUSB0).
+    Missing file → one node with parameter defaults (standalone launch).
     """
     if not path or not os.path.isfile(path):
         return [{}]
     with open(path, "r", encoding="utf-8") as f:
         root = yaml.safe_load(f) or {}
     if not isinstance(root, dict):
-        return [{}]
+        return []
     if isinstance(root.get("neato_lidar"), dict):
         return _expand(root["neato_lidar"])
     params = root.get("/**", {}).get("ros__parameters", {})
     if not isinstance(params, dict):
-        return [{}]
+        return []
     if isinstance(params.get("neato_lidar"), dict):
         return _expand(params["neato_lidar"])
     lidar = params.get("lidar")
     if isinstance(lidar, dict) and not isinstance(lidar.get("items"), list):
         return _expand(lidar)
-    if isinstance(lidar, dict):
-        return []
-    return [{}]
+    return []
 
 
 def _node_params(cfg: dict) -> dict:
@@ -91,7 +90,17 @@ def _create(context):
 
     used_names = set()
     nodes = []
-    for index, cfg in enumerate(_load_configs(path)):
+    configs = _load_configs(path)
+    if not configs:
+        return [
+            LogInfo(
+                msg=(
+                    f"[neato_lidar] v {path} neni blok neato_lidar "
+                    "(ani plochý lidar bez items) — uzel nespoustim"
+                )
+            )
+        ]
+    for index, cfg in enumerate(configs):
         nodes.append(
             Node(
                 package="neato_lidar",

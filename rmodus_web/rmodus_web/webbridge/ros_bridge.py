@@ -6,7 +6,7 @@ import time
 from typing import Dict, List, Optional
 
 from geometry_msgs.msg import PoseStamped, Twist, TwistStamped, TwistWithCovarianceStamped
-from nav_msgs.msg import OccupancyGrid, Path
+from nav_msgs.msg import OccupancyGrid, Odometry, Path
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, QoSProfile, qos_profile_sensor_data
 from sensor_msgs.msg import Imu, LaserScan, Range
@@ -30,7 +30,11 @@ from rmodus_interface.srv import (
 from rmodus_web.webbridge.config import WebConfig, normalize_topic
 from rmodus_web.webbridge.connection_manager import ConnectionManager
 from rmodus_web.webbridge.sensor_catalog import SensorDefinition
-from rmodus_web.webbridge.tf_utils import quaternion_to_yaw
+from rmodus_web.webbridge.tf_utils import TfFrameRecord, quaternion_to_yaw
+
+DYNAMIC_SENSOR_TYPES = ("lidar", "imu", "bumper", "cliff", "optical_flow", "odom")
+# Binární senzory: hrana se nesmí ztratit throttlingem (sparkline ukazuje zákmity).
+UNTHROTTLED_SENSOR_TYPES = ("bumper", "cliff")
 
 
 class WebBridgeNode(Node):
@@ -47,7 +51,7 @@ class WebBridgeNode(Node):
         self.root_frame = self.cfg.tf_root_frame
         self.sensor_definitions: Dict[str, SensorDefinition] = {}
         self.latest_sensor_messages: Dict[str, dict] = {}
-        self.tf_frames: Dict[str, dict] = {}
+        self.tf_frames: Dict[str, TfFrameRecord] = {}
         self.sensor_subscriptions: Dict[str, object] = {}
         self.latest_map = None
         self.latest_plan = None
@@ -59,6 +63,9 @@ class WebBridgeNode(Node):
         self.tf_last_resubscribe_time = 0.0
         self.tf_is_stale = True
         self._last_sensor_catalog_signature = None
+        self._sensor_last_sent: Dict[str, float] = {}
+        max_rate = float(self.cfg.sensor_max_rate_hz or 0.0)
+        self._sensor_min_period = 1.0 / max_rate if max_rate > 0 else 0.0
         self._profile_service_timeout_sec = 8.0
 
         self.cmd_use_twist_stamped = bool(self.cfg.cmd_use_twist_stamped)
@@ -146,7 +153,13 @@ class WebBridgeNode(Node):
             "frame_id": current_sensor.frame_id,
             "payload": payload,
         }
-        self.latest_sensor_messages[f"{current_sensor.sensor_type}:{current_sensor.sensor_id}"] = message
+        key = f"{current_sensor.sensor_type}:{current_sensor.sensor_id}"
+        self.latest_sensor_messages[key] = message
+        if self._sensor_min_period > 0 and current_sensor.sensor_type not in UNTHROTTLED_SENSOR_TYPES:
+            now = time.monotonic()
+            if now - self._sensor_last_sent.get(key, 0.0) < self._sensor_min_period:
+                return
+            self._sensor_last_sent[key] = now
         self._broadcast_threadsafe(message)
 
     def _normalize_frame_id(self, frame_id: str) -> str:
@@ -212,6 +225,12 @@ class WebBridgeNode(Node):
                 )
                 self._register_sensor(sensor, TwistWithCovarianceStamped, self.optical_flow_callback)
                 active_dynamic_topics.add(topic_name)
+                continue
+
+            if "nav_msgs/msg/Odometry" in topic_types:
+                sensor = self._sensor_from_topic("odom", topic_name, "nav_msgs/Odometry")
+                self._register_sensor(sensor, Odometry, self.odom_callback)
+                active_dynamic_topics.add(topic_name)
 
         self._prune_missing_dynamic_topics(active_dynamic_topics)
 
@@ -238,7 +257,7 @@ class WebBridgeNode(Node):
     def _prune_missing_dynamic_topics(self, active_dynamic_topics: set):
         to_remove = []
         for topic_name, sensor in self.sensor_definitions.items():
-            if sensor.sensor_type not in ("lidar", "imu", "bumper", "cliff", "optical_flow"):
+            if sensor.sensor_type not in DYNAMIC_SENSOR_TYPES:
                 continue
             if topic_name in active_dynamic_topics:
                 continue
@@ -252,6 +271,7 @@ class WebBridgeNode(Node):
             if sensor is None:
                 continue
             self.latest_sensor_messages.pop(f"{sensor.sensor_type}:{sensor.sensor_id}", None)
+            self._sensor_last_sent.pop(f"{sensor.sensor_type}:{sensor.sensor_id}", None)
 
         if to_remove:
             self._broadcast_sensor_catalog(force=True)
@@ -262,6 +282,9 @@ class WebBridgeNode(Node):
             return True
         fid = self._normalize_frame_id(sensor_dict.get("frame_id") or "")
         st = sensor_dict.get("sensor_type") or ""
+        if st == "odom":
+            # Odometrie publikuje v rodičovském rámci (odom), ten není child ve stromu.
+            return True
         if fid and fid in self.tf_frames:
             return True
         if st == "lidar":
@@ -377,6 +400,28 @@ class WebBridgeNode(Node):
             },
         )
 
+    def odom_callback(self, msg: Odometry, sensor: SensorDefinition):
+        if msg.header.frame_id:
+            self._update_sensor_frame(sensor.topic, msg.header.frame_id)
+        if not self._has_clients():
+            return
+        pose = msg.pose.pose
+        twist = msg.twist.twist
+        self._remember_sensor_message(
+            sensor,
+            {
+                "x": float(pose.position.x),
+                "y": float(pose.position.y),
+                "yaw": quaternion_to_yaw(
+                    pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w
+                ),
+                "vx": float(twist.linear.x),
+                "vy": float(twist.linear.y),
+                "wz": float(twist.angular.z),
+                "child_frame_id": self._normalize_frame_id(msg.child_frame_id),
+            },
+        )
+
     def _update_sensor_frame(self, topic_name: str, frame_id: str):
         normalized_frame = self._normalize_frame_id(frame_id)
         if not normalized_frame:
@@ -403,14 +448,17 @@ class WebBridgeNode(Node):
                 continue
             translation = transform.transform.translation
             rotation = transform.transform.rotation
-            self.tf_frames[normalized_child_frame_id] = {
-                "parent_frame_id": normalized_parent_frame_id,
-                "child_frame_id": normalized_child_frame_id,
-                "x": float(translation.x),
-                "y": float(translation.y),
-                "yaw": quaternion_to_yaw(rotation.x, rotation.y, rotation.z, rotation.w),
-                "is_static": is_static,
-            }
+            record = self.tf_frames.get(normalized_child_frame_id)
+            if record is None:
+                record = TfFrameRecord(normalized_child_frame_id)
+                self.tf_frames[normalized_child_frame_id] = record
+            record.update(
+                normalized_parent_frame_id,
+                (float(translation.x), float(translation.y), float(translation.z)),
+                (float(rotation.x), float(rotation.y), float(rotation.z), float(rotation.w)),
+                is_static,
+                now,
+            )
 
     def publish_tf_snapshot(self):
         if not self._has_clients() or not self.tf_frames:
@@ -418,6 +466,7 @@ class WebBridgeNode(Node):
         self._broadcast_threadsafe(
             {"type": "tf_2d", "root_frame": self.root_frame, "frames": self.get_tf_frames_snapshot()}
         )
+        self._broadcast_threadsafe(self.get_tf_3d_message())
         self._broadcast_sensor_catalog()
 
     def check_tf_health(self):
@@ -493,7 +542,18 @@ class WebBridgeNode(Node):
         self.publisher_cmd_vel.publish(msg)
 
     def get_tf_frames_snapshot(self) -> List[dict]:
-        return sorted(self.tf_frames.values(), key=lambda frame: frame["child_frame_id"])
+        return [self.tf_frames[key].as_2d() for key in sorted(self.tf_frames)]
+
+    def get_tf_3d_message(self) -> dict:
+        now = time.monotonic()
+        dead_after = self.cfg.tf_frame_stale_error_sec
+        return {
+            "type": "tf_3d",
+            "root_frame": self.root_frame,
+            "stale_warn_sec": self.cfg.tf_frame_stale_warn_sec,
+            "stale_error_sec": self.cfg.tf_frame_stale_error_sec,
+            "frames": [self.tf_frames[key].as_3d(now, dead_after) for key in sorted(self.tf_frames)],
+        }
 
     def get_initial_messages(self) -> List[dict]:
         messages = [{"type": "sensor_catalog", "sensors": self.get_sensor_catalog()}]
@@ -509,6 +569,7 @@ class WebBridgeNode(Node):
         )
         if self.tf_frames:
             messages.append({"type": "tf_2d", "root_frame": self.root_frame, "frames": self.get_tf_frames_snapshot()})
+            messages.append(self.get_tf_3d_message())
         if self.latest_map:
             messages.append(self.latest_map)
         if self.latest_plan:

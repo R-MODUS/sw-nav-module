@@ -1,70 +1,54 @@
 <div class="page-shell sensors-page">
-    <div class="page-head sensors-header">
-        <div>
-            <h1 class="page-title">Senzory</h1>
-            <p class="page-subtitle">Vyberte senzory z katalogu a poskládejte si přehled.</p>
+    <header class="sx-head">
+        <h1 class="page-title">Senzory</h1>
+        <div class="sx-chips">
+            <span class="sx-chip">Zjištěno <strong data-role="count">0</strong></span>
+            <span class="sx-chip">V přehledu <strong data-role="pinned-count">0</strong></span>
         </div>
-        <div class="sensor-summary" id="sensor-summary">
-            <div class="sensor-summary-item">
-                <span class="summary-label">Zjištěno</span>
-                <strong id="sensor-count">0</strong>
-            </div>
-            <div class="sensor-summary-item">
-                <span class="summary-label">V přehledu</span>
-                <strong id="pinned-count">0</strong>
-            </div>
+        <div class="sx-head-actions">
+            <button type="button" class="sx-btn" data-role="reset-layout" title="Vrátit výchozí rozmístění dlaždic">Obnovit rozložení</button>
         </div>
-    </div>
+    </header>
 
-    <div class="sensors-layout">
-        <aside class="sensor-card sensor-catalog-card">
-            <div class="card-title-row">
-                <div>
-                    <h2>Katalog</h2>
-                    <p>Zaškrtnutím přidáte senzor do přehledu.</p>
+    <div class="sx-layout">
+        <aside class="sx-catalog" data-role="catalog" aria-label="Katalog senzorů">
+            <div class="sx-catalog-head">
+                <span class="sx-catalog-title">Katalog</span>
+                <button type="button" class="sx-icon-btn" data-role="collapse" title="Sbalit / rozbalit katalog" aria-label="Sbalit katalog">‹</button>
+            </div>
+            <div class="sx-catalog-tools">
+                <input type="search" class="sx-search" data-role="search" placeholder="Hledat senzor / topic…" aria-label="Hledat senzor">
+                <div class="sx-catalog-actions">
+                    <button type="button" class="sx-link-btn" data-role="pin-all">Vše</button>
+                    <button type="button" class="sx-link-btn" data-role="pin-none">Nic</button>
                 </div>
             </div>
-            <div class="sensor-catalog-actions">
-                <button type="button" class="sensor-text-btn" id="sensor-pin-all">Vybrat vše</button>
-                <button type="button" class="sensor-text-btn" id="sensor-pin-none">Zrušit výběr</button>
-            </div>
-            <div id="sensor-catalog" class="sensor-catalog"></div>
-            <div class="sensor-selection-empty" id="sensor-catalog-empty">Čekám na katalog senzorů…</div>
+            <div class="sx-tree" data-role="tree"></div>
         </aside>
 
-        <section class="sensor-card sensor-dashboard-card">
-            <div class="card-title-row">
-                <div>
-                    <h2>Můj přehled</h2>
-                    <p>Dlaždice živých dat. Kliknutím otevřete detail.</p>
-                </div>
-            </div>
-            <div id="sensor-dashboard" class="sensor-dashboard"></div>
-            <div class="sensor-dashboard-empty" id="sensor-dashboard-empty">
-                V katalogu vlevo zaškrtněte senzory, které chcete sledovat.
-            </div>
+        <section class="sx-dashboard" aria-label="Přehled senzorů">
+            <div class="grid-stack sx-grid" data-role="grid"></div>
+            <p class="sx-grid-empty" data-role="grid-empty">V katalogu vlevo zaškrtněte senzory, které chcete sledovat.</p>
         </section>
     </div>
 
-    <section class="sensor-card sensor-detail-panel" id="sensor-detail-panel" hidden>
-        <div class="card-title-row">
-            <div>
-                <h2 id="sensor-detail-title">Detail senzoru</h2>
-                <p id="sensor-detail-subtitle"></p>
+    <aside class="sx-drawer" data-role="drawer" aria-hidden="true" aria-label="Detail senzoru">
+        <header class="sx-drawer-head">
+            <span class="sx-dot" data-role="dot"></span>
+            <h2 data-role="title">Detail</h2>
+            <span class="sx-badge" data-role="badge"></span>
+            <button type="button" class="sx-icon-btn" data-role="close" title="Zavřít (Esc)" aria-label="Zavřít detail">×</button>
+        </header>
+        <div class="sx-drawer-body">
+            <dl class="sx-meta" data-role="meta"></dl>
+            <div class="sx-drawer-visual" data-role="visual"></div>
+            <div class="sx-children" data-role="children" hidden></div>
+            <div class="sx-metrics" data-role="metrics"></div>
+            <div class="sx-raw-head">
+                <span>Surová data</span>
+                <button type="button" class="sx-link-btn" data-role="copy">Kopírovat</button>
             </div>
-            <div class="sensor-detail-actions">
-                <span class="sensor-badge" id="sensor-detail-type">—</span>
-                <button type="button" class="sensor-text-btn" id="sensor-detail-close">Zavřít</button>
-            </div>
+            <pre class="sx-raw" data-role="raw"></pre>
         </div>
-        <div class="sensor-detail-body">
-            <div class="sensor-detail-canvas-wrap">
-                <canvas id="sensorDetailCanvas" width="640" height="300"></canvas>
-            </div>
-            <div class="sensor-detail-side">
-                <div class="sensor-metrics" id="sensor-metrics"></div>
-                <pre class="sensor-raw-output" id="sensor-raw-output"></pre>
-            </div>
-        </div>
-    </section>
+    </aside>
 </div>

@@ -39,6 +39,9 @@ class WebConfig:
     sensor_discovery_rate_hz: float = 1.0
     tf_stale_timeout_sec: float = 3.0
     tf_resubscribe_cooldown_sec: float = 8.0
+    # Per-frame stáří dynamického TF: žlutá / červená v UI (statické rámy nikdy)
+    tf_frame_stale_warn_sec: float = 0.5
+    tf_frame_stale_error_sec: float = 2.0
     lidar_topic: str = "/scan"
     imu_topic: str = "/imu/data"
     bumper_topic_prefix: str = "/bumper/"
@@ -56,6 +59,14 @@ class WebConfig:
     e_stop_reset_topic: str = "/rmodus/e_stop/reset"
     # topic (s úvodním /) → zobrazované jméno z lidar/imu .name v profilu
     sensor_names: dict = field(default_factory=dict)
+    # {"footprint": [x, y] | None, "mounts": {topic: {kind, name, x, y, yaw, size, threshold}},
+    #  "segments": {svg_id: {topic, x?, y?, yaw?, size?, threshold?}}}
+    sensor_layout: dict = field(default_factory=dict)
+    # {"base_link": {"size": [x, y, z]} | None,
+    #  "rmodus_module": {"size": [x, y, z], "offset": [x, y, z], "rpy": [r, p, y]} | None}
+    robot_model: dict = field(default_factory=dict)
+    # Max. frekvence sensor_data zpráv do UI na jeden senzor (0 = bez omezení)
+    sensor_max_rate_hz: float = 10.0
     web_ui_nav_tabs: dict = field(default_factory=lambda: dict(DEFAULT_NAV_TABS))
     web_ui_persist_local: bool = True
     # Empty → derive from --config (…/profiles/*.yaml) or ~/rmodus/configs / $RMODUS_CONFIGS
@@ -135,36 +146,132 @@ def _ros_parameters(loaded: Mapping[str, Any]) -> Mapping[str, Any]:
     return params if isinstance(params, dict) else {}
 
 
-def _named_sensor_entries(block: Any):
-    """Yield (topic, name) from a flat lidar/imu block or from its items list."""
+NAMED_SENSOR_BLOCKS = ("lidar", "imu", "bumpers", "cliff_sensors", "flow_sensor", "wheel_odom", "lidar_odom")
+MOUNTED_SENSOR_BLOCKS = {"bumpers": "bumper", "cliff_sensors": "cliff"}
+FOOTPRINT_PARENT_FRAMES = ("", "base_link", "base_footprint")
+
+
+def _sensor_items(block: Any):
+    """Yield enabled sensor dicts from a flat block or from its items list."""
     if not isinstance(block, dict) or not _enabled(block.get("enabled"), True):
         return
     items = block.get("items")
     if isinstance(items, list):
         for item in items:
-            if not isinstance(item, dict) or not _enabled(item.get("enabled"), True):
-                continue
-            topic = str(item.get("topic") or "").strip()
-            name = str(item.get("name") or "").strip()
-            if topic and name:
-                yield topic, name
+            if isinstance(item, dict) and _enabled(item.get("enabled"), True):
+                yield item
         return
-    topic = str(block.get("topic") or "").strip()
-    name = str(block.get("name") or "").strip()
-    if topic and name:
-        yield topic, name
+    yield block
+
+
+def _named_sensor_entries(block: Any):
+    """Yield (topic, name) from a flat sensor block or from its items list."""
+    for item in _sensor_items(block):
+        topic = str(item.get("topic") or "").strip()
+        name = str(item.get("name") or "").strip()
+        if topic and name:
+            yield topic, name
 
 
 def collect_sensor_names(loaded: Mapping[str, Any]) -> dict:
-    """Map sensor topics to display names from lidar/imu/bumpers .name."""
+    """Map sensor topics to display names from <sensor block>.name / items[].name."""
     params = _ros_parameters(loaded)
     names: dict = {}
-    for key in ("lidar", "imu", "bumpers"):
+    for key in NAMED_SENSOR_BLOCKS:
         for topic, name in _named_sensor_entries(params.get(key)):
             normalized = normalize_topic(topic)
             if normalized and normalized not in names:
                 names[normalized] = name
     return names
+
+
+def _float_list(value: Any, length: int) -> Optional[list]:
+    if not isinstance(value, (list, tuple)) or len(value) < length:
+        return None
+    try:
+        return [float(v) for v in value[:length]]
+    except (TypeError, ValueError):
+        return None
+
+
+def collect_sensor_layout(loaded: Mapping[str, Any]) -> dict:
+    """Robot footprint + 2D mount poses (in base_link) of bumpers / cliff sensors for the UI."""
+    params = _ros_parameters(loaded)
+    footprint = _float_list(_mapping(params.get("base_link")).get("size"), 2)
+    mounts: dict = {}
+    for key, kind in MOUNTED_SENSOR_BLOCKS.items():
+        block = params.get(key)
+        threshold = None
+        if kind == "cliff":
+            threshold = _mapping(_mapping(block).get("estop_request")).get("cliff_range_threshold_m")
+        for item in _sensor_items(block):
+            topic = normalize_topic(item.get("topic"))
+            if not topic:
+                continue
+            parent = str(item.get("mount_parent_frame") or "").strip().lstrip("/")
+            offset = _float_list(item.get("mount_offset"), 2)
+            rpy = _float_list(item.get("mount_rpy"), 3)
+            entry = {
+                "kind": kind,
+                "name": str(item.get("name") or "").strip(),
+                "size": _float_list(item.get("size"), 2),
+            }
+            if offset is not None and parent in FOOTPRINT_PARENT_FRAMES:
+                entry.update({"x": offset[0], "y": offset[1], "yaw": rpy[2] if rpy else 0.0})
+            if threshold is not None:
+                entry["threshold"] = _as_float(threshold, 0.0)
+            mounts[topic] = entry
+    return {"footprint": footprint, "mounts": mounts}
+
+
+def collect_robot_model(loaded: Mapping[str, Any]) -> dict:
+    """Chassis + R-MODUS box dimensions for the TF 3D scene (same keys as the URDF xacros)."""
+    params = _ros_parameters(loaded)
+    base = _mapping(params.get("base_link"))
+    module = _mapping(params.get("rmodus_module", params.get("nav_module")))
+    model: dict = {"base_link": None, "rmodus_module": None}
+
+    base_size = _float_list(base.get("size"), 3)
+    if base_size:
+        model["base_link"] = {"size": base_size}
+
+    module_size = _float_list(module.get("size"), 3)
+    if module_size:
+        offset = _float_list(module.get("offset"), 3) or [
+            _as_float(module.get("offset_x"), 0.0),
+            _as_float(module.get("offset_y"), 0.0),
+            _as_float(module.get("offset_z"), 0.0),
+        ]
+        model["rmodus_module"] = {
+            "size": module_size,
+            "offset": offset,
+            "rpy": _float_list(module.get("rpy"), 3) or [0.0, 0.0, 0.0],
+        }
+    return model
+
+
+BLUEPRINT_GEOMETRY_KEYS = ("x", "y", "yaw", "threshold")
+
+
+def collect_blueprint_segments(web_block: Mapping[str, Any]) -> dict:
+    """web.ui.blueprint.segments: {svg_id: topic} or {svg_id: {topic, x?, y?, yaw?, size?, threshold?}}."""
+    blueprint = _mapping(_mapping(web_block.get("ui")).get("blueprint"))
+    segments: dict = {}
+    for seg_id, spec in _mapping(blueprint.get("segments")).items():
+        seg_id = str(seg_id).strip()
+        item = spec if isinstance(spec, dict) else {"topic": spec}
+        topic = normalize_topic(item.get("topic"))
+        if not seg_id or not topic:
+            continue
+        entry = {"topic": topic}
+        for key in BLUEPRINT_GEOMETRY_KEYS:
+            if key in item:
+                entry[key] = _as_float(item.get(key), 0.0)
+        size = _float_list(item.get("size"), 2)
+        if size:
+            entry["size"] = size
+        segments[seg_id] = entry
+    return segments
 
 
 def _as_str(value: Any, default: str) -> str:
@@ -194,6 +301,7 @@ def _web_config_from_block(defaults: WebConfig, block: Mapping[str, Any], source
     topics = _mapping(block.get("topics"))
     cmd = _mapping(block.get("cmd"))
     ui = _mapping(block.get("ui"))
+    sensors = _mapping(block.get("sensors"))
     nav_overlay = _mapping(ui.get("nav_tabs"))
     nav_tabs = dict(defaults.web_ui_nav_tabs)
     for key, value in nav_overlay.items():
@@ -211,6 +319,12 @@ def _web_config_from_block(defaults: WebConfig, block: Mapping[str, Any], source
         tf_stale_timeout_sec=_as_float(tf.get("stale_timeout_sec"), defaults.tf_stale_timeout_sec),
         tf_resubscribe_cooldown_sec=_as_float(
             tf.get("resubscribe_cooldown_sec"), defaults.tf_resubscribe_cooldown_sec
+        ),
+        tf_frame_stale_warn_sec=_as_float(
+            tf.get("frame_stale_warn_sec"), defaults.tf_frame_stale_warn_sec
+        ),
+        tf_frame_stale_error_sec=_as_float(
+            tf.get("frame_stale_error_sec"), defaults.tf_frame_stale_error_sec
         ),
         lidar_topic=_as_str(topics.get("lidar"), defaults.lidar_topic),
         imu_topic=_as_str(topics.get("imu"), defaults.imu_topic),
@@ -236,6 +350,7 @@ def _web_config_from_block(defaults: WebConfig, block: Mapping[str, Any], source
             topics.get("e_stop_request"), defaults.e_stop_request_topic
         ),
         e_stop_reset_topic=_as_str(topics.get("e_stop_reset"), defaults.e_stop_reset_topic),
+        sensor_max_rate_hz=_as_float(sensors.get("max_rate_hz"), defaults.sensor_max_rate_hz),
         web_ui_nav_tabs=nav_tabs,
         web_ui_persist_local=(
             _as_bool(ui["persist_local"]) if "persist_local" in ui else defaults.web_ui_persist_local
@@ -305,6 +420,11 @@ def load_web_config(cli_path: Optional[str] = None) -> WebConfig:
             **cfg.__dict__,
             "configs_root": root,
             "sensor_names": sensor_names,
+            "sensor_layout": {
+                **collect_sensor_layout(loaded),
+                "segments": collect_blueprint_segments(loaded["web"]),
+            },
+            "robot_model": collect_robot_model(loaded),
         }
     )
     print(f"rmodus_web: nacten blok web: z {path}")

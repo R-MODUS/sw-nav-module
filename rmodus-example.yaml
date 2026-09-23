@@ -48,6 +48,8 @@ web:
     broadcast_rate_hz: 5.0
     stale_timeout_sec: 3.0
     resubscribe_cooldown_sec: 8.0
+    frame_stale_warn_sec: 0.5
+    frame_stale_error_sec: 2.0
 
   topics:
     # Mapa kreslí každý LaserScan. Jména v UI jsou lidar.name / imu.name.
@@ -65,6 +67,9 @@ web:
     e_stop_reset: /rmodus/e_stop/reset
     discovery_rate_hz: 1.0
 
+  sensors:
+    max_rate_hz: 10.0   # živá data do záložky Senzory (bumpery bez omezení)
+
   cmd:
     use_twist_stamped: false
     frame_id: base_link
@@ -79,6 +84,9 @@ web:
       config: true   # záložka Profily
       settings: true # Network settings
       users: true
+    # Robot Blueprint: svg_id → topic (výchozí id = name z bumpers/cliff_sensors)
+    blueprint:
+      segments: {}
 
 # ============================================================
 # Níže: stejné jako rmodus_bringup/config/rmodus.yaml
@@ -91,7 +99,7 @@ bringup:
   hw: false
   uart_output: false
   estop: false
-  bumper: false
+  bumper: true
   cliff: false
   flow: false
   display: false
@@ -103,14 +111,16 @@ bringup:
   slam: false
   rf2o: false
   obstacle_cloud: false
-  microros: false
-  # Vlastní launchy (drivers mimo jádro). Chybí-li balík → skip + log.
+  microros: true
+  # Vlastní launchy. enabled: false polozku nespusti, zvlastni definice zustava.
   extras:
-    - package: neato_lidar
+    - enabled: false
+      package: neato_lidar
       launch: neato_lidar.launch.py
       args:
         config_file: $robot_yaml
-  # - path: ~/my_stack/extra.launch.py
+  # - enabled: false
+  #   path: ~/my_stack/extra.launch.py
 
 # Jedna deska = jedna položka a jeden agent. device je seriový port (ls /dev/ttyACM* /dev/ttyUSB*).
 # Firmware bumperů běží na 115200. Další desku přidej jako další item s jiným device.
@@ -121,11 +131,6 @@ microros:
       enabled: true
       transport: serial
       device: /dev/ttyACM0
-      baudrate: 115200
-    - name: extra
-      enabled: false
-      transport: serial
-      device: /dev/ttyACM1
       baudrate: 115200
 
 /**:
@@ -251,17 +256,24 @@ microros:
         request_topic: /rmodus/e_stop/request
         retrigger_while_contact: false
       items:
-        - name: 'front'
+        - name: front
           enabled: true
           pin: 0
-          topic: '/bumper/front'
-          frame_id: 'bumper_front_contact'
-          mount_parent_frame: 'base_link'
+          topic: /bumper/front
+          frame_id: bumper_front_contact
+          mount_parent_frame: base_link
           mount_offset: [0.30, 0.0, 0.0]
           mount_rpy: [0.0, 0.0, 0.0]
           size: [0.02, 0.30, 0.05]
-          contact_offset: [0.02, 0.0, -0.025]
-          contact_rpy: [0.0, 0.0, 0.0]
+        - name: rear
+          enabled: true
+          pin: 1
+          topic: /bumper/rear
+          frame_id: bumper_rear_contact
+          mount_parent_frame: base_link
+          mount_offset: [-0.30, 0.0, 0.0]
+          mount_rpy: [0.0, 0.0, 3.14159]
+          size: [0.02, 0.30, 0.05]
 
     cliff_sensors:
       enabled: true

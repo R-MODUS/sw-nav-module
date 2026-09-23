@@ -4,7 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>R-MODUS</title>
+    <link rel="stylesheet" href="static/vendor/gridstack/gridstack.min.css">
     <link rel="stylesheet" href="static/css/style.css">
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "./static/vendor/three/three.module.js",
+            "three/addons/": "./static/vendor/three/addons/"
+        }
+    }
+    </script>
 </head>
 <body>
     <div class="app-container" id="app-root">
@@ -50,9 +59,9 @@
     
     <!-- Skripty specifické pro stránky -->
     <script src="static/js/map.js"></script>
-    <script src="static/js/robot_view.js"></script>
-    <script src="static/js/sensors.js"></script>
-    <script src="static/js/tf.js"></script>
+    <script src="static/vendor/gridstack/gridstack-all.js"></script>
+    <script type="module" src="static/js/sensors/index.js"></script>
+    <script type="module" src="static/js/tf/index.js"></script>
     <script src="static/js/profiles.js"></script>
     <script src="static/js/settings.js"></script>
 

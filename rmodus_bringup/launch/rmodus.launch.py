@@ -60,6 +60,60 @@ def _resolve(path: str) -> str:
     return os.path.normpath(os.path.expanduser(str(path).strip()))
 
 
+def _as_bool(value) -> bool:
+    """YAML bool i text. bool('false') je v Pythonu True — to by zapnulo vypnuté moduly."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value != 0
+    return str(value or "").strip().lower() in ("1", "true", "yes", "on", "y")
+
+
+def _configs_root_from_profile(path: str) -> str:
+    """…/configs/profiles/foo.yaml → …/configs. Jinak prázdné."""
+    if not path:
+        return ""
+    parent = os.path.dirname(path)
+    if os.path.basename(parent) == "profiles":
+        return os.path.dirname(parent)
+    return ""
+
+
+def _microros_summary(path: str) -> str:
+    if not path or not os.path.isfile(path):
+        return "soubor chybi"
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            root = yaml.safe_load(handle) or {}
+    except yaml.YAMLError as exc:
+        return f"YAML chyba: {exc}"
+    block = root.get("microros", {}) if isinstance(root, dict) else {}
+    if not isinstance(block, dict):
+        return "microros neni slovnik"
+    if not _as_bool(block.get("enabled", True)):
+        return "microros.enabled=false"
+    items = block.get("items")
+    parts = []
+    if isinstance(items, list):
+        for raw in items:
+            if not isinstance(raw, dict):
+                continue
+            name = str(raw.get("name") or "?").strip() or "?"
+            if not _as_bool(raw.get("enabled", True)):
+                parts.append(f"{name} vypnuto")
+                continue
+            device = str(raw.get("device") or "").strip() or "(prazdne device)"
+            baud = raw.get("baudrate") or 115200
+            transport = str(raw.get("transport") or "serial").strip()
+            parts.append(f"{name} {transport} {device} @ {baud}")
+    elif block.get("device"):
+        parts.append(
+            f"{block.get('name') or 'serial'} {block.get('transport') or 'serial'} "
+            f"{block.get('device')} @ {block.get('baudrate') or 115200}"
+        )
+    return ", ".join(parts) if parts else "zadne items"
+
+
 def _load_bringup(path: str) -> dict:
     cfg = dict(_DEFAULT_BRINGUP)
     if not path or not os.path.isfile(path):
@@ -73,13 +127,13 @@ def _load_bringup(path: str) -> dict:
         return cfg
     for key in cfg:
         if key in block:
-            cfg[key] = bool(block[key])
+            cfg[key] = _as_bool(block[key])
     # legacy: bringup.autonomy.*
     auto = block.get("autonomy", {})
     if isinstance(auto, dict):
         for key in ("localization", "navigation", "slam", "rf2o", "obstacle_cloud"):
             if key in auto:
-                cfg[key] = bool(auto[key])
+                cfg[key] = _as_bool(auto[key])
     return cfg
 
 
@@ -125,12 +179,30 @@ def _build(context):
             get_package_share_directory("rmodus_bringup"), "config", "rmodus.yaml"
         )
 
+    if not os.path.isfile(robot_yaml):
+        missing_profile = True
+    else:
+        missing_profile = False
     b = _load_bringup(robot_yaml)
     extras = _load_extras(robot_yaml)
+    enabled = [key for key, value in b.items() if value]
+    extra_labels = []
+    for entry in extras:
+        label = str(entry.get("package") or entry.get("path") or "?").strip() or "?"
+        state = "true" if _as_bool(entry.get("enabled", True)) else "false"
+        extra_labels.append(f"{label}={state}")
     actions = [
         LogInfo(msg=f"[rmodus_bringup] profile={robot_yaml}"),
-        LogInfo(msg=f"[rmodus_bringup] flags={b}"),
-        LogInfo(msg=f"[rmodus_bringup] extras={len(extras)}"),
+        LogInfo(
+            msg="[rmodus_bringup] soubor chybi, flags jsou vychozi"
+            if missing_profile
+            else f"[rmodus_bringup] zapnuto: {', '.join(enabled) or '(nic)'}"
+        ),
+        LogInfo(msg=f"[rmodus_bringup] microros: {_microros_summary(robot_yaml)}"),
+        LogInfo(
+            msg="[rmodus_bringup] extras: "
+            + (", ".join(extra_labels) if extra_labels else "(zadne)")
+        ),
     ]
 
     def _include(pkg: str, launch_file: str, **launch_arguments):
@@ -150,7 +222,11 @@ def _build(context):
         actions.append(_include(pkg, launch_file, **launch_arguments))
 
     def _try_extra(entry: dict, index: int) -> None:
-        label = f"extras[{index}]"
+        label = str(entry.get("package") or entry.get("path") or f"extras[{index}]").strip()
+        label = label or f"extras[{index}]"
+        if not _as_bool(entry.get("enabled", True)):
+            actions.append(LogInfo(msg=f"[rmodus] skip '{label}': enabled is false"))
+            return
         launch_args = _stringify_launch_args(entry.get("args"), robot_yaml)
         abs_path = _resolve(str(entry.get("path") or ""))
         if abs_path:
@@ -256,7 +332,17 @@ def _build(context):
     )
     _try_feature("display", "rmodus_display", "display.launch.py", config_file=robot_yaml)
     # Profile manager before web so /rmodus/config/* services exist for UI.
-    _try_feature("config", "rmodus_config", "config.launch.py")
+    # Stejný strom jako robot_yaml (…/configs), ne odhad z $HOME.
+    configs_root = _configs_root_from_profile(robot_yaml)
+    if configs_root:
+        _try_feature(
+            "config",
+            "rmodus_config",
+            "config.launch.py",
+            configs_root=configs_root,
+        )
+    else:
+        _try_feature("config", "rmodus_config", "config.launch.py")
     _try_feature("web", "rmodus_web", "web.launch.py", robot_yaml=robot_yaml)
 
     if b["localization"] or b["slam"] or b["rf2o"] or b["obstacle_cloud"]:
@@ -314,7 +400,7 @@ def _build(context):
         else:
             actions.append(skip_log("rviz", "rviz2"))
 
-    # User / third-party launches (lidar drivers, …) — after core stack.
+    # User / third-party launches. enabled: false polozku preskoci, definice zustava.
     for i, entry in enumerate(extras):
         _try_extra(entry, i)
 

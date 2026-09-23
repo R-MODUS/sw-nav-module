@@ -2,7 +2,7 @@
     <div class="page-head tf-header">
         <div>
             <h1 class="page-title">TF</h1>
-            <p class="page-subtitle">2D přehled transformačního stromu robota.</p>
+            <p class="page-subtitle">3D přehled transformačního stromu robota.</p>
         </div>
         <div class="tf-summary">
             <div class="tf-summary-item">
@@ -10,45 +10,115 @@
                 <strong id="tf-frame-count">0</strong>
             </div>
             <div class="tf-summary-item">
-                <span class="summary-label">Kořen</span>
-                <strong id="tf-root-frame-summary">base_link</strong>
+                <span class="summary-label">Pevný rám</span>
+                <strong id="tf-fixed-frame-summary">base_link</strong>
+            </div>
+            <div class="tf-summary-item" id="tf-stale-summary" data-health="ok">
+                <span class="summary-label">Zastaralé</span>
+                <strong id="tf-stale-count">0</strong>
             </div>
         </div>
     </div>
 
     <div class="tf-layout">
         <section class="tf-card tf-visual-card">
-            <div class="card-title-row">
-                <div>
-                    <h2>Strom rámců</h2>
-                    <p>Kontrola umístění senzorů a vazeb mezi linky.</p>
+            <div class="tf-toolbar">
+                <div class="tf-segmented" role="group" aria-label="Režim kamery">
+                    <button type="button" class="tf-segmented-btn" data-camera-mode="3d" aria-pressed="true">3D</button>
+                    <button type="button" class="tf-segmented-btn" data-camera-mode="2d" aria-pressed="false">2D shora</button>
                 </div>
-                <span class="tf-badge" id="tf-root-frame">base_link</span>
-            </div>
-            <div class="tf-controls">
+                <label class="tf-control-item" for="tf-fixed-frame">
+                    <span>Pevný rám</span>
+                    <select id="tf-fixed-frame" class="tf-select"></select>
+                </label>
                 <label class="tf-control-item tf-control-check" for="tf-show-labels">
                     <input type="checkbox" id="tf-show-labels" />
                     <span>Popisky</span>
                 </label>
-                <label class="tf-control-item" for="tf-zoom">
-                    <span>Přiblížení</span>
-                    <input type="range" id="tf-zoom" min="0.5" max="8.0" step="0.1" value="2.0" />
-                    <strong id="tf-zoom-value">2.0×</strong>
+                <label class="tf-control-item" for="tf-axis-scale">
+                    <span>Osy</span>
+                    <input type="range" id="tf-axis-scale" min="0.03" max="0.5" step="0.01" value="0.12" />
+                    <strong id="tf-axis-scale-value">12 cm</strong>
                 </label>
+                <button type="button" class="tf-tool-btn" id="tf-reset-view" title="Výchozí pohled kamery">Výchozí pohled</button>
             </div>
-            <canvas id="robotTfCanvas" width="800" height="520"></canvas>
+
+            <div class="tf-viewport is-loading" id="tf-viewport">
+                <div class="tf-viewport-hint" aria-hidden="true">
+                    <span data-mode="3d" data-input="mouse">Levé tlačítko: rotace · pravé: posun · kolečko: zoom</span>
+                    <span data-mode="3d" data-input="touch">1 prst: rotace · 2 prsty: posun a zoom</span>
+                    <span data-mode="2d" data-input="mouse">Tažení: posun · kolečko: zoom</span>
+                    <span data-mode="2d" data-input="touch">1 prst: posun · 2 prsty: zoom</span>
+                </div>
+            </div>
+
+            <div class="tf-legend" aria-label="Legenda">
+                <span><i class="tf-health-dot" data-health="ok"></i>Aktuální</span>
+                <span><i class="tf-health-dot" data-health="static"></i>Statický</span>
+                <span><i class="tf-health-dot" data-health="warn"></i>Zpožděný</span>
+                <span><i class="tf-health-dot" data-health="error"></i>Zastaralý</span>
+                <span><i class="tf-health-dot" data-health="root"></i>Kořen</span>
+            </div>
             <div class="tf-card-footer" id="tf-status">Čekání na data TF…</div>
         </section>
 
-        <aside class="tf-card tf-frames-card">
-            <div class="card-title-row">
-                <div>
-                    <h2>Seznam rámců</h2>
-                    <p>Kliknutím zvýrazníte rám ve stromu.</p>
+        <div class="tf-side">
+            <aside class="tf-card tf-tree-card">
+                <div class="card-title-row">
+                    <div>
+                        <h2>Strom rámců</h2>
+                        <p>Klikněte na rám ve stromu nebo ve scéně.</p>
+                    </div>
                 </div>
-            </div>
-            <div id="tf-frame-list" class="tf-frame-list"></div>
-            <div class="tf-frame-empty" id="tf-frame-empty">Zatím žádné TF rámy.</div>
-        </aside>
+                <ul id="tf-tree" class="tf-tree" aria-label="TF rámy"></ul>
+                <div class="tf-frame-empty" id="tf-tree-empty">Zatím žádné TF rámy.</div>
+            </aside>
+
+            <aside class="tf-card tf-details-card" id="tf-details">
+                <div class="card-title-row">
+                    <div>
+                        <h2>Detail rámu</h2>
+                    </div>
+                    <button type="button" class="tf-tool-btn" id="tf-focus-frame" title="Zaměřit kameru na rám">Zaměřit</button>
+                </div>
+
+                <div class="tf-frame-empty" data-role="details-empty">Vyberte rám.</div>
+
+                <div class="tf-details-body" data-role="details-body" hidden>
+                    <div class="tf-details-head">
+                        <strong class="tf-details-name" data-field="name"></strong>
+                        <span class="tf-details-health" data-field="health"></span>
+                    </div>
+                    <dl class="tf-kv">
+                        <dt>Rodič</dt><dd data-field="parent"></dd>
+                        <dt>Zdroj</dt><dd data-field="kind"></dd>
+                        <dt>Frekvence</dt><dd data-field="hz"></dd>
+                        <dt>Poslední zpráva</dt><dd data-field="age"></dd>
+                    </dl>
+
+                    <h3 class="tf-details-section">Translace [m]</h3>
+                    <div class="tf-num-grid tf-num-grid-3">
+                        <div><span>X</span><code data-field="tx"></code></div>
+                        <div><span>Y</span><code data-field="ty"></code></div>
+                        <div><span>Z</span><code data-field="tz"></code></div>
+                    </div>
+
+                    <h3 class="tf-details-section">Rotace – kvaternion</h3>
+                    <div class="tf-num-grid tf-num-grid-4">
+                        <div><span>X</span><code data-field="qx"></code></div>
+                        <div><span>Y</span><code data-field="qy"></code></div>
+                        <div><span>Z</span><code data-field="qz"></code></div>
+                        <div><span>W</span><code data-field="qw"></code></div>
+                    </div>
+
+                    <h3 class="tf-details-section">Rotace – Euler (RPY)</h3>
+                    <div class="tf-num-grid tf-num-grid-3">
+                        <div><span>Roll</span><code data-field="roll_deg"></code><small data-field="roll_rad"></small></div>
+                        <div><span>Pitch</span><code data-field="pitch_deg"></code><small data-field="pitch_rad"></small></div>
+                        <div><span>Yaw</span><code data-field="yaw_deg"></code><small data-field="yaw_rad"></small></div>
+                    </div>
+                </div>
+            </aside>
+        </div>
     </div>
 </div>

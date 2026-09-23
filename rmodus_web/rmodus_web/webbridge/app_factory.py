@@ -77,6 +77,8 @@ def create_app(cfg: Optional[WebConfig] = None) -> FastAPI:
                 "persist_local": cfg.web_ui_persist_local,
                 "configs_root": cfg.configs_root,
                 "testing": cfg.testing,
+                "sensor_layout": cfg.sensor_layout,
+                "robot_model": cfg.robot_model,
             }
         )
         inject = f'<script>window.__RMODUS_UI_CONFIG__ = {ui_config};</script>\n    '

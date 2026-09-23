@@ -22,6 +22,7 @@ def generate_launch_description():
     container_name_full = (namespace, "/", container_name)
     use_respawn = LaunchConfiguration("use_respawn")
     log_level = LaunchConfiguration("log_level")
+    cmd_vel_topic = LaunchConfiguration("cmd_vel_topic")
 
     lifecycle_nodes = [
         "controller_server",
@@ -86,7 +87,7 @@ def generate_launch_description():
                 respawn_delay=2.0,
                 parameters=[configured_params],
                 arguments=["--ros-args", "--log-level", log_level],
-                remappings=remappings,
+                remappings=remappings + [("cmd_vel", "cmd_vel_nav")],
             ),
             Node(
                 package="nav2_bt_navigator",
@@ -119,7 +120,7 @@ def generate_launch_description():
                 respawn_delay=2.0,
                 parameters=[configured_params],
                 arguments=["--ros-args", "--log-level", log_level],
-                remappings=remappings + [("cmd_vel", "cmd_vel_nav"), ("cmd_vel_smoothed", "cmd_vel")],
+                remappings=remappings + [("cmd_vel", "cmd_vel_nav"), ("cmd_vel_smoothed", cmd_vel_topic)],
             ),
             Node(
                 package="nav2_lifecycle_manager",
@@ -166,7 +167,7 @@ def generate_launch_description():
                 plugin="behavior_server::BehaviorServer",
                 name="behavior_server",
                 parameters=[configured_params],
-                remappings=remappings,
+                remappings=remappings + [("cmd_vel", "cmd_vel_nav")],
             ),
             ComposableNode(
                 package="nav2_bt_navigator",
@@ -187,7 +188,7 @@ def generate_launch_description():
                 plugin="nav2_velocity_smoother::VelocitySmoother",
                 name="velocity_smoother",
                 parameters=[configured_params],
-                remappings=remappings + [("cmd_vel", "cmd_vel_nav"), ("cmd_vel_smoothed", "cmd_vel")],
+                remappings=remappings + [("cmd_vel", "cmd_vel_nav"), ("cmd_vel_smoothed", cmd_vel_topic)],
             ),
             ComposableNode(
                 package="nav2_lifecycle_manager",
@@ -216,6 +217,13 @@ def generate_launch_description():
     ld.add_action(DeclareLaunchArgument("container_name", default_value="nav2_container"))
     ld.add_action(DeclareLaunchArgument("use_respawn", default_value="False"))
     ld.add_action(DeclareLaunchArgument("log_level", default_value="info"))
+    ld.add_action(
+        DeclareLaunchArgument(
+            "cmd_vel_topic",
+            default_value="/nav/cmd_vel",
+            description="Výstup velocity_smootheru = vstup nav v cmd_mux",
+        )
+    )
     ld.add_action(load_nodes)
     ld.add_action(load_composable_nodes)
     return ld

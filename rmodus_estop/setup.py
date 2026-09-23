@@ -17,7 +17,7 @@ setup(
     zip_safe=True,
     maintainer="pi",
     maintainer_email="pi@todo.todo",
-    description="Central e-stop latch and cmd_vel gate.",
+    description="Central e-stop latch and state for cmd_mux.",
     license="TODO: License declaration",
     entry_points={
         "console_scripts": [

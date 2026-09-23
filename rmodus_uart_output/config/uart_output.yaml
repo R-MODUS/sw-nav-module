@@ -3,4 +3,5 @@ uart_output:
   enabled: true
   port: /dev/ttyUSB0
   baudrate: 115200
-  cmd_vel_topic: /cmd_vel_safe
+  cmd_vel_topic: /cmd_vel     # výstup cmd_mux
+  cmd_timeout_sec: 0.5        # bez příkazu déle než toto → posílá nuly (0 = vypnuto)

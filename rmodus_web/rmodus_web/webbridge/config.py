@@ -53,7 +53,7 @@ class WebConfig:
     goal_pose_topic: str = "/goal_pose"
     cmd_use_twist_stamped: bool = False
     cmd_frame_id: str = "base_link"
-    cmd_vel_topic: str = "/cmd_vel"
+    cmd_vel_topic: str = "/web/cmd_vel"
     e_stop_state_topic: str = "/rmodus/e_stop"
     e_stop_request_topic: str = "/rmodus/e_stop/request"
     e_stop_reset_topic: str = "/rmodus/e_stop/reset"
@@ -97,7 +97,7 @@ PLAN_TOPIC = "/received_global_plan"
 GOAL_POSE_TOPIC = "/goal_pose"
 CMD_USE_TWIST_STAMPED = False
 CMD_FRAME_ID = "base_link"
-CMD_VEL_TOPIC = "/cmd_vel"
+CMD_VEL_TOPIC = "/web/cmd_vel"
 E_STOP_STATE_TOPIC = "/rmodus/e_stop"
 E_STOP_REQUEST_TOPIC = "/rmodus/e_stop/request"
 E_STOP_RESET_TOPIC = "/rmodus/e_stop/reset"

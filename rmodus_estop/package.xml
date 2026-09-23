@@ -3,7 +3,7 @@
 <package format="3">
   <name>rmodus_estop</name>
   <version>0.0.0</version>
-  <description>Central e-stop latch, cmd_vel gate, optional GPIO button and platform mirror.</description>
+  <description>Central e-stop latch and state for cmd_mux, optional GPIO button and platform mirror.</description>
   <maintainer email="pi@todo.todo">pi</maintainer>
   <license>TODO: License declaration</license>
 

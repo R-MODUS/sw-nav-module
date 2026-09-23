@@ -7,3 +7,15 @@
       mass: 5.0
       size: [0.5, 0.5, 0.1]
       offset_z: 0.0973
+
+    # Pohon — plný popis v rmodus_bringup/config/rmodus.yaml.
+    drive:
+      enabled: false
+      mode: diff2
+      wheel_radius: 0.05
+      track_width: 0.3
+      units:
+        - { name: main, cmd_topic: /drive/main/cmd, state_topic: "" }
+      wheels:
+        - { name: wheel_l, unit: main, channel: 0 }
+        - { name: wheel_r, unit: main, channel: 1, invert: true }

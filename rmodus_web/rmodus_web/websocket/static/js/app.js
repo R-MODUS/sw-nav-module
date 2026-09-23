@@ -585,6 +585,31 @@ const joyManager = {
     rotate: null
 };
 
+// cmd_mux zahodí vstup po 0,5 s bez zprávy, proto držený joystick posílá stále.
+const JOY_REPEAT_MS = 100;
+const joyState = { y: 0, x: 0, rotation: 0, move: false, rotate: false };
+let joyRepeatTimer = null;
+let gamepadActive = false;
+
+function sendJoyState() {
+    sendJoystickData(joyState.y, joyState.x, joyState.rotation);
+}
+
+function updateJoyRepeat() {
+    const active = joyState.move || joyState.rotate;
+    if (active && !joyRepeatTimer) {
+        joyRepeatTimer = setInterval(sendJoyState, JOY_REPEAT_MS);
+    } else if (!active && joyRepeatTimer) {
+        clearInterval(joyRepeatTimer);
+        joyRepeatTimer = null;
+    }
+}
+
+function resetJoyState() {
+    Object.assign(joyState, { y: 0, x: 0, rotation: 0, move: false, rotate: false });
+    updateJoyRepeat();
+}
+
 function initJoysticks() {
     if (typeof window.nipplejs === 'undefined') {
         console.warn('nipplejs library is not available.');
@@ -598,6 +623,7 @@ function initJoysticks() {
         joyManager.rotate.destroy();
         joyManager.rotate = null;
     }
+    resetJoyState();
 
     const commonOptions = {
         mode: 'static',
@@ -613,15 +639,35 @@ function initJoysticks() {
     if (moveZone) {
         joyManager.move = nipplejs.create({ zone: moveZone, ...commonOptions });
         joyManager.move.on('move', (evt, data) => {
-            if (data.vector) sendJoystickData(data.vector.y, data.vector.x, 0);
-        }).on('end', () => sendJoystickData(0, 0, 0));
+            if (!data.vector) return;
+            joyState.y = data.vector.y;
+            joyState.x = data.vector.x;
+            joyState.move = true;
+            sendJoyState();
+            updateJoyRepeat();
+        }).on('end', () => {
+            joyState.y = 0;
+            joyState.x = 0;
+            joyState.move = false;
+            sendJoyState();
+            updateJoyRepeat();
+        });
     }
 
     if (rotateZone) {
         joyManager.rotate = nipplejs.create({ zone: rotateZone, ...commonOptions, color: '#ff9500' });
         joyManager.rotate.on('move', (evt, data) => {
-            if (data.vector) sendJoystickData(0, 0, -data.vector.x);
-        }).on('end', () => sendJoystickData(0, 0, 0));
+            if (!data.vector) return;
+            joyState.rotation = -data.vector.x;
+            joyState.rotate = true;
+            sendJoyState();
+            updateJoyRepeat();
+        }).on('end', () => {
+            joyState.rotation = 0;
+            joyState.rotate = false;
+            sendJoyState();
+            updateJoyRepeat();
+        });
     }
 }
 
@@ -651,6 +697,10 @@ function initGamepad() {
             }
             clearInterval(gamepadInterval);
             gamepadInterval = null;
+            if (gamepadActive) {
+                gamepadActive = false;
+                sendJoystickData(0, 0, 0);
+            }
         });
         gamepadListenersInitialized = true;
     }
@@ -671,7 +721,11 @@ function pollGamepads() {
         if (Math.abs(rotation) < deadZone) rotation = 0;
         
         if (userRole !== 'spectator' && (y !== 0 || x !== 0 || rotation !== 0)) {
+            gamepadActive = true;
             sendJoystickData(y.toFixed(2), x.toFixed(2), rotation.toFixed(2));
+        } else if (gamepadActive) {
+            gamepadActive = false;
+            sendJoystickData(0, 0, 0);
         }
     }
 }

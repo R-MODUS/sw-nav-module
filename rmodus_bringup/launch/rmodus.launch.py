@@ -33,6 +33,7 @@ _DEFAULT_BRINGUP = {
     "rf2o": False,
     "obstacle_cloud": True,
     "microros": False,
+    "cmd_mux": True,
 }
 
 # bringup flag → ROS package that must exist to include
@@ -316,11 +317,28 @@ def _build(context):
             robot_config_file=robot_yaml,
         )
 
+    # Drive (cmd_vel -> wheel units) runs independently of which launch owns the chassis TF.
+    if want_chassis and package_available("rmodus_chassis"):
+        ekf_runs = (
+            b["localization"]
+            and package_available("rmodus_localization")
+            and package_available("robot_localization")
+        )
+        actions.append(
+            _include(
+                "rmodus_chassis",
+                "drive.launch.py",
+                robot_config_file=robot_yaml,
+                publish_tf=_flag(not ekf_runs),
+            )
+        )
+
     _try_feature("hw", "rmodus_hw", "hw.launch.py", user_params_file=robot_yaml)
     _try_feature(
         "uart_output", "rmodus_uart_output", "uart_output.launch.py", config_file=robot_yaml
     )
     _try_feature("estop", "rmodus_estop", "estop.launch.py", config_file=robot_yaml)
+    _try_feature("cmd_mux", "rmodus_bringup", "cmd_mux.launch.py", config_file=robot_yaml)
     # Agent musi bezet driv, nez ESP zacne publikovat /robot/bumpers/state.
     _try_feature("microros", "rmodus_bringup", "microros.launch.py", config_file=robot_yaml)
     _try_feature("bumper", "rmodus_bumper", "bumper.launch.py", config_file=robot_yaml)

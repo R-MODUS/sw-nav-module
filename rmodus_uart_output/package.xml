@@ -3,7 +3,7 @@
 <package format="3">
   <name>rmodus_uart_output</name>
   <version>0.0.0</version>
-  <description>Optional Twist bridge: /cmd_vel_safe → UART (no kinematics).</description>
+  <description>Optional Twist bridge: /cmd_vel → UART (no kinematics).</description>
   <maintainer email="pi@todo.todo">pi</maintainer>
   <license>TODO: License declaration</license>
 

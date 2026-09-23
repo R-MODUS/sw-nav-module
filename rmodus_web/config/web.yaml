@@ -52,7 +52,7 @@ web:
     map_updates: /map_updates
     plan: /received_global_plan
     goal_pose: /goal_pose
-    cmd_vel: /cmd_vel              # výstup joysticku z UI
+    cmd_vel: /web/cmd_vel          # joystick z UI = vstup web v cmd_mux
     e_stop_state: /rmodus/e_stop           # stav (true = stop aktivní)
     e_stop_request: /rmodus/e_stop/request # podnět k zastavení (UI tlačítko později)
     e_stop_reset: /rmodus/e_stop/reset     # podnět k resetu
@@ -66,6 +66,7 @@ web:
 
   cmd:
     # false = geometry_msgs/Twist, true = geometry_msgs/TwistStamped
+    # Musí sedět s cmd_mux.use_stamped v profilu.
     use_twist_stamped: false
     frame_id: base_link
 

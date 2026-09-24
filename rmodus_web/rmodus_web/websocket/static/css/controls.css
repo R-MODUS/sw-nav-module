@@ -136,18 +136,26 @@
 
 .ctl-speed span {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
+    align-items: baseline;
+    gap: 2em;
 }
 
 .ctl-speed strong {
     color: var(--ui-text);
 }
 
-.ctl-speed input {
-    width: 100%;
-    max-width: 100%;
+.ctl-speed input[type="range"] {
+    display: block;
+    width: calc(100% - 16px);
+    max-width: calc(100% - 16px);
     min-width: 0;
-    margin: 0;
+    margin: 0 8px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-sizing: border-box;
+    flex-grow: 0;
     accent-color: var(--ui-primary);
 }
 
@@ -155,11 +163,6 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-}
-
-.ctl-stop {
-    color: var(--ui-text);
-    border-color: rgba(148, 163, 184, 0.45);
 }
 
 .ctl-estop {
@@ -182,6 +185,10 @@
 .is-spectator .controls-page .joy-zone {
     opacity: 0.45;
     pointer-events: none;
+}
+
+.is-estop .controls-page .joy-zone {
+    opacity: 0.45;
 }
 
 @media (max-width: 860px) {

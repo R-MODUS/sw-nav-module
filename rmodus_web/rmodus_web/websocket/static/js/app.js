@@ -292,7 +292,7 @@ async function initControlsPage() {
     if (!hasJoystickLibrary) {
         const hint = document.querySelector('.ctl-hint');
         if (hint) {
-            hint.textContent = 'Knihovna joysticku se nenačetla. Zbývají klávesy W S A D a Q E.';
+            hint.textContent = 'Joystick library failed to load. Keys WSAD and QE still work.';
         }
         return;
     }
@@ -463,12 +463,7 @@ function initWebSocket() {
                     break;
 
                 case "e_stop":
-                    estopActive = Boolean(data.active);
-                    estopKnown = true;
-                    if (estopActive) {
-                        stopCommand();
-                    }
-                    refreshControlsChrome();
+                    applyEstopState(Boolean(data.active));
                     break;
 
                 case "user_list_update":
@@ -593,6 +588,12 @@ const SPEED_KEY = 'rmodus.controls.speed.v2';
 let speedScale = readSpeedScale();
 let estopActive = false;
 let estopKnown = false;
+let estopServerSeen = false;
+let estopHoldUntil = 0;
+let estopCandidate = null;
+let estopStreak = 0;
+let estopResetTimer = null;
+const ESTOP_CONFIRM_MSGS = 3;
 let gamepadName = '';
 const keyHold = { w: false, a: false, s: false, d: false, q: false, e: false };
 let lastCmd = { y: 0, x: 0, r: 0 };
@@ -633,17 +634,12 @@ function mergedCommand() {
 }
 
 function sendJoystickData(y, x, rotation) {
-    const scale = speedScale;
-    const sy = Number(y) * scale;
-    const sx = Number(x) * scale;
-    const sr = Number(rotation) * scale;
+    const scale = estopActive ? 0 : speedScale;
+    const sy = (Number(y) || 0) * scale;
+    const sx = (Number(x) || 0) * scale;
+    const sr = (Number(rotation) || 0) * scale;
     lastCmd = { y: sy, x: sx, r: sr };
     paintCommandMeters();
-    if (estopKnown && estopActive) {
-        sy = 0;
-        sx = 0;
-        sr = 0;
-    }
     if (ws && ws.readyState === WebSocket.OPEN && userRole !== 'spectator') {
         ws.send(JSON.stringify({
             type: 'cmd_joy',
@@ -695,7 +691,7 @@ function paintCommandMeters() {
     if (!chip) return;
     const moving = Math.abs(lastCmd.y) + Math.abs(lastCmd.x) + Math.abs(lastCmd.r) > 0.001;
     chip.classList.toggle('is-live', moving);
-    chip.querySelector('strong').textContent = moving ? 'jede' : 'stojí';
+    chip.querySelector('strong').textContent = moving ? 'moving' : 'idle';
 }
 
 function refreshControlsChrome() {
@@ -709,16 +705,17 @@ function refreshControlsChrome() {
     if (role) role.textContent = userRole;
     if (link && linkChip) {
         const open = ws && ws.readyState === WebSocket.OPEN;
-        link.textContent = open ? 'připojeno' : 'odpojeno';
+        link.textContent = open ? 'connected' : 'offline';
         linkChip.classList.toggle('is-live', open);
         linkChip.classList.toggle('is-bad', !open);
     }
     if (estop && estopChip) {
-        estop.textContent = estopKnown ? (estopActive ? 'zamčeno' : 'volno') : '—';
+        estop.textContent = estopKnown ? (estopActive ? 'latched' : 'clear') : '—';
         estopChip.classList.toggle('is-bad', estopKnown && estopActive);
         estopChip.classList.toggle('is-live', estopKnown && !estopActive);
     }
-    if (pad) pad.textContent = gamepadName || 'nepřipojen';
+    document.body.classList.toggle('is-estop', estopActive);
+    if (pad) pad.textContent = gamepadName || 'none';
     if (lock) lock.hidden = userRole !== 'spectator';
     paintCommandMeters();
 }
@@ -735,17 +732,72 @@ function bindControlsPage() {
             if (speedVal) speedVal.textContent = `${speed.value} %`;
         };
     }
-    const stop = document.getElementById('ctl-stop');
-    if (stop) stop.onclick = () => stopCommand();
     const estopBtn = document.getElementById('ctl-estop-btn');
-    if (estopBtn) estopBtn.onclick = () => sendControlMessage('e_stop_trigger');
+    if (estopBtn) estopBtn.onclick = () => pressEstop();
     const resetBtn = document.getElementById('ctl-estop-reset');
-    if (resetBtn) resetBtn.onclick = () => sendControlMessage('e_stop_reset');
+    if (resetBtn) resetBtn.onclick = () => pressEstopReset();
 }
 
 function sendControlMessage(type) {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     ws.send(JSON.stringify({ type }));
+}
+
+function commitEstop(active) {
+    const changed = active !== estopActive || !estopKnown;
+    const rose = active && !estopActive;
+    const fell = !active && estopActive;
+    estopActive = active;
+    estopKnown = true;
+    if (rose) {
+        stopCommand();
+    }
+    if (fell && activePage === 'controls' && typeof window.nipplejs !== 'undefined') {
+        initJoysticks();
+    }
+    if (changed) {
+        refreshControlsChrome();
+    }
+}
+
+function applyEstopState(active) {
+    estopServerSeen = true;
+    if (active === estopCandidate) {
+        estopStreak += 1;
+    } else {
+        estopCandidate = active;
+        estopStreak = 1;
+    }
+    if (!active && Date.now() < estopHoldUntil) {
+        return;
+    }
+    if (estopStreak >= ESTOP_CONFIRM_MSGS || !estopKnown) {
+        if (active !== estopActive || !estopKnown) {
+            if (estopResetTimer && !active) {
+                clearTimeout(estopResetTimer);
+                estopResetTimer = null;
+            }
+            commitEstop(active);
+        }
+    }
+}
+
+function pressEstop() {
+    estopHoldUntil = Date.now() + 600;
+    sendControlMessage('e_stop_trigger');
+    commitEstop(true);
+}
+
+function pressEstopReset() {
+    estopHoldUntil = 0;
+    sendControlMessage('e_stop_reset');
+    if (estopResetTimer) clearTimeout(estopResetTimer);
+    estopResetTimer = setTimeout(() => {
+        estopResetTimer = null;
+        if (!estopServerSeen) {
+            commitEstop(false);
+        }
+    }, 1000);
 }
 
 function stopCommand() {
@@ -897,6 +949,9 @@ function initGamepad() {
         });
         window.addEventListener('keydown', (event) => onControlKey(event, true));
         window.addEventListener('keyup', (event) => onControlKey(event, false));
+        window.addEventListener('blur', () => {
+            if (activePage === 'controls') stopCommand();
+        });
         gamepadListenersInitialized = true;
     }
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];

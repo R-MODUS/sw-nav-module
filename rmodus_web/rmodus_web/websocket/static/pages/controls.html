@@ -1,21 +1,21 @@
 <div class="page-shell controls-page">
     <header class="sx-head">
-        <h1 class="page-title">Ruční ovládání</h1>
+        <h1 class="page-title">Teleop</h1>
         <div class="sx-chips">
             <span class="sx-chip" id="ctl-role">Role <strong>—</strong></span>
-            <span class="sx-chip" id="ctl-link">Spojení <strong>—</strong></span>
-            <span class="sx-chip" id="ctl-cmd">Příkaz <strong>stojí</strong></span>
+            <span class="sx-chip" id="ctl-link">Link <strong>—</strong></span>
+            <span class="sx-chip" id="ctl-cmd">Cmd <strong>idle</strong></span>
             <span class="sx-chip" id="ctl-estop">E-stop <strong>—</strong></span>
-            <span class="sx-chip" id="ctl-pad">Gamepad <strong>nepřipojen</strong></span>
+            <span class="sx-chip" id="ctl-pad">Gamepad <strong>none</strong></span>
         </div>
     </header>
 
-    <p class="ctl-lock" id="ctl-lock" hidden>Jste divák. Páčky, klávesy ani gamepad příkaz nepošlou.</p>
+    <p class="ctl-lock" id="ctl-lock" hidden>Spectator. Sticks, keys and gamepad do not send commands.</p>
 
     <div class="ctl-layout">
         <section class="ctl-sticks" aria-label="Joysticky">
-            <div id="joy-move" class="joy-zone"><span>Pohyb</span><small>WSAD</small></div>
-            <div id="joy-rotate" class="joy-zone"><span>Rotace</span><small>Q E</small></div>
+            <div id="joy-move" class="joy-zone"><span>Move</span><small>WSAD</small></div>
+            <div id="joy-rotate" class="joy-zone"><span>Yaw</span><small>QE</small></div>
         </section>
 
         <aside class="ctl-side">
@@ -29,24 +29,21 @@
                     <circle id="ctl-dot" cx="80" cy="80" r="5"/>
                 </svg>
                 <p class="ctl-vec-read">
-                    <span>vpřed <strong id="ctl-vx">0.00</strong></span>
-                    <span>strana <strong id="ctl-vy">0.00</strong></span>
-                    <span>otáčení <strong id="ctl-wz">0.00</strong></span>
+                    <span>X <strong id="ctl-vx">0.00</strong></span>
+                    <span>Y <strong id="ctl-vy">0.00</strong></span>
+                    <span>ω <strong id="ctl-wz">0.00</strong></span>
                 </p>
             </div>
 
             <label class="ctl-speed">
-                <span>Rychlost <strong id="ctl-speed-val">50 %</strong></span>
+                <span>Speed <strong id="ctl-speed-val">50 %</strong></span>
                 <input id="ctl-speed" type="range" min="0" max="100" step="5" value="50">
             </label>
 
             <div class="ctl-actions">
-                <button type="button" class="sx-btn ctl-stop" id="ctl-stop">Stop</button>
                 <button type="button" class="sx-btn ctl-estop" id="ctl-estop-btn">E-stop</button>
-                <button type="button" class="sx-btn" id="ctl-estop-reset">Reset e-stopu</button>
+                <button type="button" class="sx-btn" id="ctl-estop-reset">Reset</button>
             </div>
-
-            <p class="ctl-hint">W/S vpřed a vzad, A/D do strany, Q/E otáčení. Puštění kláves i páček pošle nuly.</p>
         </aside>
     </div>
 </div>

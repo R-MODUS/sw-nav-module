@@ -354,6 +354,7 @@ export class TfScene {
             : null;
 
         this._attachRobotModel();
+        this.worldDirty = true;
         this.needsRender = true;
     }
 
@@ -649,6 +650,7 @@ export class TfScene {
         this.partGroups.forEach((group) => {
             const node = this.nodes.get(group.userData.frame);
             if (node) {
+                group.updateMatrix();
                 node.group.add(group);
             } else {
                 group.removeFromParent();

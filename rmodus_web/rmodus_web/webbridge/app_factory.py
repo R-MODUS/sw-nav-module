@@ -63,6 +63,14 @@ def create_app(cfg: Optional[WebConfig] = None) -> FastAPI:
 
     app = FastAPI(lifespan=lifespan)
     app.state.web_cfg = cfg
+
+    @app.middleware("http")
+    async def disable_asset_cache(request, call_next):
+        response = await call_next(request)
+        path = request.url.path
+        if path == "/" or path.startswith("/static"):
+            response.headers["Cache-Control"] = "no-store"
+        return response
     app.include_router(create_profiles_router())
     app.include_router(create_network_router())
     app.include_router(create_system_router())
@@ -100,6 +108,7 @@ def create_app(cfg: Optional[WebConfig] = None) -> FastAPI:
         ros_node: Optional[WebBridgeNode] = websocket.app.state.ros_node
 
         await manager.connect(websocket)
+        await dispatcher.apply_testing_role(websocket)
         if ros_node:
             for message in ros_node.get_initial_messages():
                 await manager.send_personal_message(message, websocket)

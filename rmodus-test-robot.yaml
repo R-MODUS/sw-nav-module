@@ -23,8 +23,8 @@ web:
   tf:
     root_frame: base_link
     broadcast_rate_hz: 5.0
-    stale_timeout_sec: 3.0
-    resubscribe_cooldown_sec: 8.0
+    stale_timeout_sec: 3600
+    resubscribe_cooldown_sec: 3600
     frame_stale_warn_sec: 0.5
     frame_stale_error_sec: 2.0
 
@@ -59,7 +59,7 @@ web:
       docs: false
       config: true
       settings: true
-      users: false
+      users: true
     blueprint:
       segments: {}
 
@@ -95,14 +95,14 @@ microros:
   enabled: true
   items:
     - name: bumpers
-      enabled: true
+      enabled: false
       transport: serial
       device: /dev/ttyACM0
       baudrate: 115200
     - name: drive
       enabled: true
       transport: serial
-      device: /dev/ttyACM1
+      device: /dev/ttyUSB0
       baudrate: 115200
 
 /**:
@@ -187,7 +187,7 @@ microros:
       name: neato_front
       topic: /scan
       frame_id: lidar_beam
-      port: /dev/ttyUSB0
+      port: /dev/ttyUSB000
       motor_pin: 19
       frequency: 10000
       target_rpm: 300

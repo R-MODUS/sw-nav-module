@@ -36,13 +36,14 @@ class MessageDispatcher:
         }
 
     async def dispatch(self, websocket: WebSocket, data: dict, ros_node: Optional[WebBridgeNode]):
-        await self._handle_testing_autologin(websocket)
+        await self.apply_testing_role(websocket)
         msg_type = data.get("type")
         handler = self.handlers.get(msg_type)
         if handler:
             await handler(websocket, data, ros_node)
 
-    async def _handle_testing_autologin(self, websocket: WebSocket):
+    async def apply_testing_role(self, websocket: WebSocket):
+        """testing: první volný klient je hned admin i operátor, bez PIN a bez zprávy z prohlížeče."""
         if not self.testing_mode:
             return
         if self.role_state.current_admin is not None:

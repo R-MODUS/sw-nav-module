@@ -1,6 +1,10 @@
 /* === KONFIGURACE A PROMĚNNÉ === */
 let ws;
-let userRole = 'spectator'; // Výchozí role
+function testingMode() {
+    return Boolean(window.__RMODUS_UI_CONFIG__ && window.__RMODUS_UI_CONFIG__.testing);
+}
+
+let userRole = 'spectator'; // Výchozí role; testing ji po připojení přepne na admina
 const ADMIN_TOKEN_KEY = 'robot_admin_token';
 let activePage = '';
 let wsReconnectTimer = null;
@@ -331,6 +335,10 @@ function initWebSocket() {
         if (connElem) {
             connElem.textContent = "✅ Připojeno";
             connElem.style.color = "green";
+        }
+        if (testingMode()) {
+            userRole = 'admin';
+            updateUI();
         }
         requestAdminFromToken();
     };

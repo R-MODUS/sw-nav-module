@@ -284,13 +284,11 @@ def _wheel_parts(params: Mapping[str, Any], base: Mapping[str, Any]) -> list:
         return []
     radius = _as_float(drive.get("wheel_radius"), 0.05)
     width = _as_float(drive.get("wheel_width"), 0.04)
-    half_x = _as_float(drive.get("wheelbase"), 0.0) / 2.0
-    half_y = _as_float(drive.get("track_width"), 0.3) / 2.0
-    z = radius - _as_float(base.get("offset_z"), 0.0)
+    # Tvar sedí na wheel_*_link (střed kola už nese TF), ne na base_link.
     return [
-        _part("base_link", "cylinder", [radius, width], "#1f2937",
-              xyz=[fx * half_x, fy * half_y, z], rpy=[HALF_PI, 0.0, 0.0], name=name)
-        for name, fx, fy in layout
+        _part(f"{name}_link", "cylinder", [radius, width], "#cbd5e1",
+              rpy=[HALF_PI, 0.0, 0.0], name=name)
+        for name, _fx, _fy in layout
     ]
 
 
@@ -317,12 +315,10 @@ def _bumper_parts(params: Mapping[str, Any]) -> list:
         if not name:
             continue
         parts.append(_part(
-            str(item.get("mount_parent_frame") or "base_link").lstrip("/"),
+            f"bumper_{name}_mount",
             "box",
             size,
             "#ef4444",
-            xyz=_float_list(item.get("mount_offset"), 3),
-            rpy=_float_list(item.get("mount_rpy"), 3),
             name=f"bumper_{name}",
         ))
     return parts
@@ -526,6 +522,8 @@ def load_web_config(cli_path: Optional[str] = None) -> WebConfig:
     )
     print(f"rmodus_web: nacten blok web: z {path}")
     print(f"rmodus_web: configs_root={root}")
+    part_names = [p.get("name") for p in cfg.robot_model.get("parts") or []]
+    print(f"rmodus_web: model parts: {len(part_names)} ({', '.join(part_names) or 'zadne'})")
     if sensor_names:
         print(f"rmodus_web: jmena senzoru z profilu: {len(sensor_names)}")
     return cfg

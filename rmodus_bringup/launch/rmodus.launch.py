@@ -341,7 +341,14 @@ def _build(context):
     _try_feature("cmd_mux", "rmodus_bringup", "cmd_mux.launch.py", config_file=robot_yaml)
     # Agent musi bezet driv, nez ESP zacne publikovat /robot/bumpers/state.
     _try_feature("microros", "rmodus_bringup", "microros.launch.py", config_file=robot_yaml)
-    _try_feature("bumper", "rmodus_bumper", "bumper.launch.py", config_file=robot_yaml)
+    desc_runs = want_desc and package_available("rmodus_description")
+    _try_feature(
+        "bumper",
+        "rmodus_bumper",
+        "bumper.launch.py",
+        config_file=robot_yaml,
+        publish_tf=_flag(not desc_runs),
+    )
     _try_feature(
         "cliff", "rmodus_cliff_sensor", "cliff_sensor.launch.py", config_file=robot_yaml
     )

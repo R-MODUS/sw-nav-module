@@ -1,0 +1,261 @@
+# ============================================================
+# R-MODUS test robot — ruční jízda, bez navigace
+# ============================================================
+
+meta:
+  source: rmodus-test-robot
+  title: Test robot (manual, mecanum)
+  last_used: ""
+  copied_at: ""
+
+boot:
+  rmodus: true
+
+web:
+  testing: true
+  configs_root: ""
+  host: "0.0.0.0"
+  port: 8080
+  log_level: info
+  operator_pin: "1234"
+  admin_pin: "4321"
+
+  tf:
+    root_frame: base_link
+    broadcast_rate_hz: 5.0
+    stale_timeout_sec: 3.0
+    resubscribe_cooldown_sec: 8.0
+    frame_stale_warn_sec: 0.5
+    frame_stale_error_sec: 2.0
+
+  topics:
+    lidar: /scan
+    imu: /imu/data
+    bumper_prefix: /bumper/
+    cliff_prefix: /cliff/
+    map: /map
+    map_updates: /map_updates
+    plan: /received_global_plan
+    goal_pose: /goal_pose
+    cmd_vel: /web/cmd_vel
+    e_stop_state: /rmodus/e_stop
+    e_stop_request: /rmodus/e_stop/request
+    e_stop_reset: /rmodus/e_stop/reset
+    discovery_rate_hz: 1.0
+
+  sensors:
+    max_rate_hz: 10.0
+
+  cmd:
+    use_twist_stamped: false
+    frame_id: base_link
+
+  ui:
+    nav_tabs:
+      status: true
+      controls: true
+      map: true
+      sensors: true
+      docs: false
+      config: true
+      settings: true
+      users: false
+    blueprint:
+      segments: {}
+
+bringup:
+  config: true
+  chassis: true          # base_footprint → base_link + drive
+  description: true      # složí chassis + rmodus_mount + imu + lidar do jednoho RSP
+  hw: false
+  uart_output: false     # Twist na UART ne; pohon je drive → micro-ROS
+  estop: false           # bez zámku muxu (test bez stopky)
+  cmd_mux: true
+  bumper: true
+  cliff: false
+  flow: false
+  display: false
+  web: true
+  rviz: false
+  sim: false
+  localization: false
+  navigation: false
+  slam: false
+  rf2o: false
+  obstacle_cloud: false
+  microros: true
+  extras:
+    - enabled: true
+      package: neato_lidar
+      launch: neato_lidar.launch.py
+      args:
+        config_file: $robot_yaml
+
+microros:
+  enabled: true
+  items:
+    - name: bumpers
+      enabled: true
+      transport: serial
+      device: /dev/ttyACM0
+      baudrate: 115200
+    - name: drive
+      enabled: true
+      transport: serial
+      device: /dev/ttyACM1
+      baudrate: 115200
+
+/**:
+  ros__parameters:
+
+    # Podvozek. Hranol, střed v base_link, base_footprint je o offset_z níž.
+    base_link:
+      mass: 5.0
+      size: [0.315, 0.26, 0.035]
+      offset_z: 0.0973
+
+    # Krabička (RPi). Fixed joint base_link → rmodus_mount.
+    rmodus_module:
+      mass: 2.0
+      size: [0.175, 0.145, 0.07]
+      offset_x: 0.035
+      offset_y: 0.0
+      offset_z: 0.0525
+
+    # /cmd_vel → rad/s na kanál. Unit kinematiku nezná.
+    # cmd_topic: std_msgs/Float32MultiArray, index = channel, 20 Hz, nuly po timeoutu.
+    drive:
+      enabled: true
+      mode: mecanum
+      wheel_radius: 0.05
+      wheel_width: 0.05
+      track_width: 0.335
+      wheelbase: 0.185
+      max_wheel_speed: 10.0
+      cmd_timeout_sec: 0.5
+      joint_states: true
+      units:
+        - name: main
+          cmd_topic: /drive/main/cmd
+          state_topic: /drive/main/state
+      wheels:
+        - { name: wheel_fl, unit: main, channel: 0, invert: false, ticks_per_rev: 1440 }
+        - { name: wheel_fr, unit: main, channel: 1, invert: true,  ticks_per_rev: 1440 }
+        - { name: wheel_rl, unit: main, channel: 2, invert: false, ticks_per_rev: 1440 }
+        - { name: wheel_rr, unit: main, channel: 3, invert: true,  ticks_per_rev: 1440 }
+
+    wheel_odom:
+      enabled: true
+      type: 'odom'
+      topic: '/odom'
+
+    lidar_odom:
+      enabled: false
+      type: 'odom'
+      topic: '/odom_lidar'
+
+    # Hranol. size z sim.yaml. URDF čte tenhle plochý blok.
+    imu:
+      enabled: true
+      type: 'imu'
+      name: 'IMU'
+      topic: '/imu/data'
+      frame_id: 'imu_link'
+      size: [0.08, 0.08, 0.01]
+      mount_parent_frame: 'rmodus_mount'
+      mount_offset: [0.055, 0.055, -0.025]
+      mount_rpy: [0.0, 0.0, 0.0]
+      offset: [0.0, 0.0, 0.0]
+      rpy: [0.0, 0.0, 0.0]
+
+    # Válec. size = [průměr, výška] z sim.yaml.
+    lidar:
+      enabled: true
+      name: 'Přední LiDAR'
+      topic: '/scan'
+      frame_id: 'lidar_beam'
+      size: [0.08, 0.02]
+      mount_parent_frame: 'rmodus_mount'
+      mount_offset: [-0.005, 0.0, 0.03]
+      mount_rpy: [0.0, 0.0, 0.0]
+      offset: [0.0, 0.0, 0.015]
+      rpy: [0.0, 0.0, 0.0]
+
+    # Driver Neato. frame_id musí sedět s lidar.frame_id. name = jméno ROS uzlu.
+    neato_lidar:
+      enabled: true
+      name: neato_front
+      topic: /scan
+      frame_id: lidar_beam
+      port: /dev/ttyUSB0
+      motor_pin: 19
+      frequency: 10000
+      target_rpm: 300
+      range_min: 0.05
+      range_max: 5.0
+
+    cmd_mux:
+      enabled: true
+      use_stamped: false
+      output_topic: /cmd_vel
+      inputs:
+        - name: teleop
+          topic: /teleop/cmd_vel
+          priority: 100
+          timeout: 0.5
+        - name: web
+          topic: /web/cmd_vel
+          priority: 90
+          timeout: 0.5
+      locks: []
+
+    # TF: mount_parent_frame → bumper_<name>_mount (střed hranolu) → frame_id (kontakt).
+    # Kontakt defaultně na přední ploše [size[0]/2, 0, 0]; přepsat jde contact_offset / contact_rpy.
+    bumpers:
+      enabled: true
+      state_topic: /robot/bumpers/state
+      estop_request:
+        enabled: false
+      items:
+        - name: front
+          enabled: true
+          pin: 2
+          topic: /bumper/rear
+          frame_id: bumper_rear_contact
+          mount_parent_frame: base_link
+          mount_offset: [0.195, 0.0, 0.0]
+          mount_rpy: [0.0, 0.0, 3.14159]
+          size: [0.01, 0.20, 0.02]
+
+        - name: rear_left
+          enabled: true
+          pin: 0
+          topic: /bumper/rear_left
+          frame_id: bumper_rear_left_contact
+          mount_parent_frame: base_link
+          mount_offset: [-0.195, 0.08, 0.0]
+          mount_rpy: [0.0, 0.0, 0.0]
+          size: [0.01, 0.15, 0.02]
+
+        - name: rear_right
+          enabled: true
+          pin: 1
+          topic: /bumper/rear_right
+          frame_id: bumper_rear_right_contact
+          mount_parent_frame: base_link
+          mount_offset: [-0.195, -0.08, 0.0]
+          mount_rpy: [0.0, 0.0, 0.0]
+          size: [0.01, 0.15, 0.02]
+
+    # Vlastní díly:
+    parts:
+      enabled: true
+      items:
+        - name: drive_unit
+          enabled: true
+          parent: base_link
+          shape: box
+          size: [0.08, 0.07, 0.035]
+          xyz: [-0.15, 0.045, 0.035]
+          rpy: [0.0, 0.0, 0.0]
+          color: '#22c55e'

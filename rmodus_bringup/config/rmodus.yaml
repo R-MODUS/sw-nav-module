@@ -217,8 +217,6 @@ microros:
           mount_offset: [0.30, 0.0, 0.0]
           mount_rpy: [0.0, 0.0, 0.0]
           size: [0.02, 0.30, 0.05]
-          contact_offset: [0.02, 0.0, -0.025]
-          contact_rpy: [0.0, 0.0, 0.0]
 
     cliff_sensors:
       enabled: true

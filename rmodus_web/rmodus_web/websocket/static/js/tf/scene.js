@@ -88,6 +88,38 @@ function buildBox(size, fillColor, fillOpacity, edgeColor) {
     return group;
 }
 
+/** URDF convention: cylinder axis = z, size = [radius, length]; rpy applied as fixed XYZ. */
+function buildPart(part) {
+    const size = Array.isArray(part.size) ? part.size : [];
+    const color = new THREE.Color(part.color || '#94a3b8').getHex();
+    let geometry;
+    if (part.shape === 'cylinder' && size.length >= 2) {
+        geometry = new THREE.CylinderGeometry(size[0], size[0], size[1], 24).rotateX(Math.PI / 2);
+    } else if (part.shape === 'box' && size.length >= 3) {
+        geometry = new THREE.BoxGeometry(size[0], size[1], size[2]);
+    } else {
+        return null;
+    }
+    const group = new THREE.Group();
+    group.add(
+        new THREE.Mesh(
+            geometry,
+            new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.55, depthWrite: false }),
+        ),
+        new THREE.LineSegments(
+            new THREE.EdgesGeometry(geometry, 30),
+            new THREE.LineBasicMaterial({ color }),
+        ),
+    );
+    const xyz = Array.isArray(part.xyz) ? part.xyz : [0, 0, 0];
+    const rpy = Array.isArray(part.rpy) ? part.rpy : [0, 0, 0];
+    group.position.set(xyz[0] || 0, xyz[1] || 0, xyz[2] || 0);
+    group.rotation.set(rpy[0] || 0, rpy[1] || 0, rpy[2] || 0, 'ZYX');
+    group.userData.frame = String(part.frame || 'base_link');
+    group.name = String(part.name || group.userData.frame);
+    return group;
+}
+
 function disposeObject(root) {
     root.traverse((obj) => {
         if (obj.geometry) {
@@ -183,6 +215,7 @@ export class TfScene {
 
         this.robotGroup = null;
         this.moduleGroup = null;
+        this.partGroups = [];
     }
 
     _initCameras() {
@@ -302,12 +335,14 @@ export class TfScene {
 
     setRobotModel(model) {
         this.robotModel = model || {};
-        [this.robotGroup, this.moduleGroup].forEach((group) => {
+        [this.robotGroup, this.moduleGroup, ...this.partGroups].forEach((group) => {
             if (group) {
                 group.removeFromParent();
                 disposeObject(group);
             }
         });
+        const parts = Array.isArray(this.robotModel.parts) ? this.robotModel.parts : [];
+        this.partGroups = parts.map(buildPart).filter(Boolean);
 
         const base = this.robotModel.base_link;
         const baseSize = base && Array.isArray(base.size) ? base.size : PLACEHOLDER_BASE_SIZE;
@@ -359,7 +394,7 @@ export class TfScene {
 
         this.halo.removeFromParent();
         this.halo.material.dispose();
-        [this.robotGroup, this.moduleGroup].forEach((group) => group && disposeObject(group));
+        [this.robotGroup, this.moduleGroup, ...this.partGroups].forEach((group) => group && disposeObject(group));
         this.scene.children
             .filter((obj) => obj !== this.tfRoot)
             .forEach((obj) => disposeObject(obj));
@@ -611,6 +646,14 @@ export class TfScene {
     }
 
     _attachRobotModel() {
+        this.partGroups.forEach((group) => {
+            const node = this.nodes.get(group.userData.frame);
+            if (node) {
+                node.group.add(group);
+            } else {
+                group.removeFromParent();
+            }
+        });
         if (!this.robotGroup) {
             return;
         }

@@ -247,7 +247,104 @@ def collect_robot_model(loaded: Mapping[str, Any]) -> dict:
             "offset": offset,
             "rpy": _float_list(module.get("rpy"), 3) or [0.0, 0.0, 0.0],
         }
+    model["parts"] = (
+        _wheel_parts(params, base)
+        + _sensor_mount_parts(params)
+        + _bumper_parts(params)
+        + _custom_parts(params)
+    )
     return model
+
+
+HALF_PI = 1.5707963267948966
+WHEEL_LAYOUT = {
+    "mecanum": (("wheel_fl", 1, 1), ("wheel_fr", 1, -1), ("wheel_rl", -1, 1), ("wheel_rr", -1, -1)),
+    "diff4": (("wheel_fl", 1, 1), ("wheel_fr", 1, -1), ("wheel_rl", -1, 1), ("wheel_rr", -1, -1)),
+    "diff2": (("wheel_l", 0, 1), ("wheel_r", 0, -1)),
+}
+
+
+def _part(frame: str, shape: str, size: list, color: str, xyz=None, rpy=None, name: str = "") -> dict:
+    """One primitive for the TF scene, same convention as URDF (cylinder axis = z, size = [radius, length])."""
+    return {
+        "name": name or frame,
+        "frame": frame,
+        "shape": shape,
+        "size": size,
+        "xyz": xyz or [0.0, 0.0, 0.0],
+        "rpy": rpy or [0.0, 0.0, 0.0],
+        "color": color,
+    }
+
+
+def _wheel_parts(params: Mapping[str, Any], base: Mapping[str, Any]) -> list:
+    drive = _mapping(params.get("drive"))
+    layout = WHEEL_LAYOUT.get(str(drive.get("mode") or ""))
+    if not layout:
+        return []
+    radius = _as_float(drive.get("wheel_radius"), 0.05)
+    width = _as_float(drive.get("wheel_width"), 0.04)
+    half_x = _as_float(drive.get("wheelbase"), 0.0) / 2.0
+    half_y = _as_float(drive.get("track_width"), 0.3) / 2.0
+    z = radius - _as_float(base.get("offset_z"), 0.0)
+    return [
+        _part("base_link", "cylinder", [radius, width], "#1f2937",
+              xyz=[fx * half_x, fy * half_y, z], rpy=[HALF_PI, 0.0, 0.0], name=name)
+        for name, fx, fy in layout
+    ]
+
+
+def _sensor_mount_parts(params: Mapping[str, Any]) -> list:
+    parts = []
+    lidar = _mapping(params.get("lidar"))
+    if _enabled(lidar.get("enabled"), False):
+        size = _float_list(lidar.get("size"), 2) or [0.02, 0.02]
+        parts.append(_part("lidar_mount", "cylinder", [size[0] / 2.0, size[1]], "#3b82f6",
+                           xyz=[0.0, 0.0, size[1] / 2.0], name="lidar"))
+    imu = _mapping(params.get("imu"))
+    if _enabled(imu.get("enabled"), False):
+        size = _float_list(imu.get("size"), 3) or [0.02, 0.02, 0.01]
+        parts.append(_part("imu_mount", "box", size, "#f59e0b",
+                           xyz=[0.0, 0.0, size[2] / 2.0], name="imu"))
+    return parts
+
+
+def _bumper_parts(params: Mapping[str, Any]) -> list:
+    parts = []
+    for item in _sensor_items(params.get("bumpers")):
+        name = str(item.get("name") or "").strip()
+        size = _float_list(item.get("size"), 3) or [0.02, 0.30, 0.05]
+        if not name:
+            continue
+        parts.append(_part(
+            str(item.get("mount_parent_frame") or "base_link").lstrip("/"),
+            "box",
+            size,
+            "#ef4444",
+            xyz=_float_list(item.get("mount_offset"), 3),
+            rpy=_float_list(item.get("mount_rpy"), 3),
+            name=f"bumper_{name}",
+        ))
+    return parts
+
+
+def _custom_parts(params: Mapping[str, Any]) -> list:
+    """parts.items: pose comes from TF (link = part name), shape: frame has no geometry."""
+    parts = []
+    for item in _sensor_items(params.get("parts")):
+        name = str(item.get("name") or "").strip()
+        shape = str(item.get("shape") or "frame")
+        if not name:
+            continue
+        if shape == "box":
+            size = _float_list(item.get("size"), 3) or [0.05, 0.05, 0.05]
+        elif shape == "cylinder":
+            size = _float_list(item.get("size"), 2) or [0.05, 0.05]
+            size = [size[0] / 2.0, size[1]]
+        else:
+            continue
+        parts.append(_part(name, shape, size, str(item.get("color") or "#94a3b8"), name=name))
+    return parts
 
 
 BLUEPRINT_GEOMETRY_KEYS = ("x", "y", "yaw", "threshold")

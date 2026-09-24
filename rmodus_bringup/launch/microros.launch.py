@@ -108,6 +108,16 @@ def _create(context):
         if not device:
             actions.append(LogInfo(msg=f"[rmodus] skip microros '{label}': device is empty"))
             continue
+        if not os.path.exists(device):
+            actions.append(
+                LogInfo(
+                    msg=(
+                        f"[rmodus] skip microros '{label}': {device} does not exist "
+                        "(unplugged). Agent respawn on a missing port stalls /drive/*/cmd"
+                    )
+                )
+            )
+            continue
         if device in used_devices:
             actions.append(
                 LogInfo(msg=f"[rmodus] skip microros '{label}': {device} is already used")
@@ -124,8 +134,7 @@ def _create(context):
                 name=node_name,
                 arguments=["serial", "--dev", device, "-b", baudrate],
                 output="screen",
-                respawn=True,
-                respawn_delay=2.0,
+                respawn=False,
             )
         )
     if not any(isinstance(action, Node) for action in actions):

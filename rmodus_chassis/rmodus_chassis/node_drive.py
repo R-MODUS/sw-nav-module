@@ -10,12 +10,14 @@ so the unit can treat a missing command stream as a stop.
 """
 
 import math
+import threading
+import time
 
 import rclpy
 from geometry_msgs.msg import TransformStamped, Twist
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
-from rclpy.qos import QoSProfile, qos_profile_sensor_data
+from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float32MultiArray, Int32MultiArray
 
@@ -141,12 +143,11 @@ class DriveNode(Node):
 
         self.kin = Kinematics(mode, wheel_names, wheel_radius, track_width, wheelbase)
 
-        cmd_qos = QoSProfile(depth=1)
         for unit in self.units.values():
             if unit.channels == 0:
                 self.get_logger().warn(f"unit '{unit.name}' has no wheels — not publishing")
                 continue
-            unit.cmd_pub = self.create_publisher(Float32MultiArray, unit.cmd_topic, cmd_qos)
+            unit.cmd_pub = self.create_publisher(Float32MultiArray, unit.cmd_topic, 10)
             if unit.state_topic:
                 self.create_subscription(
                     Int32MultiArray,
@@ -156,9 +157,24 @@ class DriveNode(Node):
                 )
 
         self.cmd = (0.0, 0.0, 0.0)
-        self.last_cmd_time = None
+        self.last_cmd_mono = None
+        self._cmd_vel_count = 0
+        self._last_send_mono = None
+        self._max_loop_gap = 0.0
+        self._max_pub_ms = 0.0
+        self._last_pub_ms = 0.0
+        self._zero_ticks = 0
+        self._motion_ticks = 0
         self.create_subscription(Twist, cmd_vel_topic, self._on_cmd_vel, 10)
-        self.create_timer(1.0 / max(cmd_rate, 1.0), self._send_commands)
+        self._cmd_timer_count = 0
+        self._cmd_pub_count = 0
+        self._cmd_stat_t0 = time.monotonic()
+        # WSL can jump system time by several seconds; rclpy timers then stall.
+        self._cmd_period = 1.0 / max(cmd_rate, 1.0)
+        self._cmd_stop = threading.Event()
+        self._cmd_thread = threading.Thread(target=self._cmd_loop, daemon=True, name="drive_cmd")
+        self._cmd_thread.start()
+        self.create_timer(2.0, self._log_cmd_stats)
 
         self.feedback_wheels = [w for w in self.wheels if w.has_feedback]
         self.odom_pub = None
@@ -193,20 +209,77 @@ class DriveNode(Node):
 
     def _on_cmd_vel(self, msg: Twist):
         self.cmd = (msg.linear.x, msg.linear.y, msg.angular.z)
-        self.last_cmd_time = self.get_clock().now()
+        self.last_cmd_mono = time.monotonic()
+        self._cmd_vel_count += 1
 
     def _cmd_fresh(self):
-        if self.last_cmd_time is None:
+        if self.last_cmd_mono is None:
             return False
-        age = (self.get_clock().now() - self.last_cmd_time).nanoseconds * 1e-9
-        return age <= self.cmd_timeout
+        return (time.monotonic() - self.last_cmd_mono) <= self.cmd_timeout
+
+    def _cmd_loop(self):
+        nxt = time.monotonic()
+        while not self._cmd_stop.is_set():
+            self._send_commands()
+            nxt += self._cmd_period
+            delay = nxt - time.monotonic()
+            if delay > 0.0:
+                self._cmd_stop.wait(delay)
+            else:
+                nxt = time.monotonic()
 
     def _send_commands(self):
+        now = time.monotonic()
+        if self._last_send_mono is not None:
+            gap = now - self._last_send_mono
+            if gap > self._max_loop_gap:
+                self._max_loop_gap = gap
+            if gap > 0.2:
+                self.get_logger().warn(
+                    f"drive cmd loop gap {gap:.3f}s (period {self._cmd_period:.3f}s)"
+                )
+        self._last_send_mono = now
+        self._cmd_timer_count += 1
         if self._cmd_fresh():
             speeds = self.kin.inverse(*self.cmd, max_wheel_speed=self.max_wheel_speed)
+            self._motion_ticks += 1
         else:
             speeds = [0.0] * len(self.wheels)
+            self._zero_ticks += 1
         self._publish_speeds(speeds)
+
+    def _log_cmd_stats(self):
+        now = time.monotonic()
+        dt = now - self._cmd_stat_t0
+        if dt <= 0.0:
+            return
+        age = -1.0 if self.last_cmd_mono is None else now - self.last_cmd_mono
+        vx, vy, wz = self.cmd
+        subs = 0
+        for unit in self.units.values():
+            if unit.cmd_pub is not None:
+                try:
+                    subs = max(subs, unit.cmd_pub.get_subscription_count())
+                except Exception:
+                    pass
+        self.get_logger().info(
+            f"drive cmd loop={self._cmd_timer_count / dt:.1f} Hz "
+            f"pub={self._cmd_pub_count / dt:.1f} Hz "
+            f"cmd_vel={self._cmd_vel_count / dt:.1f} Hz "
+            f"age={age:.2f}s fresh={int(self._cmd_fresh())} "
+            f"zero={self._zero_ticks} move={self._motion_ticks} "
+            f"twist=({vx:.2f},{vy:.2f},{wz:.2f}) "
+            f"subs={subs} max_gap={self._max_loop_gap:.3f}s "
+            f"pub_ms={self._last_pub_ms:.1f} max_pub_ms={self._max_pub_ms:.1f}"
+        )
+        self._cmd_timer_count = 0
+        self._cmd_pub_count = 0
+        self._cmd_vel_count = 0
+        self._zero_ticks = 0
+        self._motion_ticks = 0
+        self._max_loop_gap = 0.0
+        self._max_pub_ms = 0.0
+        self._cmd_stat_t0 = now
 
     def _publish_speeds(self, speeds):
         frames = {
@@ -215,10 +288,21 @@ class DriveNode(Node):
         for wheel, speed in zip(self.wheels, speeds):
             if wheel.unit.name in frames:
                 frames[wheel.unit.name][wheel.channel] = float(wheel.sign * speed)
+        t0 = time.monotonic()
         for name, data in frames.items():
             self.units[name].cmd_pub.publish(Float32MultiArray(data=data))
+            self._cmd_pub_count += 1
+        self._last_pub_ms = (time.monotonic() - t0) * 1000.0
+        if self._last_pub_ms > self._max_pub_ms:
+            self._max_pub_ms = self._last_pub_ms
+        if self._last_pub_ms > 50.0:
+            self.get_logger().warn(f"drive cmd publish blocked {self._last_pub_ms:.0f} ms")
 
     def stop(self):
+        self._cmd_stop.set()
+        thread = getattr(self, "_cmd_thread", None)
+        if thread is not None and thread.is_alive() and thread is not threading.current_thread():
+            thread.join(timeout=0.3)
         self._publish_speeds([0.0] * len(self.wheels))
 
     # --- feedback path ------------------------------------------------------

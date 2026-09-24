@@ -11,6 +11,35 @@ meta:
 boot:
   rmodus: true
 
+bringup:
+  config: true
+  chassis: true          # base_footprint → base_link + drive
+  description: true      # složí chassis + rmodus_mount + imu + lidar do jednoho RSP
+  hw: false
+  uart_output: false     # Twist na UART ne; pohon je drive → micro-ROS
+  estop: false           # bez zámku muxu (test bez stopky)
+  cmd_mux: true
+  bumper: true
+  cliff: false
+  flow: false
+  display: false
+  web: true
+  rviz: false
+  sim: false
+  localization: false
+  navigation: false
+  slam: false
+  rf2o: false
+  obstacle_cloud: false
+  microros: false
+  extras:
+    - enabled: true
+      package: neato_lidar
+      launch: neato_lidar.launch.py
+      args:
+        config_file: $robot_yaml
+
+
 web:
   testing: true
   configs_root: ""
@@ -62,34 +91,6 @@ web:
       users: true
     blueprint:
       segments: {}
-
-bringup:
-  config: true
-  chassis: true          # base_footprint → base_link + drive
-  description: true      # složí chassis + rmodus_mount + imu + lidar do jednoho RSP
-  hw: false
-  uart_output: false     # Twist na UART ne; pohon je drive → micro-ROS
-  estop: true
-  cmd_mux: true
-  bumper: true
-  cliff: false
-  flow: false
-  display: false
-  web: true
-  rviz: false
-  sim: false
-  localization: false
-  navigation: false
-  slam: false
-  rf2o: false
-  obstacle_cloud: false
-  microros: true
-  extras:
-    - enabled: true
-      package: neato_lidar
-      launch: neato_lidar.launch.py
-      args:
-        config_file: $robot_yaml
 
 microros:
   enabled: true
@@ -199,10 +200,6 @@ microros:
       use_stamped: false
       output_topic: /cmd_vel
       inputs:
-        - name: estop
-          topic: /estop/cmd_vel
-          priority: 255
-          timeout: 0.5
         - name: teleop
           topic: /teleop/cmd_vel
           priority: 100
@@ -211,11 +208,7 @@ microros:
           topic: /web/cmd_vel
           priority: 90
           timeout: 0.5
-      locks:
-        - name: e_stop
-          topic: /rmodus/e_stop
-          priority: 255
-          timeout: 0.5
+      locks: []
 
     # TF: mount_parent_frame → bumper_<name>_mount (střed hranolu) → frame_id (kontakt).
     # Kontakt defaultně na přední ploše [size[0]/2, 0, 0]; přepsat jde contact_offset / contact_rpy.

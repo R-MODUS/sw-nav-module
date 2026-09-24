@@ -1,7 +1,13 @@
 """Jediný entrypoint R-MODUS — spouští rmodus_* + bringup.extras podle profilu."""
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, LogInfo, OpaqueFunction
+from launch.actions import (
+    DeclareLaunchArgument,
+    IncludeLaunchDescription,
+    LogInfo,
+    OpaqueFunction,
+    SetEnvironmentVariable,
+)
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
@@ -436,6 +442,7 @@ def generate_launch_description():
     pkg_share = FindPackageShare("rmodus_bringup")
     return LaunchDescription(
         [
+            SetEnvironmentVariable("FASTDDS_BUILTIN_TRANSPORTS", "UDPv4"),
             DeclareLaunchArgument(
                 "robot_yaml",
                 default_value=PathJoinSubstitution([pkg_share, "config", "rmodus.yaml"]),

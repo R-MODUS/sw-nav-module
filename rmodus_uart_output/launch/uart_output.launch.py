@@ -39,7 +39,8 @@ def _create(context):
     params = {
         "port": str(cfg.get("port", "/dev/ttyUSB0")),
         "baudrate": int(cfg.get("baudrate", 115200)),
-        "cmd_vel_topic": str(cfg.get("cmd_vel_topic", "/cmd_vel_safe")),
+        "cmd_vel_topic": str(cfg.get("cmd_vel_topic", "/cmd_vel")),
+        "cmd_timeout_sec": float(cfg.get("cmd_timeout_sec", 0.5)),
     }
     return [
         Node(

@@ -211,13 +211,12 @@ class ObstacleCloudNode(Node):
         # Zpracování Bumperů
         for frame, msg in self.last_bumpers.items():
             if msg.contact:
-                # Vygenerujeme úsečku bodů přes šířku bumperu
+                # Úsečka bodů přes šířku bumperu; kontaktní rámec už leží na přední ploše.
                 width = float(msg.width) if msg.width > 0.0 else 0.20
-                depth = float(msg.depth) if msg.depth > 0.0 else 0.01
                 num_points = self.bumper_points_per_sensor
                 for i in range(num_points):
                     y_off = (i / (num_points - 1) - 0.5) * width
-                    p = self.transform_point(depth, y_off, 0.0, frame, self.base_frame)
+                    p = self.transform_point(0.0, y_off, 0.0, frame, self.base_frame)
                     if p:
                         points.append(p)
 

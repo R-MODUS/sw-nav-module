@@ -14,6 +14,10 @@
 <xacro:property name='module_cfg' value="${params.get('rmodus_module', params.get('nav_module', dict()))}" />
 <xacro:property name='imu_cfg' value="${params.get('imu', dict())}" />
 <xacro:property name='lidar_cfg' value="${params.get('lidar', dict())}" />
+<xacro:property name='bumpers_cfg' value="${params.get('bumpers', dict())}" />
+<xacro:property name='bumper_items' value="${bumpers_cfg.get('items', []) if bumpers_cfg.get('enabled', False) else []}" />
+<xacro:property name='parts_cfg' value="${params.get('parts', dict())}" />
+<xacro:property name='part_items' value="${parts_cfg.get('items', []) if parts_cfg.get('enabled', True) else []}" />
 <xacro:property name='use_mesh' value='false' />
 <xacro:property name='meshes_dir' value='rmodus_description/meshes' />
 <xacro:property name='mesh_scale' value='1.0' />
@@ -24,12 +28,14 @@
 <xacro:property name='imu_link_color' value='1.0 0.82 0.35 ${alpha}'/>
 <xacro:property name='lidar_mount_color' value='0.30 0.62 1.0 ${alpha}'/>
 <xacro:property name='lidar_beam_color' value='0.10 0.90 0.95 ${alpha}'/>
+<xacro:property name='bumper_mount_color' value='0.68 0.20 0.20 ${alpha}'/>
 
 <material name='main_module_mat'> <color rgba='${main_module_color}'/> </material>
 <material name='imu_mount_mat'> <color rgba='${imu_mount_color}'/> </material>
 <material name='imu_link_mat'> <color rgba='${imu_link_color}'/> </material>
 <material name='lidar_mount_mat'> <color rgba='${lidar_mount_color}'/> </material>
 <material name='lidar_beam_mat'> <color rgba='${lidar_beam_color}'/> </material>
+<material name='bumper_mount_mat'> <color rgba='${bumper_mount_color}'/> </material>
 
 <xacro:macro name='box_inertia' params='m x y z'>
   <inertial>
@@ -43,6 +49,7 @@
 <!-- Host: either compose rmodus_chassis or stub base_link for foreign platform. -->
 <xacro:if value="$(arg include_chassis)">
   <xacro:property name='base_cfg' value="${params['base_link']}" />
+  <xacro:property name='drive_cfg' value="${params.get('drive', dict())}" />
   <xacro:include filename="$(arg chassis_contents_path)"/>
   <xacro:rmodus_chassis_links/>
 </xacro:if>
@@ -59,5 +66,7 @@
 <xacro:if value="${lidar_cfg.get('enabled', False)}">
   <xacro:include filename='lidar.urdf.xacro'/>
 </xacro:if>
+<xacro:include filename='bumper_bodies.urdf.xacro'/>
+<xacro:include filename='parts.urdf.xacro'/>
 
 </robot>

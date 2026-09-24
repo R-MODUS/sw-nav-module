@@ -45,8 +45,7 @@ def _create(context):
     logic_params = {
         "enabled": True,
         "publish_rate_hz": float(cfg.get("publish_rate_hz", 50.0)),
-        "cmd_vel_input_topic": str(cfg.get("cmd_vel_input_topic", "/cmd_vel")),
-        "cmd_vel_output_topic": str(cfg.get("cmd_vel_output_topic", "/cmd_vel_safe")),
+        "zero_cmd_topic": str(cfg.get("zero_cmd_topic", "/estop/cmd_vel")),
         "state_topic": str(cfg.get("state_topic", "/rmodus/e_stop")),
         "request_topic": request_topic,
         "reset_topic": str(cfg.get("reset_topic", "/rmodus/e_stop/reset")),

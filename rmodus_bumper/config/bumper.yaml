@@ -1,4 +1,6 @@
 # Nárazníky. pin = index 0..7 v poli z ESP (/robot/bumpers/state), ne číslo GPIO.
+# TF: base_link → bumper_<name>_mount (střed hranolu, mount_offset/mount_rpy) → frame_id (kontakt).
+# Kontakt je defaultně na přední ploše [size[0]/2, 0, 0]; přepsat jde contact_offset / contact_rpy.
 bumpers:
   enabled: true
   state_topic: /robot/bumpers/state
@@ -19,9 +21,6 @@ bumpers:
       mount_offset: [0.30, 0.0, 0.0]
       mount_rpy: [0.0, 0.0, 0.0]
       size: [0.02, 0.30, 0.05]
-      contact_offset: [0.02, 0.0, -0.025]
-      contact_rpy: [0.0, 0.0, 0.0]
-
     - name: rear
       enabled: true
       pin: 1
@@ -31,9 +30,6 @@ bumpers:
       mount_offset: [-0.30, 0.0, 0.0]
       mount_rpy: [0.0, 0.0, 3.14159]
       size: [0.02, 0.30, 0.05]
-      contact_offset: [0.02, 0.0, -0.025]
-      contact_rpy: [0.0, 0.0, 0.0]
-
     - name: left
       enabled: true
       pin: 2
@@ -43,9 +39,6 @@ bumpers:
       mount_offset: [0.0, 0.30, 0.0]
       mount_rpy: [0.0, 0.0, 1.5708]
       size: [0.02, 0.20, 0.05]
-      contact_offset: [0.02, 0.0, -0.025]
-      contact_rpy: [0.0, 0.0, 0.0]
-
     - name: right
       enabled: true
       pin: 3
@@ -55,5 +48,3 @@ bumpers:
       mount_offset: [0.0, -0.30, 0.0]
       mount_rpy: [0.0, 0.0, -1.5708]
       size: [0.02, 0.20, 0.05]
-      contact_offset: [0.02, 0.0, -0.025]
-      contact_rpy: [0.0, 0.0, 0.0]

@@ -53,7 +53,7 @@ class WebConfig:
     goal_pose_topic: str = "/goal_pose"
     cmd_use_twist_stamped: bool = False
     cmd_frame_id: str = "base_link"
-    cmd_vel_topic: str = "/cmd_vel"
+    cmd_vel_topic: str = "/web/cmd_vel"
     e_stop_state_topic: str = "/rmodus/e_stop"
     e_stop_request_topic: str = "/rmodus/e_stop/request"
     e_stop_reset_topic: str = "/rmodus/e_stop/reset"
@@ -97,7 +97,7 @@ PLAN_TOPIC = "/received_global_plan"
 GOAL_POSE_TOPIC = "/goal_pose"
 CMD_USE_TWIST_STAMPED = False
 CMD_FRAME_ID = "base_link"
-CMD_VEL_TOPIC = "/cmd_vel"
+CMD_VEL_TOPIC = "/web/cmd_vel"
 E_STOP_STATE_TOPIC = "/rmodus/e_stop"
 E_STOP_REQUEST_TOPIC = "/rmodus/e_stop/request"
 E_STOP_RESET_TOPIC = "/rmodus/e_stop/reset"
@@ -247,7 +247,100 @@ def collect_robot_model(loaded: Mapping[str, Any]) -> dict:
             "offset": offset,
             "rpy": _float_list(module.get("rpy"), 3) or [0.0, 0.0, 0.0],
         }
+    model["parts"] = (
+        _wheel_parts(params, base)
+        + _sensor_mount_parts(params)
+        + _bumper_parts(params)
+        + _custom_parts(params)
+    )
     return model
+
+
+HALF_PI = 1.5707963267948966
+WHEEL_LAYOUT = {
+    "mecanum": (("wheel_fl", 1, 1), ("wheel_fr", 1, -1), ("wheel_rl", -1, 1), ("wheel_rr", -1, -1)),
+    "diff4": (("wheel_fl", 1, 1), ("wheel_fr", 1, -1), ("wheel_rl", -1, 1), ("wheel_rr", -1, -1)),
+    "diff2": (("wheel_l", 0, 1), ("wheel_r", 0, -1)),
+}
+
+
+def _part(frame: str, shape: str, size: list, color: str, xyz=None, rpy=None, name: str = "") -> dict:
+    """One primitive for the TF scene, same convention as URDF (cylinder axis = z, size = [radius, length])."""
+    return {
+        "name": name or frame,
+        "frame": frame,
+        "shape": shape,
+        "size": size,
+        "xyz": xyz or [0.0, 0.0, 0.0],
+        "rpy": rpy or [0.0, 0.0, 0.0],
+        "color": color,
+    }
+
+
+def _wheel_parts(params: Mapping[str, Any], base: Mapping[str, Any]) -> list:
+    drive = _mapping(params.get("drive"))
+    layout = WHEEL_LAYOUT.get(str(drive.get("mode") or ""))
+    if not layout:
+        return []
+    radius = _as_float(drive.get("wheel_radius"), 0.05)
+    width = _as_float(drive.get("wheel_width"), 0.04)
+    # Tvar sedí na wheel_*_link (střed kola už nese TF), ne na base_link.
+    return [
+        _part(f"{name}_link", "cylinder", [radius, width], "#cbd5e1",
+              rpy=[HALF_PI, 0.0, 0.0], name=name)
+        for name, _fx, _fy in layout
+    ]
+
+
+def _sensor_mount_parts(params: Mapping[str, Any]) -> list:
+    parts = []
+    lidar = _mapping(params.get("lidar"))
+    if _enabled(lidar.get("enabled"), False):
+        size = _float_list(lidar.get("size"), 2) or [0.02, 0.02]
+        parts.append(_part("lidar_mount", "cylinder", [size[0] / 2.0, size[1]], "#3b82f6",
+                           xyz=[0.0, 0.0, size[1] / 2.0], name="lidar"))
+    imu = _mapping(params.get("imu"))
+    if _enabled(imu.get("enabled"), False):
+        size = _float_list(imu.get("size"), 3) or [0.02, 0.02, 0.01]
+        parts.append(_part("imu_mount", "box", size, "#f59e0b",
+                           xyz=[0.0, 0.0, size[2] / 2.0], name="imu"))
+    return parts
+
+
+def _bumper_parts(params: Mapping[str, Any]) -> list:
+    parts = []
+    for item in _sensor_items(params.get("bumpers")):
+        name = str(item.get("name") or "").strip()
+        size = _float_list(item.get("size"), 3) or [0.02, 0.30, 0.05]
+        if not name:
+            continue
+        parts.append(_part(
+            f"bumper_{name}_mount",
+            "box",
+            size,
+            "#ef4444",
+            name=f"bumper_{name}",
+        ))
+    return parts
+
+
+def _custom_parts(params: Mapping[str, Any]) -> list:
+    """parts.items: pose comes from TF (link = part name), shape: frame has no geometry."""
+    parts = []
+    for item in _sensor_items(params.get("parts")):
+        name = str(item.get("name") or "").strip()
+        shape = str(item.get("shape") or "frame")
+        if not name:
+            continue
+        if shape == "box":
+            size = _float_list(item.get("size"), 3) or [0.05, 0.05, 0.05]
+        elif shape == "cylinder":
+            size = _float_list(item.get("size"), 2) or [0.05, 0.05]
+            size = [size[0] / 2.0, size[1]]
+        else:
+            continue
+        parts.append(_part(name, shape, size, str(item.get("color") or "#94a3b8"), name=name))
+    return parts
 
 
 BLUEPRINT_GEOMETRY_KEYS = ("x", "y", "yaw", "threshold")
@@ -429,6 +522,8 @@ def load_web_config(cli_path: Optional[str] = None) -> WebConfig:
     )
     print(f"rmodus_web: nacten blok web: z {path}")
     print(f"rmodus_web: configs_root={root}")
+    part_names = [p.get("name") for p in cfg.robot_model.get("parts") or []]
+    print(f"rmodus_web: model parts: {len(part_names)} ({', '.join(part_names) or 'zadne'})")
     if sensor_names:
         print(f"rmodus_web: jmena senzoru z profilu: {len(sensor_names)}")
     return cfg

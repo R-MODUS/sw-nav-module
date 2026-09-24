@@ -87,6 +87,7 @@ def _create(context):
             launch_arguments={
                 "params_file": params_file,
                 "use_sim_time": use_sim_time,
+                "cmd_vel_topic": LaunchConfiguration("cmd_vel_topic"),
             }.items(),
         )
     ]
@@ -99,6 +100,7 @@ def generate_launch_description():
             DeclareLaunchArgument("use_sim_time", default_value="false"),
             DeclareLaunchArgument("navigation", default_value=""),
             DeclareLaunchArgument("robot_yaml", default_value=""),
+            DeclareLaunchArgument("cmd_vel_topic", default_value="/nav/cmd_vel"),
             DeclareLaunchArgument(
                 "params_file",
                 default_value=PathJoinSubstitution([pkg, "config", "nav2_params.yaml"]),

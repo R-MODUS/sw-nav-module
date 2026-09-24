@@ -1,4 +1,4 @@
-"""Central e-stop latch + cmd_vel gate + optional platform mirror."""
+"""Central e-stop latch + zero velocity for cmd_mux + optional platform mirror."""
 
 from __future__ import annotations
 
@@ -12,12 +12,14 @@ from std_srvs.srv import Trigger
 
 class EStopNode(Node):
     """
-    Latch e-stop from software / HW requests, gate /cmd_vel → /cmd_vel_safe.
+    Latch e-stop from software / HW requests.
 
     Sources publish Bool(true) on request_topic (rising-edge / pulse).
     Optional HW button node publishes level on hw_active_topic (true while pressed).
     Reset via reset_topic Bool(true) or ~/reset service.
-    State is published as Bool on state_topic (true = stop active).
+    State is published as Bool on state_topic (true = stop active); twist_mux uses it
+    as a lock. While active, zero Twist goes to zero_cmd_topic, the highest-priority
+    mux input, because twist_mux itself stops forwarding without sending zero.
     """
 
     def __init__(self):
@@ -26,8 +28,7 @@ class EStopNode(Node):
 
         self.declare_parameter("enabled", True)
         self.declare_parameter("publish_rate_hz", 50.0)
-        self.declare_parameter("cmd_vel_input_topic", "/cmd_vel")
-        self.declare_parameter("cmd_vel_output_topic", "/cmd_vel_safe")
+        self.declare_parameter("zero_cmd_topic", "/estop/cmd_vel")
         self.declare_parameter("state_topic", "/rmodus/e_stop")
         self.declare_parameter("request_topic", "/rmodus/e_stop/request")
         self.declare_parameter("reset_topic", "/rmodus/e_stop/reset")
@@ -42,8 +43,7 @@ class EStopNode(Node):
 
         self.enabled = bool(self.get_parameter("enabled").value)
         rate = max(1.0, float(self.get_parameter("publish_rate_hz").value))
-        self.cmd_in = str(self.get_parameter("cmd_vel_input_topic").value)
-        self.cmd_out = str(self.get_parameter("cmd_vel_output_topic").value)
+        self.zero_cmd_topic = str(self.get_parameter("zero_cmd_topic").value).strip()
         self.state_topic = str(self.get_parameter("state_topic").value)
         self.request_topic = str(self.get_parameter("request_topic").value)
         self.reset_topic = str(self.get_parameter("reset_topic").value)
@@ -55,9 +55,10 @@ class EStopNode(Node):
         self._zero = Twist()
         self._platform_out_active = False
 
-        self.cmd_pub = self.create_publisher(Twist, self.cmd_out, 10)
+        self.cmd_pub = (
+            self.create_publisher(Twist, self.zero_cmd_topic, 10) if self.zero_cmd_topic else None
+        )
         self.state_pub = self.create_publisher(Bool, self.state_topic, 10)
-        self.create_subscription(Twist, self.cmd_in, self._on_cmd_vel, 10, callback_group=self._cb)
         self.create_subscription(Bool, self.request_topic, self._on_request, 10, callback_group=self._cb)
         self.create_subscription(Bool, self.reset_topic, self._on_reset_msg, 10, callback_group=self._cb)
         self.create_subscription(
@@ -71,7 +72,7 @@ class EStopNode(Node):
 
         self.create_timer(1.0 / rate, self._on_timer, callback_group=self._cb)
         self.get_logger().info(
-            f"rmodus_estop: {self.cmd_in}->{self.cmd_out}, state={self.state_topic}, "
+            f"rmodus_estop: zero={self.zero_cmd_topic or '-'}, state={self.state_topic}, "
             f"request={self.request_topic}, reset={self.reset_topic}, "
             f"hw_active={self.hw_active_topic}"
         )
@@ -111,6 +112,7 @@ class EStopNode(Node):
         self._latched = True
         if not was:
             self.get_logger().warn(f"E-STOP latched ({reason})")
+            self._publish_zero()
             self._mirror_platform_trigger()
 
     def _try_reset(self, reason: str) -> bool:
@@ -169,11 +171,9 @@ class EStopNode(Node):
         self._platform_out_active = False
         self._platform_reset.call_async(Trigger.Request())
 
-    def _on_cmd_vel(self, msg: Twist):
-        if self._active():
+    def _publish_zero(self):
+        if self.cmd_pub is not None:
             self.cmd_pub.publish(self._zero)
-            return
-        self.cmd_pub.publish(msg)
 
     def _on_timer(self):
         active = self._active()
@@ -181,7 +181,7 @@ class EStopNode(Node):
         msg.data = bool(active)
         self.state_pub.publish(msg)
         if active:
-            self.cmd_pub.publish(self._zero)
+            self._publish_zero()
 
 
 def main(args=None):

@@ -18,7 +18,11 @@ setup(
     zip_safe=True,
     maintainer="pi",
     maintainer_email="pi@todo.todo",
-    description="R-MODUS host chassis seed (base_link)",
+    description="R-MODUS host chassis: base_link seed + drive kinematics",
     license="TODO: License declaration",
-    entry_points={"console_scripts": []},
+    entry_points={
+        "console_scripts": [
+            "drive = rmodus_chassis.node_drive:main",
+        ]
+    },
 )

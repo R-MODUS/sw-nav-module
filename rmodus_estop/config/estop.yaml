@@ -1,10 +1,10 @@
-# Central e-stop: latch + cmd_vel gate. Sources only publish requests.
+# Central e-stop: latch + state. Sources only publish requests.
+# cmd_mux (twist_mux) bere state_topic jako zámek a zero_cmd_topic jako vstup s prioritou 255.
 # HW button is a separate node in this package (gpio_button.enabled).
 rmodus_estop:
   enabled: true
   publish_rate_hz: 50.0
-  cmd_vel_input_topic: /cmd_vel
-  cmd_vel_output_topic: /cmd_vel_safe
+  zero_cmd_topic: /estop/cmd_vel   # nuly při aktivní stopce; "" = vypnout
   state_topic: /rmodus/e_stop
   request_topic: /rmodus/e_stop/request
   reset_topic: /rmodus/e_stop/reset

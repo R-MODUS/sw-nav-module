@@ -1,0 +1,51 @@
+<?xml version='1.0'?>
+<!-- Custom parts from parts.items: visual only (no collision/inertia), frame at shape centre.
+     shape: box [x, y, z] | cylinder [diameter, height], axis z | frame (TF only).
+     parent must be a URDF link; sensors can use a part name as mount_parent_frame.
+     Expects part_items in scope. -->
+
+<robot xmlns:xacro='http://www.ros.org/wiki/xacro'>
+
+<xacro:macro name='render_part' params='p'>
+  <xacro:if value='${p.get("enabled", True)}'>
+    <xacro:property name='pshape' value='${p.get("shape", "frame")}'/>
+    <xacro:property name='psize' value='${p.get("size", [0.05, 0.05, 0.05])}'/>
+    <xacro:property name='pxyz' value='${p.get("xyz", [0.0, 0.0, 0.0])}'/>
+    <xacro:property name='prpy' value='${p.get("rpy", [0.0, 0.0, 0.0])}'/>
+    <link name='${p["name"]}'>
+      <xacro:if value='${pshape in ("box", "cylinder")}'>
+        <visual>
+          <geometry>
+            <xacro:if value='${pshape == "box"}'>
+              <box size='${psize[0]} ${psize[1]} ${psize[2]}'/>
+            </xacro:if>
+            <xacro:if value='${pshape == "cylinder"}'>
+              <cylinder radius='${psize[0] / 2.0}' length='${psize[1]}'/>
+            </xacro:if>
+          </geometry>
+          <material name='part_${p["name"]}_mat'>
+            <!-- Hex parsed inline: a digit-only colour stored in a property would be coerced to a number. -->
+            <color rgba='${int(str(p.get("color", "#94a3b8")).lstrip("#")[0:2], 16) / 255.0} ${int(str(p.get("color", "#94a3b8")).lstrip("#")[2:4], 16) / 255.0} ${int(str(p.get("color", "#94a3b8")).lstrip("#")[4:6], 16) / 255.0} 1'/>
+          </material>
+        </visual>
+      </xacro:if>
+    </link>
+    <joint name='part_${p["name"]}_joint' type='fixed'>
+      <parent link='${p.get("parent", "base_link")}'/>
+      <child link='${p["name"]}'/>
+      <origin xyz='${pxyz[0]} ${pxyz[1]} ${pxyz[2]}' rpy='${prpy[0]} ${prpy[1]} ${prpy[2]}'/>
+    </joint>
+  </xacro:if>
+</xacro:macro>
+
+<xacro:macro name='part_loop' params='items'>
+  <xacro:if value='${items}'>
+    <xacro:property name='current_p' value='${items.pop(0)}'/>
+    <xacro:render_part p='${current_p}'/>
+    <xacro:part_loop items='${items}'/>
+  </xacro:if>
+</xacro:macro>
+
+<xacro:part_loop items='${list(part_items)}'/>
+
+</robot>

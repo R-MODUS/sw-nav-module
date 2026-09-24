@@ -64,7 +64,7 @@
       enabled: true
       port: '/dev/ttyUSB0'
       baudrate: 115200
-      cmd_vel_topic: '/cmd_vel_safe'
+      cmd_vel_topic: '/cmd_vel'
 
     bumpers:
       enabled: true

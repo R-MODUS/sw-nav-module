@@ -9,6 +9,7 @@
 
 <xacro:property name='robot_cfg' value="${xacro.load_yaml('$(arg config_path)')}" />
 <xacro:property name='base_cfg' value="${robot_cfg['/**']['ros__parameters']['base_link']}" />
+<xacro:property name='drive_cfg' value="${robot_cfg['/**']['ros__parameters'].get('drive', dict())}" />
 
 <xacro:include filename="chassis_contents.urdf.xacro"/>
 <xacro:rmodus_chassis_links/>

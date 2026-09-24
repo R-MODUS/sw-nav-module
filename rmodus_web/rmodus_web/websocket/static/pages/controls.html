@@ -1,17 +1,49 @@
-<div class="page-shell">
-    <div class="page-head">
-        <div>
-            <h1 class="page-title">Ruční ovládání</h1>
-            <p class="page-subtitle">Lokální ovládání robota přes virtuální joystick nebo gamepad.</p>
+<div class="page-shell controls-page">
+    <header class="sx-head">
+        <h1 class="page-title">Teleop</h1>
+        <div class="sx-chips">
+            <span class="sx-chip" id="ctl-role">Role <strong>—</strong></span>
+            <span class="sx-chip" id="ctl-link">Link <strong>—</strong></span>
+            <span class="sx-chip" id="ctl-cmd">Cmd <strong>idle</strong></span>
+            <span class="sx-chip" id="ctl-estop">E-stop <strong>—</strong></span>
+            <span class="sx-chip" id="ctl-pad">Gamepad <strong>none</strong></span>
         </div>
-    </div>
-    <div class="panel panel-pad">
-        <div class="joystick-main-wrapper">
-            <div id="joy-move" class="joy-zone"><span>POHYB</span></div>
-            <div id="joy-rotate" class="joy-zone"><span>ROTACE</span></div>
-        </div>
-        <div class="controls-actions">
-            <button id="gamepad-status" class="btn btn-secondary" onclick="initGamepad()">Aktivovat gamepad</button>
-        </div>
+    </header>
+
+    <p class="ctl-lock" id="ctl-lock" hidden>Spectator. Sticks, keys and gamepad do not send commands.</p>
+
+    <div class="ctl-layout">
+        <section class="ctl-sticks" aria-label="Joysticky">
+            <div id="joy-move" class="joy-zone"><span>Move</span><small>WSAD</small></div>
+            <div id="joy-rotate" class="joy-zone"><span>Yaw</span><small>QE</small></div>
+        </section>
+
+        <aside class="ctl-side">
+            <div class="ctl-vector" aria-label="Aktuální příkaz">
+                <svg viewBox="0 0 160 160" role="img">
+                    <circle class="ctl-vec-ring" cx="80" cy="80" r="58"/>
+                    <line class="ctl-vec-axis" x1="80" y1="22" x2="80" y2="138"/>
+                    <line class="ctl-vec-axis" x1="22" y1="80" x2="138" y2="80"/>
+                    <path id="ctl-arc" fill="none" stroke-width="7" stroke-linecap="round"/>
+                    <line id="ctl-arrow" x1="80" y1="80" x2="80" y2="80"/>
+                    <circle id="ctl-dot" cx="80" cy="80" r="5"/>
+                </svg>
+                <p class="ctl-vec-read">
+                    <span>X <strong id="ctl-vx">0.00</strong></span>
+                    <span>Y <strong id="ctl-vy">0.00</strong></span>
+                    <span>ω <strong id="ctl-wz">0.00</strong></span>
+                </p>
+            </div>
+
+            <label class="ctl-speed">
+                <span>Speed <strong id="ctl-speed-val">50 %</strong></span>
+                <input id="ctl-speed" type="range" min="0" max="100" step="5" value="50">
+            </label>
+
+            <div class="ctl-actions">
+                <button type="button" class="sx-btn ctl-estop" id="ctl-estop-btn">E-stop</button>
+                <button type="button" class="sx-btn" id="ctl-estop-reset">Reset</button>
+            </div>
+        </aside>
     </div>
 </div>

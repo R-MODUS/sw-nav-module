@@ -1,6 +1,10 @@
 /* === KONFIGURACE A PROMĚNNÉ === */
 let ws;
-let userRole = 'spectator'; // Výchozí role
+function testingMode() {
+    return Boolean(window.__RMODUS_UI_CONFIG__ && window.__RMODUS_UI_CONFIG__.testing);
+}
+
+let userRole = 'spectator'; // Výchozí role; testing ji po připojení přepne na admina
 const ADMIN_TOKEN_KEY = 'robot_admin_token';
 let activePage = '';
 let wsReconnectTimer = null;
@@ -281,13 +285,14 @@ async function ensureJoystickLibrary() {
 }
 
 async function initControlsPage() {
+    bindControlsPage();
+    refreshControlsChrome();
     initGamepad();
     const hasJoystickLibrary = await ensureJoystickLibrary();
     if (!hasJoystickLibrary) {
-        const statusElem = document.getElementById('gamepad-status');
-        if (statusElem) {
-            statusElem.textContent = '⚠️ Joystick knihovna se nenačetla. Ovládání joystickem je nedostupné.';
-            statusElem.style.color = '#ff9500';
+        const hint = document.querySelector('.ctl-hint');
+        if (hint) {
+            hint.textContent = 'Joystick library failed to load. Keys WSAD and QE still work.';
         }
         return;
     }
@@ -332,6 +337,11 @@ function initWebSocket() {
             connElem.textContent = "✅ Připojeno";
             connElem.style.color = "green";
         }
+        if (testingMode()) {
+            userRole = 'admin';
+            updateUI();
+        }
+        refreshControlsChrome();
         requestAdminFromToken();
     };
 
@@ -346,6 +356,7 @@ function initWebSocket() {
         }
         userRole = 'spectator';
         updateUI();
+        refreshControlsChrome();
         // Zkusíme se znovu připojit po 2 sekundách
         wsReconnectTimer = setTimeout(initWebSocket, WS_RECONNECT_DELAY_MS);
     };
@@ -451,6 +462,10 @@ function initWebSocket() {
                     updateUI();
                     break;
 
+                case "e_stop":
+                    applyEstopState(Boolean(data.active));
+                    break;
+
                 case "user_list_update":
                     updateUserList(data.users);
                     break;
@@ -496,6 +511,7 @@ function updateUI() {
     } else {
         document.body.classList.remove('is-spectator');
     }
+    refreshControlsChrome();
 }
 
 function updateUserList(users) {
@@ -568,15 +584,248 @@ window.sendGoalPoseCommand = function(x, y, yaw) {
 }
 
 /* === ODESÍLÁNÍ PŘÍKAZŮ Z JOYSTICKU / GAMEPADU === */
+const SPEED_KEY = 'rmodus.controls.speed.v2';
+let speedScale = readSpeedScale();
+let estopActive = false;
+let estopKnown = false;
+let estopServerSeen = false;
+let estopHoldUntil = 0;
+let estopCandidate = null;
+let estopStreak = 0;
+let estopResetTimer = null;
+const ESTOP_CONFIRM_MSGS = 3;
+let gamepadName = '';
+const keyHold = { w: false, a: false, s: false, d: false, q: false, e: false };
+let lastCmd = { y: 0, x: 0, r: 0 };
+
+function readSpeedScale() {
+    const raw = localStorage.getItem(SPEED_KEY);
+    const saved = Number(raw);
+    if (raw !== null && raw !== '' && Number.isFinite(saved) && saved >= 0 && saved <= 1) {
+        return saved;
+    }
+    return 0.5;
+}
+
+function clampUnit(value) {
+    return Math.max(-1, Math.min(1, value));
+}
+
+function keyVector() {
+    let y = 0;
+    let x = 0;
+    let r = 0;
+    if (keyHold.w) y += 1;
+    if (keyHold.s) y -= 1;
+    if (keyHold.d) x += 1;
+    if (keyHold.a) x -= 1;
+    if (keyHold.q) r += 1;
+    if (keyHold.e) r -= 1;
+    return { y, x, r, active: y !== 0 || x !== 0 || r !== 0 };
+}
+
+function mergedCommand() {
+    const keys = keyVector();
+    return {
+        y: clampUnit(joyState.y + keys.y),
+        x: clampUnit(joyState.x + keys.x),
+        r: clampUnit(joyState.rotation + keys.r),
+    };
+}
+
 function sendJoystickData(y, x, rotation) {
+    const scale = estopActive ? 0 : speedScale;
+    const sy = (Number(y) || 0) * scale;
+    const sx = (Number(x) || 0) * scale;
+    const sr = (Number(rotation) || 0) * scale;
+    lastCmd = { y: sy, x: sx, r: sr };
+    paintCommandMeters();
     if (ws && ws.readyState === WebSocket.OPEN && userRole !== 'spectator') {
-        const payload = {
-            type: "cmd_joy",
-            linear_y: parseFloat(y),
-            linear_x: parseFloat(x),
-            angular_z: parseFloat(rotation)
+        ws.send(JSON.stringify({
+            type: 'cmd_joy',
+            linear_y: sy,
+            linear_x: sx,
+            angular_z: sr,
+        }));
+    }
+}
+
+function paintCommandMeters() {
+    const vx = document.getElementById('ctl-vx');
+    const vy = document.getElementById('ctl-vy');
+    const wz = document.getElementById('ctl-wz');
+    if (vx) vx.textContent = lastCmd.y.toFixed(2);
+    if (vy) vy.textContent = lastCmd.x.toFixed(2);
+    if (wz) wz.textContent = lastCmd.r.toFixed(2);
+    const arrow = document.getElementById('ctl-arrow');
+    const dot = document.getElementById('ctl-dot');
+    const arc = document.getElementById('ctl-arc');
+    const reach = 46;
+    const px = 80 + Math.max(-1, Math.min(1, lastCmd.x)) * reach;
+    const py = 80 - Math.max(-1, Math.min(1, lastCmd.y)) * reach;
+    if (arrow) {
+        arrow.setAttribute('x2', px.toFixed(1));
+        arrow.setAttribute('y2', py.toFixed(1));
+    }
+    if (dot) {
+        dot.setAttribute('cx', px.toFixed(1));
+        dot.setAttribute('cy', py.toFixed(1));
+    }
+    if (arc) {
+        const sweep = Math.max(-1, Math.min(1, lastCmd.r));
+        if (Math.abs(sweep) < 0.02) {
+            arc.setAttribute('d', '');
+        } else {
+            const a0 = -Math.PI / 2;
+            const a1 = a0 - sweep * Math.PI;
+            const r = 58;
+            const x0 = 80 + r * Math.cos(a0);
+            const y0 = 80 + r * Math.sin(a0);
+            const x1 = 80 + r * Math.cos(a1);
+            const y1 = 80 + r * Math.sin(a1);
+            const dir = sweep > 0 ? 0 : 1;
+            arc.setAttribute('d', `M ${x0.toFixed(1)} ${y0.toFixed(1)} A ${r} ${r} 0 0 ${dir} ${x1.toFixed(1)} ${y1.toFixed(1)}`);
+        }
+    }
+    const chip = document.getElementById('ctl-cmd');
+    if (!chip) return;
+    const moving = Math.abs(lastCmd.y) + Math.abs(lastCmd.x) + Math.abs(lastCmd.r) > 0.001;
+    chip.classList.toggle('is-live', moving);
+    chip.querySelector('strong').textContent = moving ? 'moving' : 'idle';
+}
+
+function refreshControlsChrome() {
+    const role = document.querySelector('#ctl-role strong');
+    const link = document.querySelector('#ctl-link strong');
+    const linkChip = document.getElementById('ctl-link');
+    const estop = document.querySelector('#ctl-estop strong');
+    const estopChip = document.getElementById('ctl-estop');
+    const pad = document.querySelector('#ctl-pad strong');
+    const lock = document.getElementById('ctl-lock');
+    if (role) role.textContent = userRole;
+    if (link && linkChip) {
+        const open = ws && ws.readyState === WebSocket.OPEN;
+        link.textContent = open ? 'connected' : 'offline';
+        linkChip.classList.toggle('is-live', open);
+        linkChip.classList.toggle('is-bad', !open);
+    }
+    if (estop && estopChip) {
+        estop.textContent = estopKnown ? (estopActive ? 'latched' : 'clear') : '—';
+        estopChip.classList.toggle('is-bad', estopKnown && estopActive);
+        estopChip.classList.toggle('is-live', estopKnown && !estopActive);
+    }
+    document.body.classList.toggle('is-estop', estopActive);
+    if (pad) pad.textContent = gamepadName || 'none';
+    if (lock) lock.hidden = userRole !== 'spectator';
+    paintCommandMeters();
+}
+
+function bindControlsPage() {
+    const speed = document.getElementById('ctl-speed');
+    const speedVal = document.getElementById('ctl-speed-val');
+    if (speed) {
+        speed.value = String(Math.round(speedScale * 100));
+        if (speedVal) speedVal.textContent = `${speed.value} %`;
+        speed.oninput = () => {
+            speedScale = Number(speed.value) / 100;
+            localStorage.setItem(SPEED_KEY, String(speedScale));
+            if (speedVal) speedVal.textContent = `${speed.value} %`;
         };
-        ws.send(JSON.stringify(payload));
+    }
+    const estopBtn = document.getElementById('ctl-estop-btn');
+    if (estopBtn) estopBtn.onclick = () => pressEstop();
+    const resetBtn = document.getElementById('ctl-estop-reset');
+    if (resetBtn) resetBtn.onclick = () => pressEstopReset();
+}
+
+function sendControlMessage(type) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ type }));
+}
+
+function commitEstop(active) {
+    const changed = active !== estopActive || !estopKnown;
+    const rose = active && !estopActive;
+    const fell = !active && estopActive;
+    estopActive = active;
+    estopKnown = true;
+    if (rose) {
+        stopCommand();
+    }
+    if (fell && activePage === 'controls' && typeof window.nipplejs !== 'undefined') {
+        initJoysticks();
+    }
+    if (changed) {
+        refreshControlsChrome();
+    }
+}
+
+function applyEstopState(active) {
+    estopServerSeen = true;
+    if (active === estopCandidate) {
+        estopStreak += 1;
+    } else {
+        estopCandidate = active;
+        estopStreak = 1;
+    }
+    if (!active && Date.now() < estopHoldUntil) {
+        return;
+    }
+    if (estopStreak >= ESTOP_CONFIRM_MSGS || !estopKnown) {
+        if (active !== estopActive || !estopKnown) {
+            if (estopResetTimer && !active) {
+                clearTimeout(estopResetTimer);
+                estopResetTimer = null;
+            }
+            commitEstop(active);
+        }
+    }
+}
+
+function pressEstop() {
+    estopHoldUntil = Date.now() + 600;
+    sendControlMessage('e_stop_trigger');
+    commitEstop(true);
+}
+
+function pressEstopReset() {
+    estopHoldUntil = 0;
+    sendControlMessage('e_stop_reset');
+    if (estopResetTimer) clearTimeout(estopResetTimer);
+    estopResetTimer = setTimeout(() => {
+        estopResetTimer = null;
+        if (!estopServerSeen) {
+            commitEstop(false);
+        }
+    }, 1000);
+}
+
+function stopCommand() {
+    Object.keys(keyHold).forEach((key) => { keyHold[key] = false; });
+    joyState.y = 0;
+    joyState.x = 0;
+    joyState.rotation = 0;
+    joyState.move = false;
+    joyState.rotate = false;
+    gamepadActive = false;
+    updateJoyRepeat();
+    sendJoystickData(0, 0, 0);
+}
+
+function onControlKey(event, down) {
+    if (activePage !== 'controls') return;
+    if (event.repeat) return;
+    const tag = (event.target && event.target.tagName) || '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    const key = event.key.toLowerCase();
+    if (!(key in keyHold)) return;
+    event.preventDefault();
+    if (userRole === 'spectator') return;
+    keyHold[key] = down;
+    const keys = keyVector();
+    if (keys.active || !down) {
+        sendJoyState();
+        updateJoyRepeat();
     }
 }
 
@@ -584,6 +833,32 @@ const joyManager = {
     move: null,
     rotate: null
 };
+
+// cmd_mux zahodí vstup po 0,5 s bez zprávy, proto držený joystick posílá stále.
+const JOY_REPEAT_MS = 100;
+const joyState = { y: 0, x: 0, rotation: 0, move: false, rotate: false };
+let joyRepeatTimer = null;
+let gamepadActive = false;
+
+function sendJoyState() {
+    const cmd = mergedCommand();
+    sendJoystickData(cmd.y, cmd.x, cmd.r);
+}
+
+function updateJoyRepeat() {
+    const active = joyState.move || joyState.rotate || keyVector().active;
+    if (active && !joyRepeatTimer) {
+        joyRepeatTimer = setInterval(sendJoyState, JOY_REPEAT_MS);
+    } else if (!active && joyRepeatTimer) {
+        clearInterval(joyRepeatTimer);
+        joyRepeatTimer = null;
+    }
+}
+
+function resetJoyState() {
+    Object.assign(joyState, { y: 0, x: 0, rotation: 0, move: false, rotate: false });
+    updateJoyRepeat();
+}
 
 function initJoysticks() {
     if (typeof window.nipplejs === 'undefined') {
@@ -598,6 +873,7 @@ function initJoysticks() {
         joyManager.rotate.destroy();
         joyManager.rotate = null;
     }
+    resetJoyState();
 
     const commonOptions = {
         mode: 'static',
@@ -613,46 +889,78 @@ function initJoysticks() {
     if (moveZone) {
         joyManager.move = nipplejs.create({ zone: moveZone, ...commonOptions });
         joyManager.move.on('move', (evt, data) => {
-            if (data.vector) sendJoystickData(data.vector.y, data.vector.x, 0);
-        }).on('end', () => sendJoystickData(0, 0, 0));
+            if (!data.vector) return;
+            joyState.y = data.vector.y;
+            joyState.x = data.vector.x;
+            joyState.move = true;
+            sendJoyState();
+            updateJoyRepeat();
+        }).on('end', () => {
+            joyState.y = 0;
+            joyState.x = 0;
+            joyState.move = false;
+            sendJoyState();
+            updateJoyRepeat();
+        });
     }
 
     if (rotateZone) {
         joyManager.rotate = nipplejs.create({ zone: rotateZone, ...commonOptions, color: '#ff9500' });
         joyManager.rotate.on('move', (evt, data) => {
-            if (data.vector) sendJoystickData(0, 0, -data.vector.x);
-        }).on('end', () => sendJoystickData(0, 0, 0));
+            if (!data.vector) return;
+            joyState.rotation = -data.vector.x;
+            joyState.rotate = true;
+            sendJoyState();
+            updateJoyRepeat();
+        }).on('end', () => {
+            joyState.rotation = 0;
+            joyState.rotate = false;
+            sendJoyState();
+            updateJoyRepeat();
+        });
     }
 }
 
 let gamepadInterval = null;
 
-function initGamepad() {
-    const statusElem = document.getElementById('gamepad-status');
-    if (statusElem) statusElem.textContent = 'Hledám gamepad...';
+function setGamepadName(name) {
+    gamepadName = name || '';
+    const chip = document.getElementById('ctl-pad');
+    if (chip) chip.classList.toggle('is-live', Boolean(gamepadName));
+    refreshControlsChrome();
+}
 
+function initGamepad() {
     if (!gamepadListenersInitialized) {
-        window.addEventListener("gamepadconnected", (e) => {
-            const currentStatusElem = document.getElementById('gamepad-status');
-            if (currentStatusElem) {
-                currentStatusElem.textContent = `✅ Gamepad připojen: ${e.gamepad.id}`;
-                currentStatusElem.style.color = 'green';
-            }
+        window.addEventListener('gamepadconnected', (e) => {
+            setGamepadName(e.gamepad.id);
             if (!gamepadInterval) {
                 gamepadInterval = setInterval(pollGamepads, 100);
             }
         });
-
-        window.addEventListener("gamepaddisconnected", () => {
-            const currentStatusElem = document.getElementById('gamepad-status');
-            if (currentStatusElem) {
-                currentStatusElem.textContent = 'Gamepad odpojen.';
-                currentStatusElem.style.color = '#888';
-            }
+        window.addEventListener('gamepaddisconnected', () => {
+            setGamepadName('');
             clearInterval(gamepadInterval);
             gamepadInterval = null;
+            if (gamepadActive) {
+                gamepadActive = false;
+                sendJoystickData(0, 0, 0);
+            }
+        });
+        window.addEventListener('keydown', (event) => onControlKey(event, true));
+        window.addEventListener('keyup', (event) => onControlKey(event, false));
+        window.addEventListener('blur', () => {
+            if (activePage === 'controls') stopCommand();
         });
         gamepadListenersInitialized = true;
+    }
+    const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+    const connected = pads && pads[0];
+    if (connected) {
+        setGamepadName(connected.id);
+        if (!gamepadInterval) {
+            gamepadInterval = setInterval(pollGamepads, 100);
+        }
     }
 }
 
@@ -664,14 +972,27 @@ function pollGamepads() {
 
         let y = -gp.axes[1];
         let x = gp.axes[0];
-        let rotation = gp.axes[2];
+        let rotation = -gp.axes[2];
 
         if (Math.abs(y) < deadZone) y = 0;
         if (Math.abs(x) < deadZone) x = 0;
         if (Math.abs(rotation) < deadZone) rotation = 0;
         
-        if (userRole !== 'spectator' && (y !== 0 || x !== 0 || rotation !== 0)) {
-            sendJoystickData(y.toFixed(2), x.toFixed(2), rotation.toFixed(2));
+        if (userRole === 'spectator') return;
+        if (y !== 0 || x !== 0 || rotation !== 0) {
+            gamepadActive = true;
+            joyState.y = y;
+            joyState.x = x;
+            joyState.rotation = rotation;
+            joyState.move = true;
+            sendJoyState();
+        } else if (gamepadActive) {
+            gamepadActive = false;
+            joyState.y = 0;
+            joyState.x = 0;
+            joyState.rotation = 0;
+            joyState.move = false;
+            sendJoyState();
         }
     }
 }

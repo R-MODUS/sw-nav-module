@@ -1,9 +1,10 @@
-CLaserOdometry2DNode:
+# Klíč = jméno uzlu z localization.launch.py. /odom patří kolům (drive), TF odom → base_footprint EKF.
+rf2o_laser_odometry:
   ros__parameters:
     laser_scan_topic: /scan
-    odom_topic: /odom
+    odom_topic: /odom_lidar
     base_frame_id: base_link
     odom_frame_id: odom
-    publish_tf: true
+    publish_tf: false
     init_pose_from_topic: ""
     freq: 10.0

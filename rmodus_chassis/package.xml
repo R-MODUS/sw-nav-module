@@ -3,7 +3,7 @@
 <package format="3">
   <name>rmodus_chassis</name>
   <version>0.0.0</version>
-  <description>R-MODUS host chassis seed: base_footprint → base_link (wheel variants later)</description>
+  <description>R-MODUS host chassis: base_footprint → base_link + drive kinematics (diff2/diff4/mecanum)</description>
   <maintainer email="pi@todo.todo">pi</maintainer>
   <license>TODO: License declaration</license>
 
@@ -15,6 +15,13 @@
   <exec_depend>robot_state_publisher</exec_depend>
   <exec_depend>xacro</exec_depend>
   <exec_depend>python3-yaml</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>tf2_ros_py</exec_depend>
 
   <export>
     <build_type>ament_python</build_type>

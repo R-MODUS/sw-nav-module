@@ -17,7 +17,7 @@ setup(
     zip_safe=True,
     maintainer="pi",
     maintainer_email="pi@todo.todo",
-    description="Optional Twist bridge: /cmd_vel_safe → UART.",
+    description="Optional Twist bridge: /cmd_vel → UART.",
     license="TODO: License declaration",
     entry_points={
         "console_scripts": [

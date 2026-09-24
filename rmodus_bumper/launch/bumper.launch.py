@@ -38,19 +38,15 @@ def _enabled_items(cfg: dict) -> list:
     return out
 
 
-def _static_tf(item: dict) -> Node:
-    offset = item.get("mount_offset", [0.0, 0.0, 0.0])
-    rpy = item.get("mount_rpy", [0.0, 0.0, 0.0])
-    parent = str(item.get("mount_parent_frame", "base_link"))
-    child = str(item.get("frame_id") or f"bumper_{item.get('name', 'x')}_contact")
+def _tf_node(name: str, parent: str, child: str, xyz, rpy) -> Node:
     return Node(
         package="tf2_ros",
         executable="static_transform_publisher",
-        name=f"bumper_tf_{item.get('name', 'x')}",
+        name=name,
         arguments=[
-            "--x", str(float(offset[0])),
-            "--y", str(float(offset[1])),
-            "--z", str(float(offset[2])),
+            "--x", str(float(xyz[0])),
+            "--y", str(float(xyz[1])),
+            "--z", str(float(xyz[2])),
             "--roll", str(float(rpy[0])),
             "--pitch", str(float(rpy[1])),
             "--yaw", str(float(rpy[2])),
@@ -58,6 +54,30 @@ def _static_tf(item: dict) -> Node:
             "--child-frame-id", child,
         ],
     )
+
+
+def _static_tf(item: dict) -> list:
+    """Same chain as rmodus_description/urdf/bumper_bodies.urdf.xacro: parent → _mount → contact."""
+    name = str(item.get("name", "x"))
+    size = item.get("size") or [0.02, 0.3, 0.05]
+    mount = f"bumper_{name}_mount"
+    contact = str(item.get("frame_id") or f"bumper_{name}_contact")
+    return [
+        _tf_node(
+            f"bumper_tf_{name}_mount",
+            str(item.get("mount_parent_frame", "base_link")),
+            mount,
+            item.get("mount_offset", [0.0, 0.0, 0.0]),
+            item.get("mount_rpy", [0.0, 0.0, 0.0]),
+        ),
+        _tf_node(
+            f"bumper_tf_{name}_contact",
+            mount,
+            contact,
+            item.get("contact_offset", [float(size[0]) / 2.0, 0.0, 0.0]),
+            item.get("contact_rpy", [0.0, 0.0, 0.0]),
+        ),
+    ]
 
 
 def _create(context):
@@ -106,8 +126,10 @@ def _create(context):
             output="screen",
         )
     ]
-    for item in items:
-        nodes.append(_static_tf(item))
+    # Without rmodus_description nobody else publishes the bumper frames.
+    if LaunchConfiguration("publish_tf").perform(context).strip().lower() in ("1", "true", "yes", "on"):
+        for item in items:
+            nodes.extend(_static_tf(item))
 
     estop = cfg.get("estop_request") if isinstance(cfg.get("estop_request"), dict) else {}
     if bool(estop.get("enabled", True)):
@@ -141,6 +163,11 @@ def generate_launch_description():
     return LaunchDescription(
         [
             DeclareLaunchArgument("config_file", default_value=default),
+            DeclareLaunchArgument(
+                "publish_tf",
+                default_value="true",
+                description="Static TF _mount → contact; false when rmodus_description publishes them",
+            ),
             OpaqueFunction(function=_create),
         ]
     )

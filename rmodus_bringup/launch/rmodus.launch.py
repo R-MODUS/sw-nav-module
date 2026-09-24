@@ -1,7 +1,13 @@
 """Jediný entrypoint R-MODUS — spouští rmodus_* + bringup.extras podle profilu."""
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, LogInfo, OpaqueFunction
+from launch.actions import (
+    DeclareLaunchArgument,
+    IncludeLaunchDescription,
+    LogInfo,
+    OpaqueFunction,
+    SetEnvironmentVariable,
+)
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
@@ -33,6 +39,7 @@ _DEFAULT_BRINGUP = {
     "rf2o": False,
     "obstacle_cloud": True,
     "microros": False,
+    "cmd_mux": True,
 }
 
 # bringup flag → ROS package that must exist to include
@@ -316,14 +323,38 @@ def _build(context):
             robot_config_file=robot_yaml,
         )
 
+    # Drive (cmd_vel -> wheel units) runs independently of which launch owns the chassis TF.
+    if want_chassis and package_available("rmodus_chassis"):
+        ekf_runs = (
+            b["localization"]
+            and package_available("rmodus_localization")
+            and package_available("robot_localization")
+        )
+        actions.append(
+            _include(
+                "rmodus_chassis",
+                "drive.launch.py",
+                robot_config_file=robot_yaml,
+                publish_tf=_flag(not ekf_runs),
+            )
+        )
+
     _try_feature("hw", "rmodus_hw", "hw.launch.py", user_params_file=robot_yaml)
     _try_feature(
         "uart_output", "rmodus_uart_output", "uart_output.launch.py", config_file=robot_yaml
     )
     _try_feature("estop", "rmodus_estop", "estop.launch.py", config_file=robot_yaml)
+    _try_feature("cmd_mux", "rmodus_bringup", "cmd_mux.launch.py", config_file=robot_yaml)
     # Agent musi bezet driv, nez ESP zacne publikovat /robot/bumpers/state.
     _try_feature("microros", "rmodus_bringup", "microros.launch.py", config_file=robot_yaml)
-    _try_feature("bumper", "rmodus_bumper", "bumper.launch.py", config_file=robot_yaml)
+    desc_runs = want_desc and package_available("rmodus_description")
+    _try_feature(
+        "bumper",
+        "rmodus_bumper",
+        "bumper.launch.py",
+        config_file=robot_yaml,
+        publish_tf=_flag(not desc_runs),
+    )
     _try_feature(
         "cliff", "rmodus_cliff_sensor", "cliff_sensor.launch.py", config_file=robot_yaml
     )
@@ -411,6 +442,7 @@ def generate_launch_description():
     pkg_share = FindPackageShare("rmodus_bringup")
     return LaunchDescription(
         [
+            SetEnvironmentVariable("FASTDDS_BUILTIN_TRANSPORTS", "UDPv4"),
             DeclareLaunchArgument(
                 "robot_yaml",
                 default_value=PathJoinSubstitution([pkg_share, "config", "rmodus.yaml"]),

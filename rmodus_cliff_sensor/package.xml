@@ -3,7 +3,7 @@
 <package format="3">
   <name>rmodus_cliff_sensor</name>
   <version>0.0.0</version>
-  <description>Optional cliff sensor module: ADS1115 → sensor_msgs/Range + TF mounts.</description>
+  <description>Optional cliff sensor module: range array → sensor_msgs/Range. ADS1115 publishes the array.</description>
   <maintainer email="pi@todo.todo">pi</maintainer>
   <license>TODO: License declaration</license>
 

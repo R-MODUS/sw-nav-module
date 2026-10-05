@@ -1,7 +1,8 @@
 # ============================================================
 # R-MODUS test robot — simulace (Gazebo Harmonic)
 # Stejná geometrie a topicy jako rmodus-test-robot.yaml.
-# Pohon, /odom, /scan, /imu/data a nárazníky drží Gazebo.
+# Pohon, /odom, /scan a /imu/data drží Gazebo.
+# Nárazníky: Gazebo publikuje /robot/bumpers/state, rmodus_bumper z toho skládá /bumper/*.
 #
 #   ros2 launch rmodus_bringup rmodus.launch.py robot_yaml:=<cesta>/rmodus-test-sim.yaml
 # ============================================================
@@ -23,9 +24,9 @@ bringup:
   uart_output: false
   estop: false
   cmd_mux: true          # web/teleop → /cmd_vel → Gazebo
-  bumper: false          # kontakty publikuje rmodus_gazebo (bumpers.enabled níže zůstává)
-  cliff: false
-  flow: false
+  bumper: true           # zpracuje /robot/bumpers/state z Gazebo na /bumper/*
+  cliff: true           # v tomhle profilu nejsou cliff_sensors
+  flow: false            # v tomhle profilu není flow_sensor
   display: false
   web: true
   rviz: false

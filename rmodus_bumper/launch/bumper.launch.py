@@ -8,6 +8,16 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 
+def _as_bool(value, default=False) -> bool:
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value != 0
+    return str(value).strip().lower() in ("1", "true", "yes", "on", "y")
+
+
 def _load_block(path: str) -> dict:
     if not path or not os.path.isfile(path):
         return {}
@@ -107,7 +117,9 @@ def _create(context):
     depths = [float((i.get("size") or [0.02, 0.3, 0.05])[0]) for i in items]
     heights = [float((i.get("size") or [0.02, 0.3, 0.05])[2]) for i in items]
 
+    use_sim = _as_bool(LaunchConfiguration("use_sim_time").perform(context), False)
     params = {
+        "use_sim_time": use_sim,
         "state_topic": str(cfg.get("state_topic", "/robot/bumpers/state")),
         "bumper_indices": indices,
         "bumper_topics": topics,
@@ -140,6 +152,7 @@ def _create(context):
                 name="bumper_estop_request",
                 parameters=[
                     {
+                        "use_sim_time": use_sim,
                         "enabled": True,
                         "request_topic": str(
                             estop.get("request_topic", "/rmodus/e_stop/request")
@@ -163,6 +176,7 @@ def generate_launch_description():
     return LaunchDescription(
         [
             DeclareLaunchArgument("config_file", default_value=default),
+            DeclareLaunchArgument("use_sim_time", default_value="false"),
             DeclareLaunchArgument(
                 "publish_tf",
                 default_value="true",

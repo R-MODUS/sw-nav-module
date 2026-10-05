@@ -8,6 +8,16 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 
+def _as_bool(value, default=False) -> bool:
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value != 0
+    return str(value).strip().lower() in ("1", "true", "yes", "on", "y")
+
+
 def _load_block(path: str) -> dict:
     if not path or not os.path.isfile(path):
         return {}
@@ -75,39 +85,62 @@ def _create(context):
     frames = [
         str(i.get("frame_id") or f"cliff_sensor_{i.get('name')}_beam") for i in items
     ]
-    while len(topics) < 4:
-        topics.append(f"/cliff/unused_{len(topics)}")
-        frames.append(f"cliff_sensor_unused_{len(frames)}_beam")
-    topics, frames = topics[:4], frames[:4]
+    indices = [int(i.get("pin", n)) for n, i in enumerate(items)]
+    state_topic = str(cfg.get("state_topic", "/robot/cliffs/range"))
+    use_sim = _as_bool(LaunchConfiguration("use_sim_time").perform(context), False)
+    hw_arg = LaunchConfiguration("hardware").perform(context).strip()
+    read_hw = _as_bool(cfg.get("hardware", True), True) if not hw_arg else _as_bool(hw_arg, True)
 
     first = items[0]
-    params = {
-        "address": str(cfg.get("address", first.get("address", "0x48"))),
-        "cliff_topics": topics,
-        "cliff_frame_ids": frames,
-        "range_msg_min": float(cfg.get("range_msg_min", 0.02)),
-        "range_msg_max": float(cfg.get("range_msg_max", 0.5)),
-        "field_of_view": float(cfg.get("field_of_view", 0.05)),
-        "timer_period": float(cfg.get("timer_period", 0.1)),
-        "v_points": list(cfg.get("v_points", first.get("v_points", [0.3, 0.4, 0.8, 1.2, 2.0, 2.5]))),
-        "d_points": list(cfg.get("d_points", first.get("d_points", [0.20, 0.15, 0.08, 0.05, 0.03, 0.02]))),
-    }
-
     nodes = [
         Node(
             package="rmodus_cliff_sensor",
             executable="cliff_sensors",
             name="cliff_sensors_node",
-            parameters=[params],
+            parameters=[
+                {
+                    "use_sim_time": use_sim,
+                    "state_topic": state_topic,
+                    "cliff_indices": indices,
+                    "cliff_topics": topics,
+                    "cliff_frame_ids": frames,
+                    "range_msg_min": float(cfg.get("range_msg_min", 0.02)),
+                    "range_msg_max": float(cfg.get("range_msg_max", 0.5)),
+                    "field_of_view": float(cfg.get("field_of_view", 0.05)),
+                }
+            ],
             output="screen",
         )
     ]
-    for item in items:
-        nodes.append(_static_tf(item))
+    if read_hw:
+        nodes.append(
+            Node(
+                package="rmodus_cliff_sensor",
+                executable="cliff_hw",
+                name="cliff_hw_node",
+                parameters=[
+                    {
+                        "use_sim_time": use_sim,
+                        "state_topic": state_topic,
+                        "address": str(cfg.get("address", first.get("address", "0x48"))),
+                        "timer_period": float(cfg.get("timer_period", 0.1)),
+                        "v_points": list(
+                            cfg.get("v_points", first.get("v_points", [0.3, 0.4, 0.8, 1.2, 2.0, 2.5]))
+                        ),
+                        "d_points": list(
+                            cfg.get("d_points", first.get("d_points", [0.20, 0.15, 0.08, 0.05, 0.03, 0.02]))
+                        ),
+                    }
+                ],
+                output="screen",
+            )
+        )
+    if LaunchConfiguration("publish_tf").perform(context).strip().lower() in ("1", "true", "yes", "on"):
+        for item in items:
+            nodes.append(_static_tf(item))
 
     estop = cfg.get("estop_request") if isinstance(cfg.get("estop_request"), dict) else {}
     if bool(estop.get("enabled", True)):
-        active_topics = [t for t in topics if not t.startswith("/cliff/unused_")]
         nodes.append(
             Node(
                 package="rmodus_cliff_sensor",
@@ -115,11 +148,12 @@ def _create(context):
                 name="cliff_estop_request",
                 parameters=[
                     {
+                        "use_sim_time": use_sim,
                         "enabled": True,
                         "request_topic": str(
                             estop.get("request_topic", "/rmodus/e_stop/request")
                         ),
-                        "cliff_topics": active_topics,
+                        "cliff_topics": topics,
                         "cliff_range_threshold_m": float(
                             estop.get("cliff_range_threshold_m", 0.12)
                         ),
@@ -141,6 +175,17 @@ def generate_launch_description():
     return LaunchDescription(
         [
             DeclareLaunchArgument("config_file", default_value=default),
+            DeclareLaunchArgument("use_sim_time", default_value="false"),
+            DeclareLaunchArgument(
+                "hardware",
+                default_value="",
+                description="true = ADS1115 publikuje state_topic. Prázdné = cliff_sensors.hardware v profilu",
+            ),
+            DeclareLaunchArgument(
+                "publish_tf",
+                default_value="true",
+                description="Static TF mount. false když rámce drží URDF (description nebo Gazebo)",
+            ),
             OpaqueFunction(function=_create),
         ]
     )

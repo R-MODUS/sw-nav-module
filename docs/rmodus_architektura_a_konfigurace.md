@@ -161,7 +161,7 @@ Balíček zajišťuje vyšší logiku systému: fúzi stavových dat, navigaci, 
 ### 3.5 `rmodus_gazebo`
 
 **Role v systému:**
-Balíček realizuje simulační vrstvu, včetně spawnu robota, bridge mezi Gazebo a ROS a převodu kontaktů bumperů do interního formátu.
+Balíček realizuje simulační vrstvu, včetně spawnu robota a bridge mezi Gazebo a ROS. Nárazníky, cliff a optický tok publikuje jako surová data (`/robot/bumpers/state`, `/robot/cliffs/range`, `/robot/flow/motion`); na výstupní topicy je převedou `rmodus_bumper`, `rmodus_cliff_sensor` a `rmodus_flow_sensor`.
 
 **Klíčové soubory:**
 

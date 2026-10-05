@@ -1,7 +1,7 @@
 <?xml version='1.0'?>
 <!-- Contact sensors on bumper_<name>_mount. The world already loads Contact.
-     GZ topic is internal; sim_bumper_bridge republishes rmodus_interface/Bumper
-     on the profile topic. -->
+     GZ topic is internal; sim_bumper_bridge republishes UInt8MultiArray
+     on bumpers.state_topic. rmodus_bumper turns that into Bumper. -->
 
 <robot xmlns:xacro='http://www.ros.org/wiki/xacro'>
 

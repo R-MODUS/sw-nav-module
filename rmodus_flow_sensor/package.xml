@@ -3,7 +3,7 @@
 <package format="3">
   <name>rmodus_flow_sensor</name>
   <version>0.0.0</version>
-  <description>Optional optical-flow sensor module: PMW3901 → TwistWithCovarianceStamped.</description>
+  <description>Optional optical-flow module: pixel counts → TwistWithCovarianceStamped. PMW3901 publishes the counts.</description>
   <maintainer email="pi@todo.todo">pi</maintainer>
   <license>TODO: License declaration</license>
 
@@ -11,6 +11,7 @@
 
   <depend>rclpy</depend>
   <depend>geometry_msgs</depend>
+  <depend>std_msgs</depend>
   <depend>tf2_ros</depend>
 
   <exec_depend>ament_index_python</exec_depend>

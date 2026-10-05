@@ -22,7 +22,7 @@ bringup:
   display: true          # optional package rmodus_display
   web: true
   rviz: false
-  sim: false             # true = Gazebo místo HW pohonu, RSP a GPIO senzorů (ros_gz_*)
+  sim: false             # true = Gazebo drží pohon, URDF a surová čidla; bumper/cliff/flow je zpracují
   sim_gui: false         # true = okno gz sim; false = jen server (gz sim -s), bez ikony v liště
   localization: true     # rmodus_localization (EKF; rf2o/slam optional debs)
   navigation: true       # rmodus_navigation (Nav2 optional debs)
@@ -187,6 +187,8 @@ microros:
 
     flow_sensor:
       enabled: true
+      hardware: true
+      motion_topic: /robot/flow/motion
       type: 'twist'
       topic: '/visual_flow/data'
       frame_id: 'flow_front_link'
@@ -221,6 +223,8 @@ microros:
 
     cliff_sensors:
       enabled: true
+      hardware: true
+      state_topic: /robot/cliffs/range
       address: '0x48'
       estop_request:
         enabled: true

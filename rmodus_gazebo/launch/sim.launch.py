@@ -181,6 +181,7 @@ def _write_bridge(params, gui_cmd_topic=""):
             _bridge(topic, topic, "sensor_msgs/msg/LaserScan", "gz.msgs.LaserScan", "GZ_TO_ROS")
         )
 
+    bumpers_cfg = params.get("bumpers") if isinstance(params.get("bumpers"), dict) else {}
     bumpers = _items(params.get("bumpers"))
     for bumper in bumpers:
         topic = f"/sim/bumper/{bumper['name']}/contact"
@@ -188,6 +189,7 @@ def _write_bridge(params, gui_cmd_topic=""):
             _bridge(topic, topic, "ros_gz_interfaces/msg/Contacts", "gz.msgs.Contacts", "GZ_TO_ROS")
         )
 
+    cliffs_cfg = params.get("cliff_sensors") if isinstance(params.get("cliff_sensors"), dict) else {}
     cliffs = _items(params.get("cliff_sensors"))
     for cliff in cliffs:
         topic = f"/sim/cliff/{cliff['name']}/scan"
@@ -198,14 +200,22 @@ def _write_bridge(params, gui_cmd_topic=""):
     handle = tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yaml", encoding="utf-8")
     yaml.safe_dump(bridge, handle, sort_keys=False)
     handle.close()
-    return handle.name, bumpers, cliffs, odom_topic
+    return handle.name, bumpers, bumpers_cfg, cliffs, cliffs_cfg, odom_topic
 
 
-def _size(item, index, default):
-    size = item.get("size") if isinstance(item.get("size"), (list, tuple)) else []
-    if index < len(size):
-        return float(size[index])
-    return default
+def _yaw(block):
+    rpy = block.get("mount_rpy") if isinstance(block.get("mount_rpy"), (list, tuple)) else []
+    if len(rpy) > 2:
+        return float(rpy[2])
+    return 0.0
+
+
+def _offset(block):
+    raw = block.get("mount_offset") if isinstance(block.get("mount_offset"), (list, tuple)) else []
+    values = [float(v) for v in list(raw)[:3]]
+    while len(values) < 3:
+        values.append(0.0)
+    return values
 
 
 def _create(context):
@@ -239,7 +249,11 @@ def _create(context):
 
     params = _load_profile(robot_yaml)
     gui_cmd_topic = "/sim_gui/cmd_vel" if gui else ""
-    bridge_path, bumpers, cliffs, odom_topic = _write_bridge(params, gui_cmd_topic)
+    bridge_path, bumpers, bumpers_cfg, cliffs, cliffs_cfg, odom_topic = _write_bridge(
+        params, gui_cmd_topic
+    )
+    flow = params.get("flow_sensor") if isinstance(params.get("flow_sensor"), dict) else {}
+    flow_on = _as_bool(flow.get("enabled"), False)
     teleop_output = _teleop_output(params, _cmd_topic(params))
 
     resource_path = share
@@ -347,18 +361,9 @@ def _create(context):
                 parameters=[
                     {
                         **sim_time,
+                        "state_topic": str(bumpers_cfg.get("state_topic") or "/robot/bumpers/state"),
                         "bumper_names": [str(item["name"]) for item in bumpers],
-                        "bumper_topics": [
-                            str(item.get("topic") or f"/bumper/{item['name']}") for item in bumpers
-                        ],
-                        "bumper_frames": [
-                            str(item.get("frame_id") or f"bumper_{item['name']}_contact")
-                            for item in bumpers
-                        ],
-                        # Same mapping as rmodus_bumper: width=size[1], depth=size[0], height=size[2].
-                        "bumper_widths": [_size(item, 1, 0.3) for item in bumpers],
-                        "bumper_depths": [_size(item, 0, 0.02) for item in bumpers],
-                        "bumper_heights": [_size(item, 2, 0.05) for item in bumpers],
+                        "bumper_pins": [int(item.get("pin", index)) for index, item in enumerate(bumpers)],
                     }
                 ],
                 output="screen",
@@ -374,14 +379,32 @@ def _create(context):
                 parameters=[
                     {
                         **sim_time,
+                        "state_topic": str(cliffs_cfg.get("state_topic") or "/robot/cliffs/range"),
                         "cliff_names": [str(item["name"]) for item in cliffs],
-                        "cliff_topics": [
-                            str(item.get("topic") or f"/cliff/{item['name']}") for item in cliffs
-                        ],
-                        "cliff_frames": [
-                            str(item.get("frame_id") or f"cliff_sensor_{item['name']}_beam")
-                            for item in cliffs
-                        ],
+                        "cliff_pins": [int(item.get("pin", index)) for index, item in enumerate(cliffs)],
+                    }
+                ],
+                output="screen",
+            )
+        )
+
+    if flow_on:
+        actions.append(
+            Node(
+                package="rmodus_gazebo",
+                executable="sim_flow_bridge",
+                name="sim_flow_bridge",
+                parameters=[
+                    {
+                        **sim_time,
+                        "motion_topic": str(flow.get("motion_topic") or "/robot/flow/motion"),
+                        "odom_topic": odom_topic,
+                        "mount_yaw": _yaw(flow),
+                        "mount_offset": _offset(flow),
+                        "z_height": float(flow.get("z_height", 0.025)),
+                        "fov_deg": float(flow.get("fov_deg", 42.0)),
+                        "res_pix": int(flow.get("res_pix", 35)),
+                        "timer_period": float(flow.get("timer_period", 0.05)),
                     }
                 ],
                 output="screen",

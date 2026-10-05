@@ -291,7 +291,7 @@ def _build(context):
     if b["sim"]:
         hw_in_sim = [
             key
-            for key in ("hw", "uart_output", "microros", "bumper", "cliff", "flow", "display")
+            for key in ("hw", "uart_output", "microros", "display")
             if b.get(key)
         ]
         for key in hw_in_sim:
@@ -300,9 +300,9 @@ def _build(context):
             actions.append(
                 LogInfo(
                     msg=(
-                        "[rmodus_bringup] sim: HW uzly přeskočeny ("
+                        "[rmodus_bringup] sim: GPIO/UART/displej přeskočeny ("
                         + ", ".join(hw_in_sim)
-                        + "); senzory a pohon drží Gazebo"
+                        + ")"
                     )
                 )
             )
@@ -321,7 +321,9 @@ def _build(context):
             LogInfo(
                 msg=(
                     "[rmodus_bringup] sim: URDF, /cmd_vel a /odom drží rmodus_gazebo "
-                    "(description/chassis RSP a drive se nespouští); "
+                    "(description/chassis RSP a drive se nespouští). "
+                    "Nárazníky, cliff a flow: Gazebo publikuje surový topic, "
+                    "balíček ho zpracuje, pokud je bringup zapne. "
                     f"sim_gui={_flag(b['sim_gui'])}"
                 )
             )
@@ -387,18 +389,33 @@ def _build(context):
     # Agent musi bezet driv, nez ESP zacne publikovat /robot/bumpers/state.
     _try_feature("microros", "rmodus_bringup", "microros.launch.py", config_file=robot_yaml)
     desc_runs = want_desc and package_available("rmodus_description")
+    # Sim URDF i description nesou rámy nárazníků a cliffů. Flow v URDF není.
+    sensor_tf = _flag((not b["sim"]) and (not desc_runs))
+    sensor_hw = {"hardware": "false"} if b["sim"] else {}
     _try_feature(
         "bumper",
         "rmodus_bumper",
         "bumper.launch.py",
         config_file=robot_yaml,
-        publish_tf=_flag(not desc_runs),
+        publish_tf=sensor_tf,
+        use_sim_time=use_sim,
     )
     _try_feature(
-        "cliff", "rmodus_cliff_sensor", "cliff_sensor.launch.py", config_file=robot_yaml
+        "cliff",
+        "rmodus_cliff_sensor",
+        "cliff_sensor.launch.py",
+        config_file=robot_yaml,
+        publish_tf=sensor_tf,
+        use_sim_time=use_sim,
+        **sensor_hw,
     )
     _try_feature(
-        "flow", "rmodus_flow_sensor", "flow_sensor.launch.py", config_file=robot_yaml
+        "flow",
+        "rmodus_flow_sensor",
+        "flow_sensor.launch.py",
+        config_file=robot_yaml,
+        use_sim_time=use_sim,
+        **sensor_hw,
     )
     _try_feature("display", "rmodus_display", "display.launch.py", config_file=robot_yaml)
     # Profile manager before web so /rmodus/config/* services exist for UI.

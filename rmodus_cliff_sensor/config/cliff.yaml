@@ -1,5 +1,9 @@
 cliff_sensors:
   enabled: true
+  # Surový vstup (ADS1115 po přepočtu i Gazebo): Float32MultiArray, index = pin, metry.
+  # hardware: true čte I2C a ten topic publikuje. V simulaci bringup předá hardware:=false.
+  hardware: true
+  state_topic: /robot/cliffs/range
   address: "0x48"
   timer_period: 0.1
   range_msg_min: 0.02

@@ -39,6 +39,7 @@ setup(
             'sim_bumper_bridge = rmodus_gazebo.sim_bumper_bridge:main',
             'sim_odom_tf = rmodus_gazebo.sim_adapters:main_odom',
             'sim_cliff_bridge = rmodus_gazebo.sim_adapters:main_cliff',
+            'sim_flow_bridge = rmodus_gazebo.sim_adapters:main_flow',
             'sim_teleop_repeat = rmodus_gazebo.sim_teleop_repeat:main',
         ],
     },

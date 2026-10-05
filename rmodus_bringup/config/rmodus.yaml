@@ -22,7 +22,8 @@ bringup:
   display: true          # optional package rmodus_display
   web: true
   rviz: false
-  sim: false             # optional rmodus_gazebo + ros_gz_* (zatím nespouští stack)
+  sim: false             # true = Gazebo místo HW pohonu, RSP a GPIO senzorů (ros_gz_*)
+  sim_gui: false         # true = okno gz sim; false = jen server (gz sim -s), bez ikony v liště
   localization: true     # rmodus_localization (EKF; rf2o/slam optional debs)
   navigation: true       # rmodus_navigation (Nav2 optional debs)
   slam: true             # slam_toolbox (optional deb)

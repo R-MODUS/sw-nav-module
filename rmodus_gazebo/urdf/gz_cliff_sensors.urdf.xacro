@@ -1,49 +1,41 @@
 <?xml version='1.0'?>
-<!-- Sim-only: Gazebo ray sensor plugins for cliff sensors.
-     TF links/joints are defined in rmodus_description/urdf/cliff_sensors.urdf.xacro -->
+<!-- Downward ray on cliff_sensor_<name>_beam.
+     Publishes LaserScan on an internal topic; sim_cliff_bridge turns it into sensor_msgs/Range. -->
 
-<robot xmlns:xacro='http://www.ros.org/wiki/xacro'
-       xmlns:gz='http://gazebosim.org/schema'>
+<robot xmlns:xacro='http://www.ros.org/wiki/xacro'>
 
 <xacro:macro name='gz_cliff_sensor' params='c'>
-
   <xacro:if value='${c.get("enabled", True)}'>
-
-  <gazebo reference='cliff_sensor_${c["name"]}_mount_joint'>
-    <preserveFixedJoint>true</preserveFixedJoint>
-  </gazebo>
-
-  <gazebo reference='cliff_sensor_${c["name"]}_beam_joint'>
-    <preserveFixedJoint>true</preserveFixedJoint>
-  </gazebo>
-
-  <gazebo reference='cliff_sensor_${c["name"]}_beam'>
-    <sensor name='cliff_${c["name"]}' type='gpu_ray'>
-      <always_on>1</always_on>
-      <update_rate>${c.get("update_rate", 20)}</update_rate>
-      <visualize>${str(c.get("visualize", True)).lower()}</visualize>
-      <ray>
-        <scan>
-          <horizontal>
-            <samples>1</samples>
-            <resolution>1</resolution>
-            <min_angle>0</min_angle>
-            <max_angle>0</max_angle>
-          </horizontal>
-        </scan>
-        <range>
-          <min>${c.get("range_min", 0.01)}</min>
-          <max>${c.get("range_max", 0.5)}</max>
-          <resolution>${c.get("range_resolution", 0.001)}</resolution>
-        </range>
-      </ray>
-      <topic>${c.get("topic", "/cliff/" + c["name"])}</topic>
-      <gz_frame_id>cliff_sensor_${c["name"]}_beam</gz_frame_id>
-    </sensor>
-  </gazebo>
-
+    <gazebo reference='cliff_sensor_${c["name"]}_mount_joint'>
+      <preserveFixedJoint>true</preserveFixedJoint>
+    </gazebo>
+    <gazebo reference='cliff_sensor_${c["name"]}_beam_joint'>
+      <preserveFixedJoint>true</preserveFixedJoint>
+    </gazebo>
+    <gazebo reference='cliff_sensor_${c["name"]}_beam'>
+      <sensor name='cliff_${c["name"]}' type='gpu_ray'>
+        <always_on>1</always_on>
+        <update_rate>${c.get("update_rate", 20)}</update_rate>
+        <visualize>${str(c.get("visualize", False)).lower()}</visualize>
+        <topic>/sim/cliff/${c["name"]}/scan</topic>
+        <gz_frame_id>cliff_sensor_${c["name"]}_beam</gz_frame_id>
+        <ray>
+          <scan>
+            <horizontal>
+              <samples>1</samples>
+              <resolution>1</resolution>
+              <min_angle>-0.01</min_angle>
+              <max_angle>0.01</max_angle>
+            </horizontal>
+          </scan>
+          <range>
+            <min>${c.get("range_min", 0.01)}</min>
+            <max>${c.get("range_max", 0.5)}</max>
+          </range>
+        </ray>
+      </sensor>
+    </gazebo>
   </xacro:if>
-
 </xacro:macro>
 
 <xacro:macro name='gz_cliff_sensor_loop' params='items'>

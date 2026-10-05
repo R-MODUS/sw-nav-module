@@ -18,6 +18,7 @@ def generate_launch_description():
                 default_value=default_web_yaml,
                 description="YAML s blokem web: (default: share/rmodus_web/config/web.yaml)",
             ),
+            DeclareLaunchArgument("use_sim_time", default_value="false"),
             Node(
                 package="rmodus_web",
                 executable="web",
@@ -25,6 +26,7 @@ def generate_launch_description():
                 output="screen",
                 emulate_tty=True,
                 arguments=["--config", robot_yaml],
+                parameters=[{"use_sim_time": LaunchConfiguration("use_sim_time")}],
             ),
         ]
     )

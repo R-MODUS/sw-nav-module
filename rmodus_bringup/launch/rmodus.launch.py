@@ -33,6 +33,7 @@ _DEFAULT_BRINGUP = {
     "web": True,
     "rviz": False,
     "sim": False,
+    "sim_gui": False,
     "localization": True,
     "navigation": True,
     "slam": True,
@@ -192,7 +193,7 @@ def _build(context):
         missing_profile = False
     b = _load_bringup(robot_yaml)
     extras = _load_extras(robot_yaml)
-    enabled = [key for key, value in b.items() if value]
+    enabled = [key for key, value in b.items() if value and key != "sim_gui"]
     extra_labels = []
     for entry in extras:
         label = str(entry.get("package") or entry.get("path") or "?").strip() or "?"
@@ -286,10 +287,46 @@ def _build(context):
             LogInfo(msg=f"[rmodus_bringup] extras include {pkg}/launch/{launch_file}")
         )
 
+    use_sim = _flag(b["sim"])
+    if b["sim"]:
+        hw_in_sim = [
+            key
+            for key in ("hw", "uart_output", "microros", "bumper", "cliff", "flow", "display")
+            if b.get(key)
+        ]
+        for key in hw_in_sim:
+            b[key] = False
+        if hw_in_sim:
+            actions.append(
+                LogInfo(
+                    msg=(
+                        "[rmodus_bringup] sim: HW uzly přeskočeny ("
+                        + ", ".join(hw_in_sim)
+                        + "); senzory a pohon drží Gazebo"
+                    )
+                )
+            )
+
     # TF: one RSP — description composes chassis when both enabled and present.
+    # Sim: rmodus_gazebo owns the URDF (continuous wheels + plugins), /cmd_vel and /odom.
     want_desc = b["description"]
     want_chassis = b["chassis"]
-    if want_desc:
+    ekf_runs = (
+        b["localization"]
+        and package_available("rmodus_localization")
+        and package_available("robot_localization")
+    )
+    if b["sim"]:
+        actions.append(
+            LogInfo(
+                msg=(
+                    "[rmodus_bringup] sim: URDF, /cmd_vel a /odom drží rmodus_gazebo "
+                    "(description/chassis RSP a drive se nespouští); "
+                    f"sim_gui={_flag(b['sim_gui'])}"
+                )
+            )
+        )
+    elif want_desc:
         if package_available("rmodus_description"):
             include_chassis = want_chassis and package_available("rmodus_chassis")
             if want_chassis and not include_chassis:
@@ -298,7 +335,7 @@ def _build(context):
                 _include(
                     "rmodus_description",
                     "description.launch.py",
-                    use_sim_time="false",
+                    use_sim_time=use_sim,
                     robot_config_file=robot_yaml,
                     override_config_path=robot_yaml,
                     include_chassis=_flag(include_chassis),
@@ -311,7 +348,7 @@ def _build(context):
                     "chassis",
                     "rmodus_chassis",
                     "chassis.launch.py",
-                    use_sim_time="false",
+                    use_sim_time=use_sim,
                     robot_config_file=robot_yaml,
                 )
     elif want_chassis:
@@ -319,17 +356,13 @@ def _build(context):
             "chassis",
             "rmodus_chassis",
             "chassis.launch.py",
-            use_sim_time="false",
+            use_sim_time=use_sim,
             robot_config_file=robot_yaml,
         )
 
     # Drive (cmd_vel -> wheel units) runs independently of which launch owns the chassis TF.
-    if want_chassis and package_available("rmodus_chassis"):
-        ekf_runs = (
-            b["localization"]
-            and package_available("rmodus_localization")
-            and package_available("robot_localization")
-        )
+    # In sim the Gazebo drive plugin is the actuator.
+    if not b["sim"] and want_chassis and package_available("rmodus_chassis"):
         actions.append(
             _include(
                 "rmodus_chassis",
@@ -344,7 +377,13 @@ def _build(context):
         "uart_output", "rmodus_uart_output", "uart_output.launch.py", config_file=robot_yaml
     )
     _try_feature("estop", "rmodus_estop", "estop.launch.py", config_file=robot_yaml)
-    _try_feature("cmd_mux", "rmodus_bringup", "cmd_mux.launch.py", config_file=robot_yaml)
+    _try_feature(
+        "cmd_mux",
+        "rmodus_bringup",
+        "cmd_mux.launch.py",
+        config_file=robot_yaml,
+        use_sim_time=use_sim,
+    )
     # Agent musi bezet driv, nez ESP zacne publikovat /robot/bumpers/state.
     _try_feature("microros", "rmodus_bringup", "microros.launch.py", config_file=robot_yaml)
     desc_runs = want_desc and package_available("rmodus_description")
@@ -374,7 +413,9 @@ def _build(context):
         )
     else:
         _try_feature("config", "rmodus_config", "config.launch.py")
-    _try_feature("web", "rmodus_web", "web.launch.py", robot_yaml=robot_yaml)
+    _try_feature(
+        "web", "rmodus_web", "web.launch.py", robot_yaml=robot_yaml, use_sim_time=use_sim
+    )
 
     if b["localization"] or b["slam"] or b["rf2o"] or b["obstacle_cloud"]:
         if package_available("rmodus_localization"):
@@ -382,7 +423,7 @@ def _build(context):
                 _include(
                     "rmodus_localization",
                     "localization.launch.py",
-                    use_sim_time="false",
+                    use_sim_time=use_sim,
                     robot_config_file=robot_yaml,
                     global_params_file=robot_yaml,
                     localization=_flag(b["localization"]),
@@ -400,7 +441,7 @@ def _build(context):
                 _include(
                     "rmodus_navigation",
                     "navigation.launch.py",
-                    use_sim_time="false",
+                    use_sim_time=use_sim,
                     robot_yaml=robot_yaml,
                     navigation="true",
                 )
@@ -415,11 +456,12 @@ def _build(context):
                 actions.append(skip_log("sim/gazebo-runtime", gz_missing))
             else:
                 actions.append(
-                    LogInfo(
-                        msg=(
-                            "[rmodus_bringup] bringup.sim=true: rmodus_gazebo is present, "
-                            "but sim launch wiring is still reserved (not started yet)."
-                        )
+                    _include(
+                        "rmodus_gazebo",
+                        "sim.launch.py",
+                        robot_yaml=robot_yaml,
+                        publish_tf=_flag(not ekf_runs),
+                        gui=_flag(b["sim_gui"]),
                     )
                 )
         else:
@@ -427,7 +469,7 @@ def _build(context):
 
     if b["rviz"]:
         if package_available("rviz2"):
-            actions.append(_include("rmodus_bringup", "rviz.launch.py", use_sim_time="false"))
+            actions.append(_include("rmodus_bringup", "rviz.launch.py", use_sim_time=use_sim))
         else:
             actions.append(skip_log("rviz", "rviz2"))
 

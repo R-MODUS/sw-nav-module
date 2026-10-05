@@ -1,58 +1,72 @@
+"""Gazebo contacts → rmodus_interface/Bumper on the profile topics."""
+
 import rclpy
 from rclpy.node import Node
 from ros_gz_interfaces.msg import Contacts
 from rmodus_interface.msg import Bumper
-import time
+
 
 class SimBumperBridge(Node):
     def __init__(self):
-        super().__init__('sim_bumper_bridge')
-        
-        self.declare_parameter('bumper_names', rclpy.Parameter.Type.STRING_ARRAY)
-        bumper_names = self.get_parameter('bumper_names').value
-        
-        self.last_contact_time = {} # Tady budeme držet čas posledního "True"
-        self.publishers_ = {}
+        super().__init__("sim_bumper_bridge")
 
-        if not bumper_names:
-            self.get_logger().warn('Nenalezen žádný název nárazníku.')
+        names = list(self.declare_parameter("bumper_names", [""]).value)
+        topics = list(self.declare_parameter("bumper_topics", [""]).value)
+        frames = list(self.declare_parameter("bumper_frames", [""]).value)
+        widths = [float(v) for v in self.declare_parameter("bumper_widths", [0.0]).value]
+        depths = [float(v) for v in self.declare_parameter("bumper_depths", [0.0]).value]
+        heights = [float(v) for v in self.declare_parameter("bumper_heights", [0.0]).value]
+
+        count = len(names)
+        if not count or any(len(seq) != count for seq in (topics, frames, widths, depths, heights)):
+            self.get_logger().error("bumper name/topic/frame/size lists must be the same length")
             return
 
-        for name in bumper_names:
-            self.publishers_[name] = self.create_publisher(Bumper, f'/bumper/{name}', 10)
-            self.last_contact_time[name] = 0.0 # Inicializace
-            
+        self._timeout = 0.2
+        self._last_contact = {name: None for name in names}
+        self._pubs = []
+        for index, name in enumerate(names):
+            self._pubs.append(
+                (
+                    name,
+                    frames[index],
+                    widths[index],
+                    depths[index],
+                    heights[index],
+                    self.create_publisher(Bumper, topics[index], 10),
+                )
+            )
             self.create_subscription(
                 Contacts,
-                f'/bumper/{name}/contact',
-                lambda msg, n=name: self.gz_contact_callback(msg, n),
-                10
+                f"/sim/bumper/{name}/contact",
+                lambda msg, bumper_name=name: self._on_contact(msg, bumper_name),
+                10,
             )
 
-        # Timer pro pravidelný "heartbeat" (10 Hz)
-        self.create_timer(0.1, self.publish_all_states)
-        self.get_logger().info(f'Sim bumper bridge spuštěn pro: {bumper_names}')
+        self.create_timer(0.1, self._publish)
+        self.get_logger().info(f"Sim bumper bridge: {list(zip(names, topics))}")
 
-    def gz_contact_callback(self, msg, name):
-        # Pokud přišla zpráva a obsahuje kontakty, uložíme si aktuální čas simulace
-        if len(msg.contacts) > 0:
-            # Použijeme čas simulace z ROSu (aby to fungovalo i při pauze v GZ)
-            self.last_contact_time[name] = self.get_clock().now().nanoseconds / 1e9
+    def _on_contact(self, msg, name):
+        if msg.contacts:
+            self._last_contact[name] = self.get_clock().now().nanoseconds / 1e9
 
-    def publish_all_states(self):
-        current_time = self.get_clock().now().nanoseconds / 1e9
-        
-        # Tolerance, jak dlouho po poslední zprávě považujeme nárazník za sepnutý
-        # 0.2s je bezpečná rezerva pro 30Hz update rate v Gazebu
-        timeout = 0.2 
+    def _publish(self):
+        if not getattr(self, "_pubs", None):
+            return
+        now = self.get_clock().now()
+        now_sec = now.nanoseconds / 1e9
+        stamp = now.to_msg()
+        for name, frame, width, depth, height, pub in self._pubs:
+            last = self._last_contact[name]
+            out = Bumper()
+            out.header.stamp = stamp
+            out.header.frame_id = frame
+            out.contact = last is not None and (now_sec - last) < self._timeout
+            out.width = width
+            out.depth = depth
+            out.height = height
+            pub.publish(out)
 
-        for name, pub in self.publishers_.items():
-            msg = Bumper()
-            
-            # Pokud je čas od posledního kontaktu menší než timeout, je to stále True
-            msg.contact = (current_time - self.last_contact_time[name]) < timeout
-            
-            pub.publish(msg)
 
 def main(args=None):
     rclpy.init(args=args)

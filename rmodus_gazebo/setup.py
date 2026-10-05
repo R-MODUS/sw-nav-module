@@ -37,6 +37,8 @@ setup(
     entry_points={
         'console_scripts': [
             'sim_bumper_bridge = rmodus_gazebo.sim_bumper_bridge:main',
+            'sim_odom_tf = rmodus_gazebo.sim_adapters:main_odom',
+            'sim_cliff_bridge = rmodus_gazebo.sim_adapters:main_cliff',
         ],
     },
 )

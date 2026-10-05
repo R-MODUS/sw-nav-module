@@ -3,7 +3,7 @@
 <package format="3">
   <name>rmodus_description</name>
   <version>0.0.0</version>
-  <description>R-MODUS kit description: rmodus_mount + optional lidar/IMU TF on base_link</description>
+  <description>R-MODUS robot model: chassis + kit in one URDF. Gazebo only adds a plugin overlay.</description>
   <maintainer email="pi@todo.todo">pi</maintainer>
   <license>TODO: License declaration</license>
 

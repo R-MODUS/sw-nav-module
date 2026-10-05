@@ -1,4 +1,8 @@
-"""Gazebo twin of the profile robot: same YAML, chassis + kit URDF, gz sensors and drive."""
+"""Gazebo twin of the profile robot.
+
+The model is rmodus_description/urdf/robot.urdf.xacro. This launch asks for
+continuous wheel joints and the Gazebo plugin overlay, then spawns that URDF.
+"""
 
 import os
 import tempfile
@@ -241,11 +245,13 @@ def _create(context):
 
     share = get_package_share_directory("rmodus_gazebo")
     world = os.path.join(share, "worlds", "my_world.world")
-    robot_xacro = os.path.join(share, "urdf", "robot.urdf.xacro")
+    robot_xacro = os.path.join(
+        get_package_share_directory("rmodus_description"), "urdf", "robot.urdf.xacro"
+    )
     chassis_contents = os.path.join(
         get_package_share_directory("rmodus_chassis"), "urdf", "chassis_contents.urdf.xacro"
     )
-    description_urdf = os.path.join(get_package_share_directory("rmodus_description"), "urdf")
+    gazebo_urdf = os.path.join(share, "urdf")
 
     params = _load_profile(robot_yaml)
     gui_cmd_topic = "/sim_gui/cmd_vel" if gui else ""
@@ -298,10 +304,13 @@ def _create(context):
                                 robot_xacro,
                                 " config_path:=",
                                 robot_yaml,
+                                " include_chassis:=true",
+                                " joint_type:=continuous",
+                                " gazebo_overlay:=true",
                                 " chassis_contents_path:=",
                                 chassis_contents,
-                                " description_urdf_dir:=",
-                                description_urdf,
+                                " gazebo_urdf_dir:=",
+                                gazebo_urdf,
                             ]
                         ),
                         value_type=str,

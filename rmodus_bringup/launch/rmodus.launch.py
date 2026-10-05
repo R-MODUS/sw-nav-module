@@ -320,8 +320,9 @@ def _build(context):
         actions.append(
             LogInfo(
                 msg=(
-                    "[rmodus_bringup] sim: URDF, /cmd_vel a /odom drží rmodus_gazebo "
-                    "(description/chassis RSP a drive se nespouští). "
+                    "[rmodus_bringup] sim: model je rmodus_description/robot.urdf.xacro "
+                    "(joint_type=continuous + Gazebo pluginy); RSP drží rmodus_gazebo, "
+                    "description/chassis RSP a drive se nespouští. "
                     "Nárazníky, cliff a flow: Gazebo publikuje surový topic, "
                     "balíček ho zpracuje, pokud je bringup zapne. "
                     f"sim_gui={_flag(b['sim_gui'])}"

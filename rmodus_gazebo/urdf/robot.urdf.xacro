@@ -1,8 +1,6 @@
 <?xml version='1.0'?>
-<!-- Sim twin of the real robot.
-     Geometry comes from the same profile YAML and the same xacro fragments
-     as rmodus_chassis + rmodus_description. This file only adds Gazebo plugins
-     and continuous wheel joints so /cmd_vel can drive the model. -->
+<!-- Sim defaults for the single model in rmodus_description/urdf/robot.urdf.xacro.
+     Geometry is not copied here. Launch passes the same arguments directly. -->
 
 <robot
   name='rmodus'
@@ -11,81 +9,11 @@
 
 <xacro:arg name='config_path' default=''/>
 <xacro:arg name='chassis_contents_path' default='$(find rmodus_chassis)/urdf/chassis_contents.urdf.xacro'/>
-<xacro:arg name='description_urdf_dir' default='$(find rmodus_description)/urdf'/>
+<xacro:arg name='include_chassis' default='true'/>
+<xacro:arg name='joint_type' default='continuous'/>
+<xacro:arg name='gazebo_overlay' default='true'/>
+<xacro:arg name='gazebo_urdf_dir' default='$(find rmodus_gazebo)/urdf'/>
 
-<xacro:property name='robot_cfg' value="${xacro.load_yaml('$(arg config_path)')}"/>
-<xacro:property name='params' value="${robot_cfg['/**']['ros__parameters']}"/>
-<xacro:property name='base_cfg' value="${params['base_link']}"/>
-<xacro:property name='drive_cfg' value="${params.get('drive', dict())}"/>
-<xacro:property name='module_cfg' value="${params.get('rmodus_module', params.get('nav_module', dict()))}"/>
-<xacro:property name='imu_cfg' value="${params.get('imu', dict())}"/>
-<xacro:property name='lidar_cfg' value="${params.get('lidar', dict())}"/>
-<xacro:property name='bumpers_cfg' value="${params.get('bumpers', dict())}"/>
-<xacro:property name='bumper_items' value="${bumpers_cfg.get('items', []) if bumpers_cfg.get('enabled', False) else []}"/>
-<xacro:property name='bumpers' value="${[b for b in bumper_items if b.get('enabled', True)]}"/>
-<xacro:property name='parts_cfg' value="${params.get('parts', dict())}"/>
-<xacro:property name='part_items' value="${parts_cfg.get('items', []) if parts_cfg.get('enabled', True) else []}"/>
-<xacro:property name='cliffs_cfg' value="${params.get('cliff_sensors', dict())}"/>
-<xacro:property name='cliff_sensors' value="${[c for c in (cliffs_cfg.get('items') or []) if c.get('enabled', True)] if cliffs_cfg.get('enabled', False) else []}"/>
-<xacro:property name='imu_on' value='${bool(imu_cfg.get("enabled", False))}'/>
-<xacro:property name='lidar_on' value='${bool(lidar_cfg.get("enabled", False))}'/>
-<xacro:property name='cliffs_on' value='${bool(cliff_sensors)}'/>
-
-<xacro:property name='alpha' value='1'/>
-<xacro:property name='main_module_color' value='0.45 0.48 0.52 ${alpha}'/>
-<xacro:property name='imu_mount_color' value='1.0 0.62 0.20 ${alpha}'/>
-<xacro:property name='imu_link_color' value='1.0 0.82 0.35 ${alpha}'/>
-<xacro:property name='lidar_mount_color' value='0.30 0.62 1.0 ${alpha}'/>
-<xacro:property name='lidar_beam_color' value='0.10 0.90 0.95 ${alpha}'/>
-<xacro:property name='bumper_mount_color' value='0.68 0.20 0.20 ${alpha}'/>
-<xacro:property name='cliff_mount_color' value='0.18 0.62 0.44 ${alpha}'/>
-
-<material name='main_module_mat'> <color rgba='${main_module_color}'/> </material>
-<material name='imu_mount_mat'> <color rgba='${imu_mount_color}'/> </material>
-<material name='imu_link_mat'> <color rgba='${imu_link_color}'/> </material>
-<material name='lidar_mount_mat'> <color rgba='${lidar_mount_color}'/> </material>
-<material name='lidar_beam_mat'> <color rgba='${lidar_beam_color}'/> </material>
-<material name='bumper_mount_mat'> <color rgba='${bumper_mount_color}'/> </material>
-<material name='cliff_mount_mat'> <color rgba='${cliff_mount_color}'/> </material>
-
-<xacro:macro name='box_inertia' params='m x y z'>
-  <inertial>
-    <mass value='${m}'/>
-    <inertia ixx='${m/12 * (y*y + z*z)}' ixy='0.0' ixz='0.0'
-             iyy='${m/12 * (x*x + z*z)}' iyz='0.0'
-             izz='${m/12 * (x*x + y*y)}'/>
-  </inertial>
-</xacro:macro>
-
-<xacro:include filename='$(arg chassis_contents_path)'/>
-<xacro:rmodus_chassis_links joint_type='continuous'/>
-
-<xacro:include filename='$(arg description_urdf_dir)/rmodus_module.urdf.xacro'/>
-<xacro:if value='${imu_on}'>
-  <xacro:include filename='$(arg description_urdf_dir)/imu.urdf.xacro'/>
-</xacro:if>
-<xacro:if value='${lidar_on}'>
-  <xacro:include filename='$(arg description_urdf_dir)/lidar.urdf.xacro'/>
-</xacro:if>
-<xacro:include filename='$(arg description_urdf_dir)/bumper_bodies.urdf.xacro'/>
-<xacro:include filename='$(arg description_urdf_dir)/parts.urdf.xacro'/>
-<xacro:if value='${cliffs_on}'>
-  <xacro:include filename='$(arg description_urdf_dir)/cliff_sensors.urdf.xacro'/>
-</xacro:if>
-
-<xacro:if value='${lidar_on or cliffs_on}'>
-  <xacro:include filename='gz_sensors.urdf.xacro'/>
-</xacro:if>
-<xacro:if value='${imu_on}'>
-  <xacro:include filename='gz_imu.urdf.xacro'/>
-</xacro:if>
-<xacro:if value='${lidar_on}'>
-  <xacro:include filename='gz_lidar.urdf.xacro'/>
-</xacro:if>
-<xacro:include filename='gz_bumpers.urdf.xacro'/>
-<xacro:if value='${cliffs_on}'>
-  <xacro:include filename='gz_cliff_sensors.urdf.xacro'/>
-</xacro:if>
-<xacro:include filename='control.urdf.xacro'/>
+<xacro:include filename='$(find rmodus_description)/urdf/robot.urdf.xacro'/>
 
 </robot>

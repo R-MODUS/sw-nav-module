@@ -35,6 +35,7 @@ def _create_robot_state_publisher(context):
     use_sim_time = LaunchConfiguration("use_sim_time")
     include_chassis = LaunchConfiguration("include_chassis").perform(context).strip().lower()
     include_chassis_arg = "true" if include_chassis in ("1", "true", "yes", "on") else "false"
+    joint_type = LaunchConfiguration("joint_type").perform(context).strip() or "fixed"
 
     robot_config_file = _resolve_config_path(
         LaunchConfiguration("robot_config_file").perform(context)
@@ -78,6 +79,8 @@ def _create_robot_state_publisher(context):
         final_config_path,
         " include_chassis:=",
         include_chassis_arg,
+        " joint_type:=",
+        joint_type,
     ]
     if include_chassis_arg == "true":
         xacro_cmd.extend([" chassis_contents_path:=", chassis_contents])
@@ -130,6 +133,11 @@ def generate_launch_description():
                 "include_chassis",
                 default_value="false",
                 description="Compose rmodus_chassis base_link into this URDF (one RSP)",
+            ),
+            DeclareLaunchArgument(
+                "joint_type",
+                default_value="fixed",
+                description="Wheel joints. fixed on the robot, continuous in Gazebo",
             ),
             OpaqueFunction(function=_create_robot_state_publisher),
         ]

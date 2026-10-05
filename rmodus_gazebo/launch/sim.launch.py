@@ -104,6 +104,36 @@ def _topic(block, default):
     return default
 
 
+def _cmd_topic(params):
+    mux = params.get("cmd_mux")
+    if isinstance(mux, dict) and str(mux.get("output_topic") or "").strip():
+        return str(mux["output_topic"]).strip()
+    return "/cmd_vel"
+
+
+def _teleop_output(params, drive_topic):
+    """ROS topic fed by the GUI card.
+
+    With cmd_mux the card must enter as the teleop input. Publishing straight
+    onto the drive topic would fight the mux, which is the only /cmd_vel source.
+    """
+    mux = params.get("cmd_mux")
+    if isinstance(mux, dict) and not _as_bool(mux.get("enabled"), True):
+        return drive_topic
+    if isinstance(mux, dict):
+        for item in mux.get("inputs") or []:
+            if not isinstance(item, dict):
+                continue
+            if str(item.get("name") or "").strip() != "teleop":
+                continue
+            if not _as_bool(item.get("enabled"), True):
+                continue
+            topic = str(item.get("topic") or "").strip()
+            if topic:
+                return topic
+    return "/teleop/cmd_vel"
+
+
 def _bridge(ros_topic, gz_topic, ros_type, gz_type, direction):
     return {
         "ros_topic_name": ros_topic,
@@ -114,11 +144,8 @@ def _bridge(ros_topic, gz_topic, ros_type, gz_type, direction):
     }
 
 
-def _write_bridge(params):
-    cmd_topic = "/cmd_vel"
-    mux = params.get("cmd_mux")
-    if isinstance(mux, dict) and str(mux.get("output_topic") or "").strip():
-        cmd_topic = str(mux["output_topic"]).strip()
+def _write_bridge(params, gui_cmd_topic=""):
+    cmd_topic = _cmd_topic(params)
     odom_topic = _topic(params.get("wheel_odom"), "/odom")
     imu = params.get("imu") if isinstance(params.get("imu"), dict) else {}
     lidar = params.get("lidar") if isinstance(params.get("lidar"), dict) else {}
@@ -135,6 +162,16 @@ def _write_bridge(params):
         _bridge(cmd_topic, cmd_topic, "geometry_msgs/msg/Twist", "gz.msgs.Twist", "ROS_TO_GZ"),
         _bridge(odom_topic, odom_topic, "nav_msgs/msg/Odometry", "gz.msgs.Odometry", "GZ_TO_ROS"),
     ]
+    if gui_cmd_topic:
+        bridge.append(
+            _bridge(
+                gui_cmd_topic,
+                gui_cmd_topic,
+                "geometry_msgs/msg/Twist",
+                "gz.msgs.Twist",
+                "GZ_TO_ROS",
+            )
+        )
     if _as_bool(imu.get("enabled"), False):
         topic = _topic(imu, "/imu/data")
         bridge.append(_bridge(topic, topic, "sensor_msgs/msg/Imu", "gz.msgs.IMU", "GZ_TO_ROS"))
@@ -201,7 +238,9 @@ def _create(context):
     description_urdf = os.path.join(get_package_share_directory("rmodus_description"), "urdf")
 
     params = _load_profile(robot_yaml)
-    bridge_path, bumpers, cliffs, odom_topic = _write_bridge(params)
+    gui_cmd_topic = "/sim_gui/cmd_vel" if gui else ""
+    bridge_path, bumpers, cliffs, odom_topic = _write_bridge(params, gui_cmd_topic)
+    teleop_output = _teleop_output(params, _cmd_topic(params))
 
     resource_path = share
     existing = os.environ.get("GZ_SIM_RESOURCE_PATH", "")
@@ -209,7 +248,9 @@ def _create(context):
         resource_path = share + os.pathsep + existing
 
     gz_cmd = ["gz", "sim", "-r"]
-    if not gui:
+    if gui:
+        gz_cmd.extend(["--gui-config", os.path.join(share, "config", "gui.config")])
+    else:
         gz_cmd.append("-s")
     gz_cmd.append(world)
 
@@ -219,6 +260,7 @@ def _create(context):
             msg=(
                 f"[rmodus_gazebo] profile={robot_yaml} gui={gui} "
                 f"(requested={gui_requested}) publish_tf={publish_tf}"
+                + (f" teleop={gui_cmd_topic}→{teleop_output}" if gui else "")
             )
         ),
         SetEnvironmentVariable("GZ_SIM_RESOURCE_PATH", resource_path),
@@ -267,6 +309,23 @@ def _create(context):
             ],
         ),
     ]
+
+    if gui:
+        actions.append(
+            Node(
+                package="rmodus_gazebo",
+                executable="sim_teleop_repeat",
+                name="sim_teleop_repeat",
+                parameters=[
+                    {
+                        **sim_time,
+                        "input_topic": gui_cmd_topic,
+                        "output_topic": teleop_output,
+                    }
+                ],
+                output="screen",
+            )
+        )
 
     if publish_tf:
         actions.append(

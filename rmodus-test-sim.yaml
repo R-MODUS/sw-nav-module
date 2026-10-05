@@ -30,20 +30,13 @@ bringup:
   web: true
   rviz: false
   sim: true
-  sim_gui: false         # true = okno Gazebo; false = fyzika bez okna
+  sim_gui: true        # true = okno Gazebo; false = fyzika bez okna
   localization: false
   navigation: false
   slam: false
   rf2o: false
   obstacle_cloud: false
   microros: false
-  extras:
-    - enabled: false     # /scan publikuje Gazebo lidar
-      package: neato_lidar
-      launch: neato_lidar.launch.py
-      args:
-        config_file: $robot_yaml
-
 
 web:
   testing: true

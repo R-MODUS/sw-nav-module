@@ -115,6 +115,8 @@ microros:
     imu:
       enabled: true
       type: 'imu'
+      name: 'imu'
+      label: 'IMU'
       topic: '/imu/data'
       frame_id: 'imu_link'
       mount_parent_frame: 'rmodus_mount'
@@ -125,6 +127,8 @@ microros:
 
     lidar:
       enabled: true
+      name: 'lidar'
+      label: 'LiDAR'
       topic: '/scan'
       frame_id: 'lidar_beam'
       mount_parent_frame: 'rmodus_mount'
@@ -212,10 +216,10 @@ microros:
         retrigger_while_contact: false
       items:
         - name: 'front'
+          label: 'Front Bumper'
           enabled: true
           pin: 0
           topic: '/bumper/front'
-          frame_id: 'bumper_front_contact'
           mount_parent_frame: 'base_link'
           mount_offset: [0.30, 0.0, 0.0]
           mount_rpy: [0.0, 0.0, 0.0]
@@ -233,9 +237,9 @@ microros:
         retrigger_while_cliff: false
       items:
         - name: 'fl'
+          label: 'FL Cliff Sensor'
           enabled: true
           topic: '/cliff/fl'
-          frame_id: 'cliff_sensor_fl_beam'
           pin: 0
           mount_parent_frame: 'base_link'
           mount_offset: [0.25, 0.20, 0.0]
@@ -244,9 +248,9 @@ microros:
           beam_offset: [0.0, 0.0, -0.01]
           beam_rpy: [0.0, 1.5708, 0.0]
         - name: 'fr'
+          label: 'FR Cliff Sensor'
           enabled: true
           topic: '/cliff/fr'
-          frame_id: 'cliff_sensor_fr_beam'
           pin: 1
           mount_parent_frame: 'base_link'
           mount_offset: [0.25, -0.20, 0.0]

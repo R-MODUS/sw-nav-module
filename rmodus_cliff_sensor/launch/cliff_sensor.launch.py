@@ -42,11 +42,16 @@ def _enabled_items(cfg: dict) -> list:
     ]
 
 
+def _beam_frame(item: dict) -> str:
+    """frame_id, or <name>_beam. Same expression as cliff_sensors.urdf.xacro."""
+    return str(item.get("frame_id") or f"{item.get('name', 'x')}_beam")
+
+
 def _static_tf(item: dict) -> Node:
     offset = item.get("mount_offset", [0.0, 0.0, 0.0])
     rpy = item.get("mount_rpy", [0.0, 0.0, 0.0])
     parent = str(item.get("mount_parent_frame", "base_link"))
-    child = str(item.get("frame_id") or f"cliff_sensor_{item.get('name', 'x')}_beam")
+    child = _beam_frame(item)
     return Node(
         package="tf2_ros",
         executable="static_transform_publisher",
@@ -82,9 +87,7 @@ def _create(context):
         return []
 
     topics = [str(i.get("topic", f"/cliff/{i.get('name')}")) for i in items]
-    frames = [
-        str(i.get("frame_id") or f"cliff_sensor_{i.get('name')}_beam") for i in items
-    ]
+    frames = [_beam_frame(i) for i in items]
     indices = [int(i.get("pin", n)) for n, i in enumerate(items)]
     state_topic = str(cfg.get("state_topic", "/robot/cliffs/range"))
     use_sim = _as_bool(LaunchConfiguration("use_sim_time").perform(context), False)

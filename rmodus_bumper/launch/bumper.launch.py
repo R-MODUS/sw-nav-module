@@ -67,11 +67,11 @@ def _tf_node(name: str, parent: str, child: str, xyz, rpy) -> Node:
 
 
 def _static_tf(item: dict) -> list:
-    """Same chain as rmodus_description/urdf/bumper_bodies.urdf.xacro: parent → _mount → contact."""
+    """Same chain as bumper_bodies.urdf.xacro: parent → <name>_mount → frame_id or <name>_contact."""
     name = str(item.get("name", "x"))
     size = item.get("size") or [0.02, 0.3, 0.05]
-    mount = f"bumper_{name}_mount"
-    contact = str(item.get("frame_id") or f"bumper_{name}_contact")
+    mount = f"{name}_mount"
+    contact = str(item.get("frame_id") or f"{name}_contact")
     return [
         _tf_node(
             f"bumper_tf_{name}_mount",
@@ -109,7 +109,7 @@ def _create(context):
 
     topics = [str(i.get("topic", f"/bumper/{i.get('name')}")) for i in items]
     frames = [
-        str(i.get("frame_id") or f"bumper_{i.get('name')}_contact") for i in items
+        str(i.get("frame_id") or f"{i.get('name')}_contact") for i in items
     ]
     # pin = index 0..7 v poli z ESP, ne číslo GPIO.
     indices = [int(i.get("pin", n)) for n, i in enumerate(items)]

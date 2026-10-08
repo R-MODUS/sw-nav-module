@@ -1,8 +1,9 @@
 <?xml version='1.0'?>
-<!-- Bumpers: bumper_<name>_mount = physical box centred on mount_offset,
-     frame_id (default bumper_<name>_contact) = contact point, by default on the front face [size[0]/2, 0, 0].
+<!-- Bumper: <name>_mount = box centred on mount_offset,
+     frame_id (default <name>_contact) = contact, by default on the front face [size[0]/2, 0, 0].
+     Collision is named <name>_mount; sdformat appends _collision itself.
      rmodus_bumper publishes the same chain as static TF only when description is not running.
-     Expects bumper_items in scope. -->
+     Expects bumper_items in scope. name is the whole stem (front or bumper_front). -->
 
 <robot xmlns:xacro='http://www.ros.org/wiki/xacro'>
 
@@ -13,8 +14,8 @@
     <xacro:property name='brpy' value='${b.get("mount_rpy", [0.0, 0.0, 0.0])}'/>
     <xacro:property name='coff' value='${b.get("contact_offset", [bsize[0] / 2.0, 0.0, 0.0])}'/>
     <xacro:property name='crpy' value='${b.get("contact_rpy", [0.0, 0.0, 0.0])}'/>
-    <xacro:property name='cframe' value='${b.get("frame_id") or "bumper_" + b["name"] + "_contact"}'/>
-    <link name='bumper_${b["name"]}_mount'>
+    <xacro:property name='cframe' value='${b.get("frame_id") or b["name"] + "_contact"}'/>
+    <link name='${b["name"]}_mount'>
       <inertial>
         <mass value='0.01'/>
         <inertia ixx='1e-5' ixy='0' ixz='0' iyy='1e-5' iyz='0' izz='1e-5'/>
@@ -23,13 +24,13 @@
         <geometry><box size='${bsize[0]} ${bsize[1]} ${bsize[2]}'/></geometry>
         <material name='bumper_mount_mat'/>
       </visual>
-      <collision name='bumper_${b["name"]}_mount_collision'>
+      <collision name='${b["name"]}_mount'>
         <geometry><box size='${bsize[0]} ${bsize[1]} ${bsize[2]}'/></geometry>
       </collision>
     </link>
-    <joint name='bumper_${b["name"]}_mount_joint' type='fixed'>
+    <joint name='${b["name"]}_mount_joint' type='fixed'>
       <parent link='${b.get("mount_parent_frame", "base_link")}'/>
-      <child link='bumper_${b["name"]}_mount'/>
+      <child link='${b["name"]}_mount'/>
       <origin xyz='${boff[0]} ${boff[1]} ${boff[2]}' rpy='${brpy[0]} ${brpy[1]} ${brpy[2]}'/>
     </joint>
     <link name='${cframe}'>
@@ -38,8 +39,8 @@
         <inertia ixx='1e-7' ixy='0' ixz='0' iyy='1e-7' iyz='0' izz='1e-7'/>
       </inertial>
     </link>
-    <joint name='bumper_${b["name"]}_contact_joint' type='fixed'>
-      <parent link='bumper_${b["name"]}_mount'/>
+    <joint name='${b["name"]}_contact_joint' type='fixed'>
+      <parent link='${b["name"]}_mount'/>
       <child link='${cframe}'/>
       <origin xyz='${coff[0]} ${coff[1]} ${coff[2]}' rpy='${crpy[0]} ${crpy[1]} ${crpy[2]}'/>
     </joint>

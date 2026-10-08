@@ -1,25 +1,28 @@
 <?xml version='1.0'?>
-<!-- Contact sensors on bumper_<name>_mount. The world already loads Contact.
-     GZ topic is internal; sim_bumper_bridge republishes UInt8MultiArray
-     on bumpers.state_topic. rmodus_bumper turns that into Bumper. -->
+<!-- Contact sensor <name>_sensor on link <name>_mount. The world already loads Contact.
+     Harmonic publishes
+     /world/my_world/model/rmodus/link/<name>_mount/sensor/<name>_sensor/contact.
+     The bridge maps that onto /sim/bumper/<name>/contact.
+     URDF collision is named <name>_mount; the filter uses <name>_mount_collision
+     because sdformat appends _collision itself. -->
 
 <robot xmlns:xacro='http://www.ros.org/wiki/xacro'>
 
 <xacro:macro name='gz_bumper_sensors' params='b'>
   <xacro:if value='${b.get("enabled", True)}'>
-    <gazebo reference='bumper_${b["name"]}_mount_joint'>
+    <gazebo reference='${b["name"]}_mount_joint'>
       <preserveFixedJoint>true</preserveFixedJoint>
     </gazebo>
-    <gazebo reference='bumper_${b["name"]}_contact_joint'>
+    <gazebo reference='${b["name"]}_contact_joint'>
       <preserveFixedJoint>true</preserveFixedJoint>
     </gazebo>
-    <gazebo reference='bumper_${b["name"]}_mount'>
-      <sensor name='bumper_${b["name"]}_sensor' type='contact'>
+    <gazebo reference='${b["name"]}_mount'>
+      <sensor name='${b["name"]}_sensor' type='contact'>
         <always_on>1</always_on>
         <update_rate>${b.get("update_rate", 30)}</update_rate>
         <topic>/sim/bumper/${b["name"]}/contact</topic>
         <contact>
-          <collision>bumper_${b["name"]}_mount_collision</collision>
+          <collision>${b["name"]}_mount_collision</collision>
         </contact>
       </sensor>
     </gazebo>

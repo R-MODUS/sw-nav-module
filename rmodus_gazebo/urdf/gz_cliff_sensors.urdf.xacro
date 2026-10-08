@@ -1,25 +1,27 @@
 <?xml version='1.0'?>
-<!-- Downward ray on cliff_sensor_<name>_beam.
-     Publishes LaserScan on an internal topic; sim_cliff_bridge packs meters
-     into cliff_sensors.state_topic. rmodus_cliff_sensor turns that into Range. -->
+<!-- Ray <name>_ray on the beam link: frame_id, or <name>_beam.
+     Publishes LaserScan on /sim/cliff/<name>/scan; sim_cliff_bridge packs meters
+     into cliff_sensors.state_topic. rmodus_cliff_sensor turns that into Range.
+     name is the whole stem (fl or cliff_sensor_fl). -->
 
 <robot xmlns:xacro='http://www.ros.org/wiki/xacro'>
 
 <xacro:macro name='gz_cliff_sensor' params='c'>
   <xacro:if value='${c.get("enabled", True)}'>
-    <gazebo reference='cliff_sensor_${c["name"]}_mount_joint'>
+    <xacro:property name='cframe' value='${c.get("frame_id") or c["name"] + "_beam"}'/>
+    <gazebo reference='${c["name"]}_mount_joint'>
       <preserveFixedJoint>true</preserveFixedJoint>
     </gazebo>
-    <gazebo reference='cliff_sensor_${c["name"]}_beam_joint'>
+    <gazebo reference='${c["name"]}_beam_joint'>
       <preserveFixedJoint>true</preserveFixedJoint>
     </gazebo>
-    <gazebo reference='cliff_sensor_${c["name"]}_beam'>
-      <sensor name='cliff_${c["name"]}' type='gpu_ray'>
+    <gazebo reference='${cframe}'>
+      <sensor name='${c["name"]}_ray' type='gpu_ray'>
         <always_on>1</always_on>
         <update_rate>${c.get("update_rate", 20)}</update_rate>
         <visualize>${str(c.get("visualize", False)).lower()}</visualize>
         <topic>/sim/cliff/${c["name"]}/scan</topic>
-        <gz_frame_id>cliff_sensor_${c["name"]}_beam</gz_frame_id>
+        <gz_frame_id>${cframe}</gz_frame_id>
         <ray>
           <scan>
             <horizontal>

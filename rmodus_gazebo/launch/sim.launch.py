@@ -5,6 +5,7 @@ continuous wheel joints and the Gazebo plugin overlay, then spawns that URDF.
 """
 
 import os
+import re
 import tempfile
 
 import yaml
@@ -18,6 +19,7 @@ from launch.actions import (
     SetEnvironmentVariable,
     TimerAction,
 )
+from launch.logging import get_logger
 from launch.substitutions import Command, LaunchConfiguration
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
@@ -100,6 +102,29 @@ def _items(block):
     else:
         return []
     return [item for item in raw if isinstance(item, dict) and item.get("name") and _as_bool(item.get("enabled"), True)]
+
+
+_SIM_NAME = re.compile(r"^[a-z][a-z0-9_]*$")
+
+
+def _frame_from_name(kind, name):
+    """Contact or beam when frame_id is omitted. name is the whole stem."""
+    if kind == "bumper":
+        return f"{name}_contact"
+    if kind == "cliff":
+        return f"{name}_beam"
+    return ""
+
+
+def _sim_token(item, kind):
+    """Name used in /sim/<kind>/<name>/... and in *_names. Label is ignored."""
+    name = item.get("name")
+    if not isinstance(name, str) or not _SIM_NAME.fullmatch(name):
+        get_logger("rmodus_gazebo").error(
+            f"[rmodus_gazebo] skip {kind} {name!r}: name must match ^[a-z][a-z0-9_]*$"
+        )
+        return ""
+    return name
 
 
 def _topic(block, default):
@@ -185,18 +210,33 @@ def _write_bridge(params, gui_cmd_topic=""):
             _bridge(topic, topic, "sensor_msgs/msg/LaserScan", "gz.msgs.LaserScan", "GZ_TO_ROS")
         )
 
+    # Harmonic publishes the contact sensor on the scoped name, not on <topic>.
+    # /world/my_world/model/rmodus/link/<name>_mount/sensor/<name>_sensor/contact
+    # maps onto /sim/bumper/<name>/contact. World and model match my_world and `create -name rmodus`.
     bumpers_cfg = params.get("bumpers") if isinstance(params.get("bumpers"), dict) else {}
-    bumpers = _items(params.get("bumpers"))
-    for bumper in bumpers:
-        topic = f"/sim/bumper/{bumper['name']}/contact"
+    bumpers = []
+    for bumper in _items(params.get("bumpers")):
+        name = _sim_token(bumper, "bumper")
+        if not name:
+            continue
+        bumpers.append(bumper)
+        ros_topic = f"/sim/bumper/{name}/contact"
+        gz_topic = (
+            f"/world/my_world/model/rmodus/link/{name}_mount"
+            f"/sensor/{name}_sensor/contact"
+        )
         bridge.append(
-            _bridge(topic, topic, "ros_gz_interfaces/msg/Contacts", "gz.msgs.Contacts", "GZ_TO_ROS")
+            _bridge(ros_topic, gz_topic, "ros_gz_interfaces/msg/Contacts", "gz.msgs.Contacts", "GZ_TO_ROS")
         )
 
     cliffs_cfg = params.get("cliff_sensors") if isinstance(params.get("cliff_sensors"), dict) else {}
-    cliffs = _items(params.get("cliff_sensors"))
-    for cliff in cliffs:
-        topic = f"/sim/cliff/{cliff['name']}/scan"
+    cliffs = []
+    for cliff in _items(params.get("cliff_sensors")):
+        name = _sim_token(cliff, "cliff")
+        if not name:
+            continue
+        cliffs.append(cliff)
+        topic = f"/sim/cliff/{name}/scan"
         bridge.append(
             _bridge(topic, topic, "sensor_msgs/msg/LaserScan", "gz.msgs.LaserScan", "GZ_TO_ROS")
         )

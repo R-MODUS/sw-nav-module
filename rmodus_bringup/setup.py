@@ -22,5 +22,9 @@ setup(
     description="R-MODUS bringup",
     license="TODO: License declaration",
     extras_require={"test": ["pytest"]},
-    entry_points={"console_scripts": []},
+    entry_points={
+        "console_scripts": [
+            "compile_profile = rmodus_bringup.profile_compile:main",
+        ],
+    },
 )

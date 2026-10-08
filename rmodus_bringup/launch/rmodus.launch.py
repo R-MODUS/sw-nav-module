@@ -17,31 +17,8 @@ import os
 import yaml
 
 from rmodus_bringup.package_gates import missing_packages, package_available, skip_log
-
-
-_DEFAULT_BRINGUP = {
-    "config": True,
-    "chassis": True,
-    "description": True,
-    "hw": True,
-    "uart_output": True,
-    "estop": True,
-    "bumper": True,
-    "cliff": True,
-    "flow": True,
-    "display": True,
-    "web": True,
-    "rviz": False,
-    "sim": False,
-    "sim_gui": False,
-    "localization": True,
-    "navigation": True,
-    "slam": True,
-    "rf2o": False,
-    "obstacle_cloud": True,
-    "microros": False,
-    "cmd_mux": True,
-}
+from rmodus_bringup.profile_compile import compile_profile
+from rmodus_bringup.profile_schema import DEFAULT_BRINGUP as _DEFAULT_BRINGUP
 
 # bringup flag → ROS package that must exist to include
 _OPTIONAL_RM_PKGS = {
@@ -181,11 +158,30 @@ def _flag(v: bool) -> str:
 
 
 def _build(context):
-    robot_yaml = _resolve(LaunchConfiguration("robot_yaml").perform(context))
-    if not robot_yaml:
-        robot_yaml = os.path.join(
+    source_yaml = _resolve(LaunchConfiguration("robot_yaml").perform(context))
+    if not source_yaml:
+        source_yaml = os.path.join(
             get_package_share_directory("rmodus_bringup"), "config", "rmodus.yaml"
         )
+
+    compile_on = _as_bool(LaunchConfiguration("compile").perform(context))
+    compile_notes = []
+    if compile_on:
+        compiled = compile_profile(source_yaml)
+        for warning in compiled.warnings:
+            where = str(warning.get("path") or "").strip()
+            text = str(warning.get("message") or "").strip()
+            compile_notes.append(
+                f"[rmodus_bringup] profil: {where}: {text}"
+                if where
+                else f"[rmodus_bringup] profil: {text}"
+            )
+        robot_yaml = compiled.path
+    else:
+        compile_notes.append(
+            "[rmodus_bringup] compile=false, profil se bere tak, jak leží"
+        )
+        robot_yaml = source_yaml
 
     if not os.path.isfile(robot_yaml):
         missing_profile = True
@@ -199,19 +195,22 @@ def _build(context):
         label = str(entry.get("package") or entry.get("path") or "?").strip() or "?"
         state = "true" if _as_bool(entry.get("enabled", True)) else "false"
         extra_labels.append(f"{label}={state}")
-    actions = [
-        LogInfo(msg=f"[rmodus_bringup] profile={robot_yaml}"),
-        LogInfo(
-            msg="[rmodus_bringup] soubor chybi, flags jsou vychozi"
-            if missing_profile
-            else f"[rmodus_bringup] zapnuto: {', '.join(enabled) or '(nic)'}"
-        ),
-        LogInfo(msg=f"[rmodus_bringup] microros: {_microros_summary(robot_yaml)}"),
-        LogInfo(
-            msg="[rmodus_bringup] extras: "
-            + (", ".join(extra_labels) if extra_labels else "(zadne)")
-        ),
-    ]
+    actions = [LogInfo(msg=note) for note in compile_notes]
+    actions.extend(
+        [
+            LogInfo(msg=f"[rmodus_bringup] profile={robot_yaml}"),
+            LogInfo(
+                msg="[rmodus_bringup] soubor chybi, flags jsou vychozi"
+                if missing_profile
+                else f"[rmodus_bringup] zapnuto: {', '.join(enabled) or '(nic)'}"
+            ),
+            LogInfo(msg=f"[rmodus_bringup] microros: {_microros_summary(robot_yaml)}"),
+            LogInfo(
+                msg="[rmodus_bringup] extras: "
+                + (", ".join(extra_labels) if extra_labels else "(zadne)")
+            ),
+        ]
+    )
 
     def _include(pkg: str, launch_file: str, **launch_arguments):
         return IncludeLaunchDescription(
@@ -420,8 +419,9 @@ def _build(context):
     )
     _try_feature("display", "rmodus_display", "display.launch.py", config_file=robot_yaml)
     # Profile manager before web so /rmodus/config/* services exist for UI.
-    # Stejný strom jako robot_yaml (…/configs), ne odhad z $HOME.
-    configs_root = _configs_root_from_profile(robot_yaml)
+    # Kořen …/configs se pozná z uživatelského souboru (…/profiles/*.yaml).
+    # Zkompilovaný /tmp/rmodus/*.ros.yaml tu složku nemá.
+    configs_root = _configs_root_from_profile(source_yaml)
     if configs_root:
         _try_feature(
             "config",
@@ -507,6 +507,11 @@ def generate_launch_description():
                 "robot_yaml",
                 default_value=PathJoinSubstitution([pkg_share, "config", "rmodus.yaml"]),
                 description="Profil s bringup: + extras + /**/ros__parameters",
+            ),
+            DeclareLaunchArgument(
+                "compile",
+                default_value="true",
+                description="true = složit dočasný ROS YAML; false = použít soubor tak, jak leží",
             ),
             OpaqueFunction(function=_build),
         ]

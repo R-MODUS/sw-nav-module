@@ -10,6 +10,13 @@ from pydantic import BaseModel, Field
 
 from rmodus_web.webbridge.config import WebConfig
 
+try:
+    from rmodus_bringup.profile_compile import lint_profile
+except ImportError:  # bringup není nainstalovaný — uložení i otevření dál fungují
+
+    def lint_profile(_text: str) -> dict:
+        return {"errors": [], "warnings": []}
+
 
 class ProfileCreateBody(BaseModel):
     name: str = Field(..., min_length=1)
@@ -53,6 +60,32 @@ async def _call(request: Request, method_name: str, *args):
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
+def _safe_lint(text: str) -> dict[str, list]:
+    try:
+        report = lint_profile(text if isinstance(text, str) else "")
+    except Exception:
+        return {"errors": [], "warnings": []}
+    if not isinstance(report, dict):
+        return {"errors": [], "warnings": []}
+    return {
+        "errors": list(report.get("errors") or []),
+        "warnings": list(report.get("warnings") or []),
+    }
+
+
+def _issues_flag(path: str):
+    """True/False podle lintu. None když soubor nejde přečíst — seznam neselže."""
+    if not path:
+        return None
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            text = handle.read()
+    except (OSError, UnicodeError):
+        return None
+    report = _safe_lint(text)
+    return bool(report["errors"] or report["warnings"])
+
+
 def _fail_if_needed(success: bool, message: str) -> None:
     if success:
         return
@@ -76,14 +109,18 @@ def create_profiles_router() -> APIRouter:
         res = await _call(request, "profiles_list")
         _fail_if_needed(res.success, res.message)
         active = res.active or None
-        profiles = [
-            {
+        profiles = []
+        for name in list(res.names):
+            path = f"{res.profiles_dir}/{name}.yaml"
+            entry = {
                 "name": name,
                 "active": name == active,
-                "path": f"{res.profiles_dir}/{name}.yaml",
+                "path": path,
             }
-            for name in list(res.names)
-        ]
+            issues = _issues_flag(path)
+            if issues is not None:
+                entry["issues"] = issues
+            profiles.append(entry)
         return {
             "configs_root": res.configs_root or cfg.configs_root,
             "profiles_dir": res.profiles_dir,
@@ -97,11 +134,14 @@ def create_profiles_router() -> APIRouter:
     async def get_one(name: str, request: Request) -> dict[str, Any]:
         res = await _call(request, "profiles_get", name)
         _fail_if_needed(res.success, res.message)
+        diagnostics = _safe_lint(res.content)
         return {
             "name": res.name,
             "active": bool(res.active),
             "path": res.path,
             "content": res.content,
+            "errors": diagnostics["errors"],
+            "warnings": diagnostics["warnings"],
         }
 
     @router.put("/{name}")
@@ -114,7 +154,14 @@ def create_profiles_router() -> APIRouter:
         _require_write_access(request, x_admin_pin)
         res = await _call(request, "profiles_save", name, body.content)
         _fail_if_needed(res.success, res.message)
-        return {"ok": True, "name": res.name, "path": res.path}
+        diagnostics = _safe_lint(body.content)
+        return {
+            "ok": True,
+            "name": res.name,
+            "path": res.path,
+            "errors": diagnostics["errors"],
+            "warnings": diagnostics["warnings"],
+        }
 
     @router.post("")
     async def create_one(

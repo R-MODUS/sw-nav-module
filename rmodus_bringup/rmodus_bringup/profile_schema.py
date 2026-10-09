@@ -14,6 +14,7 @@ PARAM_BLOCKS = (
     "lidar_odom",
     "imu",
     "lidar",
+    "map",
     "cmd_mux",
     "estop",
     "flow_sensor",

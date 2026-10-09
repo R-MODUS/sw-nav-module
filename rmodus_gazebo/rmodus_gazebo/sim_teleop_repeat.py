@@ -26,7 +26,7 @@ class SimTeleopRepeat(Node):
     def __init__(self):
         super().__init__("sim_teleop_repeat")
         src = str(self.declare_parameter("input_topic", "/sim_gui/cmd_vel").value)
-        dst = str(self.declare_parameter("output_topic", "/teleop/cmd_vel").value)
+        dst = str(self.declare_parameter("output_topic", "/sim/cmd_vel").value)
         rate = float(self.declare_parameter("rate", 20.0).value)
         self._release_sec = float(self.declare_parameter("release_sec", 0.6).value)
         if rate <= 0.0:

@@ -157,6 +157,29 @@ def _flag(v: bool) -> str:
     return "true" if v else "false"
 
 
+def _map_yaml(path: str) -> str:
+    """map.yaml_filename ze zkompilovaného profilu. Chybí blok → prázdné."""
+    if not path or not os.path.isfile(path):
+        return ""
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            root = yaml.safe_load(handle) or {}
+    except yaml.YAMLError:
+        return ""
+    if not isinstance(root, dict):
+        return ""
+    params = {}
+    wrapped = root.get("/**")
+    if isinstance(wrapped, dict) and isinstance(wrapped.get("ros__parameters"), dict):
+        params = wrapped["ros__parameters"]
+    block = params.get("map")
+    if not isinstance(block, dict) and isinstance(root.get("map"), dict):
+        block = root.get("map")
+    if not isinstance(block, dict):
+        return ""
+    return str(block.get("yaml_filename") or "").strip()
+
+
 def _build(context):
     source_yaml = _resolve(LaunchConfiguration("robot_yaml").perform(context))
     if not source_yaml:
@@ -462,6 +485,8 @@ def _build(context):
                     use_sim_time=use_sim,
                     robot_yaml=robot_yaml,
                     navigation="true",
+                    slam=_flag(b["slam"]),
+                    map=_map_yaml(robot_yaml),
                 )
             )
         else:

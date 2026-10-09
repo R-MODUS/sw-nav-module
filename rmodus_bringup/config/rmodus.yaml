@@ -137,6 +137,11 @@ microros:
       offset: [0.005, 0.0, 0.2]
       rpy: [0.0, 0.0, 0.0]
 
+    # Uložená mapa pro Nav2. Použije se jen když bringup.slam je false.
+    # Prázdné yaml_filename = žádný map_server ani AMCL.
+    map:
+      yaml_filename: ""
+
     # Rychlost: zdroje publikují na <zdroj>/cmd_vel, twist_mux vybere podle priority
     # a výstup jde na /cmd_vel (to žere host: uart_output nebo cizí podvozek).
     # Nikdo jiný než mux na /cmd_vel publikovat nesmí.

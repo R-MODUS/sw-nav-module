@@ -1,3 +1,6 @@
+# Nepoužívá se. Geometrii bere sim.launch.py z profilu robota (robot_yaml).
+# Soubor zůstává jen jako historický náčrt starého modelu.
+
 /**:
   ros__parameters:
 

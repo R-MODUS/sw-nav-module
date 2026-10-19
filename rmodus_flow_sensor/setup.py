@@ -22,6 +22,7 @@ setup(
     entry_points={
         "console_scripts": [
             "flow_sensor = rmodus_flow_sensor.node_flow_sensor:main",
+            "flow_hw = rmodus_flow_sensor.node_flow_hw:main",
         ],
     },
 )

@@ -22,7 +22,8 @@ bringup:
   display: true          # optional package rmodus_display
   web: true
   rviz: false
-  sim: false             # optional rmodus_gazebo + ros_gz_* (zatím nespouští stack)
+  sim: false             # true = Gazebo drží pohon, URDF a surová čidla; bumper/cliff/flow je zpracují
+  sim_gui: false         # true = okno gz sim; false = jen server (gz sim -s), bez ikony v liště
   localization: true     # rmodus_localization (EKF; rf2o/slam optional debs)
   navigation: true       # rmodus_navigation (Nav2 optional debs)
   slam: true             # slam_toolbox (optional deb)
@@ -114,6 +115,8 @@ microros:
     imu:
       enabled: true
       type: 'imu'
+      name: 'imu'
+      label: 'IMU'
       topic: '/imu/data'
       frame_id: 'imu_link'
       mount_parent_frame: 'rmodus_mount'
@@ -124,6 +127,8 @@ microros:
 
     lidar:
       enabled: true
+      name: 'lidar'
+      label: 'LiDAR'
       topic: '/scan'
       frame_id: 'lidar_beam'
       mount_parent_frame: 'rmodus_mount'
@@ -131,6 +136,11 @@ microros:
       mount_rpy: [0.0, 0.0, 0.0]
       offset: [0.005, 0.0, 0.2]
       rpy: [0.0, 0.0, 0.0]
+
+    # Uložená mapa pro Nav2. Použije se jen když bringup.slam je false.
+    # Prázdné yaml_filename = žádný map_server ani AMCL.
+    map:
+      yaml_filename: ""
 
     # Rychlost: zdroje publikují na <zdroj>/cmd_vel, twist_mux vybere podle priority
     # a výstup jde na /cmd_vel (to žere host: uart_output nebo cizí podvozek).
@@ -186,6 +196,8 @@ microros:
 
     flow_sensor:
       enabled: true
+      hardware: true
+      motion_topic: /robot/flow/motion
       type: 'twist'
       topic: '/visual_flow/data'
       frame_id: 'flow_front_link'
@@ -209,10 +221,10 @@ microros:
         retrigger_while_contact: false
       items:
         - name: 'front'
+          label: 'Front Bumper'
           enabled: true
           pin: 0
           topic: '/bumper/front'
-          frame_id: 'bumper_front_contact'
           mount_parent_frame: 'base_link'
           mount_offset: [0.30, 0.0, 0.0]
           mount_rpy: [0.0, 0.0, 0.0]
@@ -220,6 +232,8 @@ microros:
 
     cliff_sensors:
       enabled: true
+      hardware: true
+      state_topic: /robot/cliffs/range
       address: '0x48'
       estop_request:
         enabled: true
@@ -228,9 +242,9 @@ microros:
         retrigger_while_cliff: false
       items:
         - name: 'fl'
+          label: 'FL Cliff Sensor'
           enabled: true
           topic: '/cliff/fl'
-          frame_id: 'cliff_sensor_fl_beam'
           pin: 0
           mount_parent_frame: 'base_link'
           mount_offset: [0.25, 0.20, 0.0]
@@ -239,9 +253,9 @@ microros:
           beam_offset: [0.0, 0.0, -0.01]
           beam_rpy: [0.0, 1.5708, 0.0]
         - name: 'fr'
+          label: 'FR Cliff Sensor'
           enabled: true
           topic: '/cliff/fr'
-          frame_id: 'cliff_sensor_fr_beam'
           pin: 1
           mount_parent_frame: 'base_link'
           mount_offset: [0.25, -0.20, 0.0]

@@ -12,14 +12,19 @@
   </inertial>
 </xacro:macro>
 
-<xacro:macro name='rmodus_chassis_links'>
+<xacro:macro name='rmodus_chassis_links' params='joint_type:=fixed'>
   <xacro:property name='base_mass' value='${base_cfg["mass"]}'/>
   <xacro:property name='base_size_x' value='${base_cfg["size"][0]}'/>
   <xacro:property name='base_size_y' value='${base_cfg["size"][1]}'/>
   <xacro:property name='base_size_z' value='${base_cfg["size"][2]}'/>
   <xacro:property name='base_offset_z' value='${base_cfg["offset_z"]}'/>
 
-  <link name='base_footprint'/>
+  <link name='base_footprint'>
+    <inertial>
+      <mass value='0.001'/>
+      <inertia ixx='1e-6' ixy='0' ixz='0' iyy='1e-6' iyz='0' izz='1e-6'/>
+    </inertial>
+  </link>
 
   <link name='base_link'>
     <xacro:rmodus_chassis_box_inertia m='${base_mass}' x='${base_size_x}' y='${base_size_y}' z='${base_size_z}'/>
@@ -40,11 +45,13 @@
     <origin xyz='0 0 ${base_offset_z}' rpy='0 0 0'/>
   </joint>
 
-  <xacro:rmodus_chassis_wheels/>
+  <xacro:rmodus_chassis_wheels joint_type='${joint_type}'/>
 </xacro:macro>
 
-<!-- Wheel centre z sits wheel_radius above base_footprint. Fixed joints: TF must not wait for /joint_states. -->
-<xacro:macro name='rmodus_chassis_wheel' params='name x y radius width z'>
+<!-- Wheel centre z sits wheel_radius above base_footprint.
+     HW default joint_type=fixed so TF does not wait for /joint_states.
+     Sim passes joint_type=continuous; axis Y matches the cylinder (visual rpy pi/2 about X). -->
+<xacro:macro name='rmodus_chassis_wheel' params='name x y radius width z joint_type:=fixed'>
   <link name='${name}_link'>
     <xacro:rmodus_chassis_box_inertia m='0.3' x='${2*radius}' y='${width}' z='${2*radius}'/>
     <visual>
@@ -57,14 +64,17 @@
       <geometry><cylinder radius='${radius}' length='${width}'/></geometry>
     </collision>
   </link>
-  <joint name='${name}' type='fixed'>
+  <joint name='${name}' type='${joint_type}'>
     <parent link='base_link'/>
     <child link='${name}_link'/>
     <origin xyz='${x} ${y} ${z}' rpy='0 0 0'/>
+    <xacro:if value='${joint_type != "fixed"}'>
+      <axis xyz='0 1 0'/>
+    </xacro:if>
   </joint>
 </xacro:macro>
 
-<xacro:macro name='rmodus_chassis_wheels'>
+<xacro:macro name='rmodus_chassis_wheels' params='joint_type:=fixed'>
   <xacro:property name='wheel_mode' value='${drive_cfg.get("mode", "")}'/>
   <xacro:property name='wheel_r' value='${float(drive_cfg.get("wheel_radius", 0.05))}'/>
   <xacro:property name='wheel_w' value='${float(drive_cfg.get("wheel_width", 0.04))}'/>
@@ -77,14 +87,14 @@
   </material>
 
   <xacro:if value='${wheel_mode in ("mecanum", "diff4")}'>
-    <xacro:rmodus_chassis_wheel name='wheel_fl' x='${wheel_hx}' y='${wheel_hy}' radius='${wheel_r}' width='${wheel_w}' z='${wheel_z}'/>
-    <xacro:rmodus_chassis_wheel name='wheel_fr' x='${wheel_hx}' y='${-wheel_hy}' radius='${wheel_r}' width='${wheel_w}' z='${wheel_z}'/>
-    <xacro:rmodus_chassis_wheel name='wheel_rl' x='${-wheel_hx}' y='${wheel_hy}' radius='${wheel_r}' width='${wheel_w}' z='${wheel_z}'/>
-    <xacro:rmodus_chassis_wheel name='wheel_rr' x='${-wheel_hx}' y='${-wheel_hy}' radius='${wheel_r}' width='${wheel_w}' z='${wheel_z}'/>
+    <xacro:rmodus_chassis_wheel name='wheel_fl' x='${wheel_hx}' y='${wheel_hy}' radius='${wheel_r}' width='${wheel_w}' z='${wheel_z}' joint_type='${joint_type}'/>
+    <xacro:rmodus_chassis_wheel name='wheel_fr' x='${wheel_hx}' y='${-wheel_hy}' radius='${wheel_r}' width='${wheel_w}' z='${wheel_z}' joint_type='${joint_type}'/>
+    <xacro:rmodus_chassis_wheel name='wheel_rl' x='${-wheel_hx}' y='${wheel_hy}' radius='${wheel_r}' width='${wheel_w}' z='${wheel_z}' joint_type='${joint_type}'/>
+    <xacro:rmodus_chassis_wheel name='wheel_rr' x='${-wheel_hx}' y='${-wheel_hy}' radius='${wheel_r}' width='${wheel_w}' z='${wheel_z}' joint_type='${joint_type}'/>
   </xacro:if>
   <xacro:if value='${wheel_mode == "diff2"}'>
-    <xacro:rmodus_chassis_wheel name='wheel_l' x='0.0' y='${wheel_hy}' radius='${wheel_r}' width='${wheel_w}' z='${wheel_z}'/>
-    <xacro:rmodus_chassis_wheel name='wheel_r' x='0.0' y='${-wheel_hy}' radius='${wheel_r}' width='${wheel_w}' z='${wheel_z}'/>
+    <xacro:rmodus_chassis_wheel name='wheel_l' x='0.0' y='${wheel_hy}' radius='${wheel_r}' width='${wheel_w}' z='${wheel_z}' joint_type='${joint_type}'/>
+    <xacro:rmodus_chassis_wheel name='wheel_r' x='0.0' y='${-wheel_hy}' radius='${wheel_r}' width='${wheel_w}' z='${wheel_z}' joint_type='${joint_type}'/>
   </xacro:if>
 </xacro:macro>
 

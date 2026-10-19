@@ -98,6 +98,7 @@ def _flatten(group: str, entries: list, params: dict) -> None:
 
 
 def _create(context):
+    use_sim_time = _as_bool(LaunchConfiguration("use_sim_time").perform(context), False)
     path = os.path.expanduser(str(LaunchConfiguration("config_file").perform(context)).strip())
     root = _load_profile(path)
     cfg = _block(root)
@@ -134,7 +135,10 @@ def _create(context):
         )
 
     output_topic = str(cfg.get("output_topic") or "/cmd_vel").strip()
-    params = {"use_stamped": _as_bool(cfg.get("use_stamped"), False)}
+    params = {
+        "use_stamped": _as_bool(cfg.get("use_stamped"), False),
+        "use_sim_time": use_sim_time,
+    }
     _flatten("topics", inputs, params)
     _flatten("locks", locks, params)
 
@@ -157,6 +161,7 @@ def generate_launch_description():
     return LaunchDescription(
         [
             DeclareLaunchArgument("config_file", default_value=""),
+            DeclareLaunchArgument("use_sim_time", default_value="false"),
             OpaqueFunction(function=_create),
         ]
     )

@@ -1,5 +1,9 @@
 flow_sensor:
   enabled: true
+  # Surový vstup: Int16MultiArray [dx, dy] v pixelech za timer_period.
+  # hardware: true čte SPI a ten topic publikuje. V simulaci bringup předá hardware:=false.
+  hardware: true
+  motion_topic: /robot/flow/motion
   type: twist
   topic: /visual_flow/data
   frame_id: flow_front_link

@@ -1,41 +1,44 @@
 <?xml version='1.0'?>
-<!-- Shared cliff sensor TF frames - no Gazebo plugins -->
+<!-- Cliff: <name>_mount = box, beam link = frame_id or <name>_beam.
+     Same expression as rmodus_cliff_sensor launch (Range header and static TF).
+     name is the whole stem (fl or cliff_sensor_fl). -->
 
 <robot xmlns:xacro='http://www.ros.org/wiki/xacro'>
 
 <xacro:property name='cliff_sensor_mass' value='0.001'/>
 
 <xacro:macro name='render_cliff_sensor' params='c'>
-  <link name='cliff_sensor_${c["name"]}_mount'>
+  <xacro:property name='cframe' value='${c.get("frame_id") or c["name"] + "_beam"}'/>
+  <link name='${c["name"]}_mount'>
     <xacro:box_inertia m='${cliff_sensor_mass}' x='${c["size"][0]}' y='${c["size"][1]}' z='${c["size"][2]}'/>
     <visual>
       <origin xyz='${c["size"][0]/2} 0 ${-c["size"][2]/2}' rpy='0 0 0'/>
       <geometry><box size='${c["size"][0]} ${c["size"][1]} ${c["size"][2]}'/></geometry>
       <material name='cliff_mount_mat'/>
     </visual>
-    <collision>
+    <collision name='${c["name"]}_mount'>
       <origin xyz='${c["size"][0]/2} 0 ${-c["size"][2]/2}' rpy='0 0 0'/>
       <geometry><box size='${c["size"][0]} ${c["size"][1]} ${c["size"][2]}'/></geometry>
     </collision>
   </link>
 
-  <joint name='cliff_sensor_${c["name"]}_mount_joint' type='fixed'>
+  <joint name='${c["name"]}_mount_joint' type='fixed'>
     <parent link='${c.get("mount_parent_frame", c.get("parent_frame", "base_link"))}'/>
-    <child link='cliff_sensor_${c["name"]}_mount'/>
+    <child link='${c["name"]}_mount'/>
     <origin xyz='${c.get("mount_offset", c.get("offset", [0.0, 0.0, 0.0]))[0]} ${c.get("mount_offset", c.get("offset", [0.0, 0.0, 0.0]))[1]} ${c.get("mount_offset", c.get("offset", [0.0, 0.0, 0.0]))[2]}'
             rpy='${c.get("mount_rpy", [0.0, 0.0, c.get("yaw", 0.0)])[0]} ${c.get("mount_rpy", [0.0, 0.0, c.get("yaw", 0.0)])[1]} ${c.get("mount_rpy", [0.0, 0.0, c.get("yaw", 0.0)])[2]}'/>
   </joint>
 
-  <link name='cliff_sensor_${c["name"]}_beam'>
+  <link name='${cframe}'>
     <inertial>
       <mass value='0.001'/>
       <inertia ixx='0.00001' ixy='0' ixz='0' iyy='0.00001' iyz='0' izz='0.00001'/>
     </inertial>
   </link>
 
-  <joint name='cliff_sensor_${c["name"]}_beam_joint' type='fixed'>
-    <parent link='cliff_sensor_${c["name"]}_mount'/>
-    <child link='cliff_sensor_${c["name"]}_beam'/>
+  <joint name='${c["name"]}_beam_joint' type='fixed'>
+    <parent link='${c["name"]}_mount'/>
+    <child link='${cframe}'/>
     <origin xyz='${c.get("beam_offset", [c["size"][0], 0.0, -c["size"][2]/2])[0]} ${c.get("beam_offset", [c["size"][0], 0.0, -c["size"][2]/2])[1]} ${c.get("beam_offset", [c["size"][0], 0.0, -c["size"][2]/2])[2]}'
             rpy='${c.get("beam_rpy", [0.0, pi/2, 0.0])[0]} ${c.get("beam_rpy", [0.0, pi/2, 0.0])[1]} ${c.get("beam_rpy", [0.0, pi/2, 0.0])[2]}'/>
   </joint>

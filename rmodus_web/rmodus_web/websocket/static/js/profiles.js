@@ -252,13 +252,66 @@
             row.className = 'surface-list-item profiles-list-item'
                 + (p.name === selectedName ? ' is-selected' : '')
                 + (p.active ? ' is-active' : '');
+            const marks = [];
+            if (p.issues) {
+                marks.push('<span class="profiles-issue-dot" title="Chyby nebo varování"></span>');
+            }
+            if (p.active) {
+                marks.push('<span class="profiles-badge">aktivní</span>');
+            }
+            const meta = marks.length
+                ? `<span class="profiles-list-meta">${marks.join('')}</span>`
+                : '';
             row.innerHTML = `
                 <span class="profiles-list-name">${escapeHtml(p.name)}</span>
-                ${p.active ? '<span class="profiles-badge">aktivní</span>' : ''}
+                ${meta}
             `;
             row.addEventListener('click', () => openProfile(p.name));
             list.appendChild(row);
         });
+    }
+
+    function diagFields(entry) {
+        if (!entry || typeof entry !== 'object') {
+            return { path: '', message: String(entry || '') };
+        }
+        return {
+            path: entry.path ? String(entry.path) : '',
+            message: entry.message ? String(entry.message) : '',
+        };
+    }
+
+    function renderDiagnostics(errors, warnings) {
+        const panel = document.getElementById('profiles-diagnostics');
+        if (!panel) return;
+        const rows = [];
+        (Array.isArray(errors) ? errors : []).forEach((entry) => {
+            const fields = diagFields(entry);
+            rows.push(
+                `<li class="profiles-diag-item is-error">`
+                + `<span class="profiles-diag-kind">Chyba</span>`
+                + `<span class="profiles-diag-path">${escapeHtml(fields.path)}</span>`
+                + `<span class="profiles-diag-message">${escapeHtml(fields.message)}</span>`
+                + `</li>`
+            );
+        });
+        (Array.isArray(warnings) ? warnings : []).forEach((entry) => {
+            const fields = diagFields(entry);
+            rows.push(
+                `<li class="profiles-diag-item is-warning">`
+                + `<span class="profiles-diag-kind">Varování</span>`
+                + `<span class="profiles-diag-path">${escapeHtml(fields.path)}</span>`
+                + `<span class="profiles-diag-message">${escapeHtml(fields.message)}</span>`
+                + `</li>`
+            );
+        });
+        if (!rows.length) {
+            panel.hidden = true;
+            panel.innerHTML = '';
+            return;
+        }
+        panel.hidden = false;
+        panel.innerHTML = `<ul class="profiles-diag-list">${rows.join('')}</ul>`;
     }
 
     async function refreshList() {
@@ -306,6 +359,7 @@
                 title.textContent = data.active ? `${data.name} (aktivní)` : data.name;
             }
             if (pathEl) pathEl.textContent = data.path || '';
+            renderDiagnostics(data.errors, data.warnings);
 
             updateChrome();
             if (listCache) renderList(listCache);
@@ -342,13 +396,14 @@
         }
         const content = getEditorText();
         try {
-            await api(`/api/profiles/${encodeURIComponent(selectedName)}`, {
+            const saved = await api(`/api/profiles/${encodeURIComponent(selectedName)}`, {
                 method: 'PUT',
                 body: JSON.stringify({ content }),
             });
             loadedContent = content;
             dirty = false;
             editing = false;
+            renderDiagnostics(saved && saved.errors, saved && saved.warnings);
             updateChrome();
             await refreshList();
         } catch (err) {
@@ -454,6 +509,7 @@
             const pathEl = document.getElementById('profiles-editor-path');
             if (title) title.textContent = 'Vyber profil';
             if (pathEl) pathEl.textContent = '';
+            renderDiagnostics([], []);
             updateChrome();
             await refreshList();
         } catch (err) {
@@ -524,6 +580,7 @@
             });
         }
 
+        renderDiagnostics([], []);
         updateChrome();
         await refreshList();
         if (listCache && listCache.active) {

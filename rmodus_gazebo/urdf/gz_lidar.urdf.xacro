@@ -1,22 +1,13 @@
 <?xml version='1.0'?>
-<!-- Sim-only: Gazebo lidar sensor plugin.
-     TF link/joint defined in rmodus_description/urdf/lidar.urdf.xacro -->
+<!-- GPU lidar on the description frame lidar_beam. Topic follows lidar.topic. -->
 
-<robot xmlns:xacro='http://www.ros.org/wiki/xacro'
-       xmlns:gz='http://gazebosim.org/schema'>
+<robot xmlns:xacro='http://www.ros.org/wiki/xacro'>
 
-<gazebo>
-  <plugin
-    filename='libgz-sim-sensors-system.so'
-    name='gz::sim::systems::Sensors'>
-    <render_engine>ogre2</render_engine>
-  </plugin>
-</gazebo>
+<xacro:property name='lidar_samples' value='${max(1, int(round(float(lidar_cfg.get("fov", 360)) / max(float(lidar_cfg.get("resolution", 1.0)), 1e-6))))}'/>
 
 <gazebo reference='lidar_mount_joint'>
   <preserveFixedJoint>true</preserveFixedJoint>
 </gazebo>
-
 <gazebo reference='lidar_joint'>
   <preserveFixedJoint>true</preserveFixedJoint>
 </gazebo>
@@ -26,13 +17,15 @@
     <always_on>1</always_on>
     <visualize>${str(lidar_cfg.get("visualize", False)).lower()}</visualize>
     <update_rate>${lidar_cfg.get("update_rate", 10)}</update_rate>
+    <topic>${lidar_cfg.get("topic", "/scan")}</topic>
+    <gz_frame_id>${lidar_cfg.get("frame_id", "lidar_beam")}</gz_frame_id>
     <ray>
       <scan>
         <horizontal>
-          <samples>${max(1, int(round(lidar_cfg.get("fov", 360) / max(lidar_cfg.get("resolution", 1.0), 1e-6))))}</samples>
-          <resolution>1.0</resolution>
+          <samples>${lidar_samples}</samples>
+          <resolution>1</resolution>
           <min_angle>${lidar_cfg.get("angle_min", 0.0)}</min_angle>
-          <max_angle>${lidar_cfg.get("angle_max", 2 * pi)}</max_angle>
+          <max_angle>${lidar_cfg.get("angle_max", 6.28318530718)}</max_angle>
         </horizontal>
       </scan>
       <range>
@@ -40,8 +33,6 @@
         <max>${lidar_cfg.get("range_max", 5.0)}</max>
       </range>
     </ray>
-    <topic>${lidar_cfg.get("topic", "/scan")}</topic>
-    <gz_frame_id>lidar_beam</gz_frame_id>
   </sensor>
 </gazebo>
 

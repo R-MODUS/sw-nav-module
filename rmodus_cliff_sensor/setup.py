@@ -23,6 +23,7 @@ setup(
     entry_points={
         "console_scripts": [
             "cliff_sensors = rmodus_cliff_sensor.node_cliff_sensors:main",
+            "cliff_hw = rmodus_cliff_sensor.node_cliff_hw:main",
             "cliff_estop_request = rmodus_cliff_sensor.node_cliff_estop_request:main",
         ],
     },

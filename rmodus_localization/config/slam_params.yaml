@@ -1,3 +1,4 @@
+# localization.launch.py přepíše use_sim_time launch argumentem. Ten vyhrává nad true níže.
 slam_toolbox:
   ros__parameters:
     use_sim_time: true

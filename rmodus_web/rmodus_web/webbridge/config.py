@@ -57,9 +57,9 @@ class WebConfig:
     e_stop_state_topic: str = "/rmodus/e_stop"
     e_stop_request_topic: str = "/rmodus/e_stop/request"
     e_stop_reset_topic: str = "/rmodus/e_stop/reset"
-    # topic (s úvodním /) → zobrazované jméno z lidar/imu .name v profilu
+    # topic (s úvodním /) → zobrazovaný text (neprázdný label, jinak name)
     sensor_names: dict = field(default_factory=dict)
-    # {"footprint": [x, y] | None, "mounts": {topic: {kind, name, x, y, yaw, size, threshold}},
+    # {"footprint": [x, y] | None, "mounts": {topic: {kind, name, frame, x, y, yaw, size, threshold}},
     #  "segments": {svg_id: {topic, x?, y?, yaw?, size?, threshold?}}}
     sensor_layout: dict = field(default_factory=dict)
     # {"base_link": {"size": [x, y, z]} | None,
@@ -164,24 +164,32 @@ def _sensor_items(block: Any):
     yield block
 
 
+def _sensor_display_text(item: Mapping[str, Any]) -> str:
+    """Display text for a sensor item: non-empty label, otherwise name."""
+    label = str(item.get("label") or "").strip()
+    if label:
+        return label
+    return str(item.get("name") or "").strip()
+
+
 def _named_sensor_entries(block: Any):
-    """Yield (topic, name) from a flat sensor block or from its items list."""
+    """Yield (topic, label-or-name) from a flat sensor block or from its items list."""
     for item in _sensor_items(block):
         topic = str(item.get("topic") or "").strip()
-        name = str(item.get("name") or "").strip()
-        if topic and name:
-            yield topic, name
+        text = _sensor_display_text(item)
+        if topic and text:
+            yield topic, text
 
 
 def collect_sensor_names(loaded: Mapping[str, Any]) -> dict:
-    """Map sensor topics to display names from <sensor block>.name / items[].name."""
+    """Map sensor topics to display text (non-empty label, otherwise name)."""
     params = _ros_parameters(loaded)
     names: dict = {}
     for key in NAMED_SENSOR_BLOCKS:
-        for topic, name in _named_sensor_entries(params.get(key)):
+        for topic, text in _named_sensor_entries(params.get(key)):
             normalized = normalize_topic(topic)
             if normalized and normalized not in names:
-                names[normalized] = name
+                names[normalized] = text
     return names
 
 
@@ -192,6 +200,19 @@ def _float_list(value: Any, length: int) -> Optional[list]:
         return [float(v) for v in value[:length]]
     except (TypeError, ValueError):
         return None
+
+
+def _sensor_frame(item: Mapping[str, Any], kind: str) -> str:
+    """Contact or beam: frame_id, otherwise <name>_contact / <name>_beam. name is the whole stem."""
+    explicit = str(item.get("frame_id") or "").strip()
+    if explicit:
+        return explicit
+    token = str(item.get("name") or "").strip()
+    if not token:
+        return ""
+    if kind == "cliff":
+        return f"{token}_beam"
+    return f"{token}_contact"
 
 
 def collect_sensor_layout(loaded: Mapping[str, Any]) -> dict:
@@ -213,7 +234,8 @@ def collect_sensor_layout(loaded: Mapping[str, Any]) -> dict:
             rpy = _float_list(item.get("mount_rpy"), 3)
             entry = {
                 "kind": kind,
-                "name": str(item.get("name") or "").strip(),
+                "name": _sensor_display_text(item),
+                "frame": _sensor_frame(item, kind),
                 "size": _float_list(item.get("size"), 2),
             }
             if offset is not None and parent in FOOTPRINT_PARENT_FRAMES:
@@ -251,6 +273,7 @@ def collect_robot_model(loaded: Mapping[str, Any]) -> dict:
         _wheel_parts(params, base)
         + _sensor_mount_parts(params)
         + _bumper_parts(params)
+        + _cliff_parts(params)
         + _custom_parts(params)
     )
     return model
@@ -315,11 +338,28 @@ def _bumper_parts(params: Mapping[str, Any]) -> list:
         if not name:
             continue
         parts.append(_part(
-            f"bumper_{name}_mount",
+            f"{name}_mount",
             "box",
             size,
             "#ef4444",
-            name=f"bumper_{name}",
+            name=_sensor_display_text(item),
+        ))
+    return parts
+
+
+def _cliff_parts(params: Mapping[str, Any]) -> list:
+    parts = []
+    for item in _sensor_items(params.get("cliff_sensors")):
+        name = str(item.get("name") or "").strip()
+        size = _float_list(item.get("size"), 3) or [0.02, 0.02, 0.02]
+        if not name:
+            continue
+        parts.append(_part(
+            f"{name}_mount",
+            "box",
+            size,
+            "#2e9e70",
+            name=_sensor_display_text(item),
         ))
     return parts
 

@@ -21,6 +21,7 @@
       - nav2_controller, nav2_smoother, nav2_planner, nav2_behaviors
       - nav2_bt_navigator, nav2_waypoint_follower, nav2_velocity_smoother
       - nav2_lifecycle_manager
+      - nav2_amcl, nav2_map_server (jen uložená mapa, ne spolu se SLAM)
   -->
 
   <export>
@@ -35,6 +36,8 @@
       <optional_depend>nav2_waypoint_follower</optional_depend>
       <optional_depend>nav2_velocity_smoother</optional_depend>
       <optional_depend>nav2_lifecycle_manager</optional_depend>
+      <optional_depend>nav2_amcl</optional_depend>
+      <optional_depend>nav2_map_server</optional_depend>
     </rmodus>
   </export>
 </package>

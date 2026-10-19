@@ -64,6 +64,7 @@ class WebBridgeNode(Node):
         self.tf_is_stale = True
         self._last_sensor_catalog_signature = None
         self._sensor_last_sent: Dict[str, float] = {}
+        self._missing_sensor_frames: set = set()
         max_rate = float(self.cfg.sensor_max_rate_hz or 0.0)
         self._sensor_min_period = 1.0 / max_rate if max_rate > 0 else 0.0
         self._profile_service_timeout_sec = 8.0
@@ -192,6 +193,9 @@ class WebBridgeNode(Node):
             if not self._topic_has_publishers(topic_name):
                 continue
 
+            if topic_name.startswith("/sim/"):
+                continue
+
             if "sensor_msgs/msg/LaserScan" in topic_types:
                 sensor = self._sensor_from_topic("lidar", topic_name, "sensor_msgs/LaserScan")
                 self._register_sensor(sensor, LaserScan, self.scan_callback)
@@ -234,12 +238,21 @@ class WebBridgeNode(Node):
 
         self._prune_missing_dynamic_topics(active_dynamic_topics)
 
+    def _profile_mount(self, topic_name: str):
+        layout = self.cfg.sensor_layout if isinstance(self.cfg.sensor_layout, dict) else {}
+        mounts = layout.get("mounts") if isinstance(layout.get("mounts"), dict) else {}
+        mount = mounts.get(normalize_topic(topic_name))
+        return mount if isinstance(mount, dict) else None
+
     def _sensor_from_topic(self, sensor_type: str, topic_name: str, message_type: str) -> SensorDefinition:
         sensor_id = self._sensor_id_from_topic(topic_name)
         label = self._sensor_label_from_topic(sensor_type, topic_name)
-        suffix = topic_name.rstrip("/").split("/")[-1]
-        frame_suffix = suffix if suffix.endswith("_link") else f"{suffix}_link"
-        return SensorDefinition(sensor_type, sensor_id, topic_name, label, frame_suffix, message_type)
+        mount = self._profile_mount(topic_name) if sensor_type in ("bumper", "cliff") else None
+        frame_id = str(mount.get("frame") or "").strip() if mount else ""
+        if not frame_id:
+            suffix = topic_name.rstrip("/").split("/")[-1]
+            frame_id = suffix if suffix.endswith("_link") else f"{suffix}_link"
+        return SensorDefinition(sensor_type, sensor_id, topic_name, label, frame_id, message_type)
 
     def _register_sensor(self, sensor: SensorDefinition, message_cls, callback):
         if sensor.topic in self.sensor_subscriptions:
@@ -276,12 +289,23 @@ class WebBridgeNode(Node):
         if to_remove:
             self._broadcast_sensor_catalog(force=True)
 
+    def _warn_missing_sensor_frame(self, frame_id: str, topic: str) -> None:
+        if frame_id in self._missing_sensor_frames:
+            return
+        self._missing_sensor_frames.add(frame_id)
+        self.get_logger().warning(f"rám {frame_id} není v TF, senzor {topic} zůstává na půdorysu")
+
     def _sensor_visible_for_ui(self, sensor_dict: dict) -> bool:
         """Katalog odpovídá tomu, co je ve stromu TF — ne všechna ROS témata."""
         if not self.tf_frames:
             return True
         fid = self._normalize_frame_id(sensor_dict.get("frame_id") or "")
         st = sensor_dict.get("sensor_type") or ""
+        topic = str(sensor_dict.get("topic") or "")
+        if st in ("bumper", "cliff") and self._profile_mount(topic):
+            if fid and fid not in self.tf_frames:
+                self._warn_missing_sensor_frame(fid, topic)
+            return True
         if st == "odom":
             # Odometrie publikuje v rodičovském rámci (odom), ten není child ve stromu.
             return True
@@ -351,13 +375,25 @@ class WebBridgeNode(Node):
         if not self._has_clients():
             return
         self._update_sensor_frame(sensor.topic, msg.header.frame_id)
-        range_span = max(msg.max_range - msg.min_range, 1e-6)
+        # Gazebo writes +inf when the ray hits nothing. JSON has no Infinity/NaN,
+        # and the browser drops the whole websocket frame.
+        minimum = float(msg.min_range) if math.isfinite(msg.min_range) else 0.0
+        maximum = float(msg.max_range) if math.isfinite(msg.max_range) else minimum + 1.0
+        if maximum <= minimum:
+            maximum = minimum + 1.0
+        reading = float(msg.range)
+        if math.isnan(reading):
+            return
+        if math.isinf(reading):
+            reading = maximum if reading > 0.0 else minimum
+        span = max(maximum - minimum, 1e-6)
+        fov = float(msg.field_of_view) if math.isfinite(msg.field_of_view) else 0.0
         payload = {
-            "range": float(msg.range),
-            "min_range": float(msg.min_range),
-            "max_range": float(msg.max_range),
-            "field_of_view": float(msg.field_of_view),
-            "normalized_range": max(0.0, min(1.0, (msg.range - msg.min_range) / range_span)),
+            "range": reading,
+            "min_range": minimum,
+            "max_range": maximum,
+            "field_of_view": fov,
+            "normalized_range": max(0.0, min(1.0, (reading - minimum) / span)),
         }
         self._remember_sensor_message(sensor, payload)
 

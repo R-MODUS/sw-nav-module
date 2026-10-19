@@ -7,6 +7,7 @@ import tf2_ros
 import math
 
 from rmodus_interface.msg import Bumper
+from rmodus_localization.sensor_frames import frame_from_topic, resolve_frame
 
 
 class ObstacleCloudNode(Node):
@@ -32,19 +33,12 @@ class ObstacleCloudNode(Node):
         self.declare_parameter('persistent_merge_distance_m', 0.05)
         self.declare_parameter('persistent_max_points', 4000)
         self.declare_parameter('persistent_decay_sec', 0.0)
-        self.declare_parameter(
-            'range_topics',
-            ['/range/sensor_0', '/range/sensor_1', '/range/sensor_2', '/range/sensor_3', '/cliff/fl', '/cliff/fr', '/cliff/rl', '/cliff/rr'],
-        )
-        self.declare_parameter('bumper_topics', ['/bumper/front', '/bumper/rear', '/bumper/left', '/bumper/right'])
-        self.declare_parameter(
-            'range_topic_frames',
-            ['/cliff/fl:cliff_sensor_fl_beam', '/cliff/fr:cliff_sensor_fr_beam', '/cliff/rl:cliff_sensor_rl_beam', '/cliff/rr:cliff_sensor_rr_beam'],
-        )
-        self.declare_parameter(
-            'bumper_topic_frames',
-            ['/bumper/front:bumper_front_contact', '/bumper/rear:bumper_rear_contact', '/bumper/left:bumper_left_contact', '/bumper/right:bumper_right_contact'],
-        )
+        # Prázdný seznam v declare nemá typ. Prázdný řetězec se níž zahodí.
+        # Skutečné topicy a rámy předává localization.launch.py z profilu.
+        self.declare_parameter('range_topics', [''])
+        self.declare_parameter('bumper_topics', [''])
+        self.declare_parameter('range_topic_frames', [''])
+        self.declare_parameter('bumper_topic_frames', [''])
 
         self.base_frame = str(self.get_parameter('base_frame').value)
         self.output_topic = str(self.get_parameter('output_topic').value)
@@ -65,15 +59,9 @@ class ObstacleCloudNode(Node):
         self.persistent_merge_distance_m = max(0.0, float(self.get_parameter('persistent_merge_distance_m').value))
         self.persistent_max_points = max(1, int(self.get_parameter('persistent_max_points').value))
         self.persistent_decay_sec = max(0.0, float(self.get_parameter('persistent_decay_sec').value))
-        self.name_aliases = {
-            'front_left': 'fl',
-            'front_right': 'fr',
-            'rear_left': 'rl',
-            'rear_right': 'rr',
-        }
 
-        range_topics = list(self.get_parameter('range_topics').value)
-        bumper_topics = list(self.get_parameter('bumper_topics').value)
+        range_topics = self._string_list('range_topics')
+        bumper_topics = self._string_list('bumper_topics')
         self.range_topic_frames = self._parse_mapping_list(list(self.get_parameter('range_topic_frames').value))
         self.bumper_topic_frames = self._parse_mapping_list(list(self.get_parameter('bumper_topic_frames').value))
 
@@ -107,11 +95,21 @@ class ObstacleCloudNode(Node):
         # Timer pro generování mraku
         period = 1.0 / self.publish_rate_hz if self.publish_rate_hz > 0.0 else 0.05
         self.create_timer(period, self.publish_cloud)
+        if not range_topics and not bumper_topics:
+            self.get_logger().info(
+                'obstacle_cloud: žádné topicy bumperů ani cliffů — smyšlené senzory se nepřidávají'
+            )
         self.get_logger().info(f'Obstacle cloud active: {self.output_topic} in frame {self.base_frame}')
         if self.persistent_enabled:
             self.get_logger().info(
                 f'Persistent obstacle cloud active: {self.persistent_topic} in frame {self.persistent_frame}'
             )
+
+    def _string_list(self, name):
+        raw = self.get_parameter(name).value
+        if not raw:
+            return []
+        return [str(item).strip() for item in raw if str(item).strip()]
 
     def _parse_mapping_list(self, mappings):
         parsed = {}
@@ -154,36 +152,24 @@ class ObstacleCloudNode(Node):
         for topic_name, topic_types in self.get_topic_names_and_types():
             if topic_name.startswith(self.cliff_topic_prefix) and 'sensor_msgs/msg/Range' in topic_types:
                 if topic_name not in self.range_topic_frames:
-                    self.range_topic_frames[topic_name] = self._default_range_frame(topic_name)
+                    self.range_topic_frames[topic_name] = frame_from_topic(topic_name, 'range')
                 self._register_range_topic(topic_name)
 
             if topic_name.startswith(self.bumper_topic_prefix) and 'rmodus_interface/msg/Bumper' in topic_types:
                 if topic_name not in self.bumper_topic_frames:
-                    self.bumper_topic_frames[topic_name] = self._default_bumper_frame(topic_name)
+                    self.bumper_topic_frames[topic_name] = frame_from_topic(topic_name, 'bumper')
                 self._register_bumper_topic(topic_name)
 
-    def _default_range_frame(self, topic):
-        suffix = topic.rstrip('/').split('/')[-1]
-        suffix = self.name_aliases.get(suffix, suffix)
-        return f'cliff_sensor_{suffix}_beam'
-
-    def _default_bumper_frame(self, topic):
-        suffix = topic.rstrip('/').split('/')[-1]
-        suffix = self.name_aliases.get(suffix, suffix)
-        return f'bumper_{suffix}_contact'
-
     def bumper_cb(self, msg, topic):
-        frame_id = msg.header.frame_id.strip() if msg.header.frame_id else ''
-        if not frame_id:
-            frame_id = self.bumper_topic_frames.get(topic, '')
+        header = msg.header.frame_id if msg.header.frame_id else ''
+        frame_id = resolve_frame(header, topic, self.bumper_topic_frames, 'bumper')
         if not frame_id:
             return
         self.last_bumpers[frame_id] = msg
 
     def range_cb(self, msg, topic):
-        frame_id = msg.header.frame_id.strip() if msg.header.frame_id else ''
-        if not frame_id:
-            frame_id = self.range_topic_frames.get(topic, '')
+        header = msg.header.frame_id if msg.header.frame_id else ''
+        frame_id = resolve_frame(header, topic, self.range_topic_frames, 'range')
         if not frame_id:
             return
         self.last_ranges[frame_id] = msg
